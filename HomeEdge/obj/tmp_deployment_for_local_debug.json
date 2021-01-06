@@ -1,0 +1,79 @@
+{
+  "modulesContent": {
+    "$edgeAgent": {
+      "properties.desired": {
+        "schemaVersion": "1.0",
+        "runtime": {
+          "type": "docker",
+          "settings": {
+            "minDockerVersion": "v1.25",
+            "loggingOptions": "",
+            "registryCredentials": {}
+          }
+        },
+        "systemModules": {
+          "edgeAgent": {
+            "type": "docker",
+            "settings": {
+              "image": "mcr.microsoft.com/azureiotedge-agent:1.0",
+              "createOptions": "{}"
+            }
+          },
+          "edgeHub": {
+            "type": "docker",
+            "status": "running",
+            "restartPolicy": "always",
+            "settings": {
+              "image": "mcr.microsoft.com/azureiotedge-hub:1.0",
+              "createOptions": "{\"HostConfig\":{\"PortBindings\":{\"5671/tcp\":[{\"HostPort\":\"5671\"}],\"8883/tcp\":[{\"HostPort\":\"8883\"}],\"443/tcp\":[{\"HostPort\":\"443\"}]}}}"
+            }
+          }
+        },
+        "modules": {
+          "StreamAnalyticsEdge": {
+            "version": "1.0.0",
+            "type": "docker",
+            "status": "running",
+            "restartPolicy": "always",
+            "settings": {
+              "image": "mcr.microsoft.com/azure-stream-analytics/azureiotedge:1.0.8",
+              "createOptions": "{}"
+            },
+            "env": {
+              "PlanId": {
+                "value": "stream-analytics-on-iot-edge"
+              }
+            }
+          }
+        }
+      }
+    },
+    "$edgeHub": {
+      "properties.desired": {
+        "schemaVersion": "1.0",
+        "routes": {
+          "HomeModuleToStreamAnlyticsEdge": "FROM /messages/modules/HomeModule/outputs/* INTO BrokeredEndpoint(\"/modules/StreamAnalyticsEdge/inputs/Input1h\")",
+          "StreamAnalyticsEdgeToIoTHub": "FROM /messages/modules/StreamAnalyticsEdge/outputs/* INTO $upstream",
+          "HomeModuleToIoTHub": "FROM /messages/modules/HomeModule/outputs/* INTO $upstream"
+        },
+        "storeAndForwardConfiguration": {
+          "timeToLiveSecs": 7200
+        }
+      }
+    },
+    "HomeModule": {
+      "properties.desired": {
+        "isHomeInVacation": false,
+        "isHomeSecured": false
+      }
+    },
+    "StreamAnalyticsEdge": {
+      "properties.desired": {
+        "ASAJobInfo": "https://functionstorage01.blob.core.windows.net/asa-edge-725b2e12-cee6-4b74-8133-f4680282fda4/ASAEdgeJobs/725b2e12-cee6-4b74-8133-f4680282fda4/095947f6-cf32-4f77-a2e7-5c1f59bb318e/ASAEdgeJobDefinition.zip?sv=2018-03-28&sr=b&sig=oin1k2UvwQKlvYDjQPotw%2FIWWRm%2BqMhtPKYvNYQfJGc%3D&st=2020-12-13T22%3A42%3A21Z&se=2023-12-13T22%3A52%3A21Z&sp=r",
+        "ASAJobResourceId": "/subscriptions/816c386e-0eab-4c34-86e3-ee06f8d4ce74/resourceGroups/IoT/providers/Microsoft.StreamAnalytics/streamingjobs/StreamAnalyticsEdge",
+        "ASAJobEtag": "6b72445b-0061-4917-9190-e83a0aaf3aad",
+        "PublishTimestamp": "12/13/2020 10:52:21 PM"
+      }
+    }
+  }
+}

@@ -124,14 +124,15 @@ namespace HomeModule.Schedulers
                     UtcOffset = Program.DateTimeTZ().Offset.Hours,
                     DateAndTime = Program.DateTimeTZ().DateTime,
                 };
-                await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo);
+                Console.WriteLine($"Send data, not secured");
+                //await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo);
             }
 
             //run the alert only if home is secured and someone is moving
             if (TelemetryDataClass.isHomeSecured && IsSomeoneAtHome)
             {
                 bool forceOutsideLightsOn = true;
-                SetOutsideLightsOn(true, forceOutsideLightsOn, !forceOutsideLightsOn); //forcing outside lights ON
+                SetOutsideLightsOn(true, forceOutsideLightsOn); //forcing outside lights ON
                 TelemetryDataClass.SourceInfo = $"Home secured, someone moving {HomeSecurity.alertingSensors}";
                 var monitorData = new
                 {
@@ -144,6 +145,7 @@ namespace HomeModule.Schedulers
                     time = Program.DateTimeTZ().ToString("HH:mm"),
                     status = HomeSecurity.alertingSensors
                 };
+                Console.WriteLine($"Send data, secured");
                 await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo);
             }
         }

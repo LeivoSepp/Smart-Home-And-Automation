@@ -67,7 +67,7 @@ namespace HomeModule.Azure
                 if (HomeCommands["isOutsideLightsOn"] != null && ((bool)HomeCommands["isOutsideLightsOn"] == !TelemetryDataClass.isOutsideLightsOn))
                 {
                     bool setLightsOn = (bool)HomeCommands["isOutsideLightsOn"];
-                    SomeoneAtHome.SetOutsideLightsOn(setLightsOn, setLightsOn, !setLightsOn); //forcing to turn lights on or off
+                    SomeoneAtHome.SetOutsideLightsOn(setLightsOn, setLightsOn); //forcing to turn lights on or off
                 }
                 if (HomeCommands["isGarageLightsOn"] != null && ((bool)HomeCommands["isGarageLightsOn"] == !TelemetryDataClass.isGarageLightsOn))
                 {

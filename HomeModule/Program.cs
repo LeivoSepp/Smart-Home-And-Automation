@@ -96,6 +96,7 @@ namespace HomeModule
 
             Shelly.CheckOutsideLightsOnStartup(Shelly.OutsideLight);
             SomeoneAtHome.CheckLightStatuses();
+            SomeoneAtHome.CheckSomeoneMoving();
 
             //Send data to IoTHub
             _sendData = new SendTelemetryData();

@@ -28,7 +28,7 @@ namespace HomeModule.Schedulers
         }
         private static bool _isSomeoneAtHome;
 
-        //this has a state if someone is at home
+        //this has a state if someone is moving at home
         public static bool IsSomeoneMoving
         {
             get { return _isSomeoneMoving; }
@@ -39,7 +39,7 @@ namespace HomeModule.Schedulers
                     _isSomeoneMoving = value;
                     if (_isSomeoneMoving)
                     {
-                        OnSomeoneMovingAtHome();
+                        SetHomeTimerInterval();
                     }
                 }
             }
@@ -58,7 +58,7 @@ namespace HomeModule.Schedulers
                     //fire only if gate start opening
                     if (_isGateOpening)
                     {
-                        OnGateOpening();
+                        SetGateTimerInterval();
                     }
                 }
             }
@@ -82,26 +82,12 @@ namespace HomeModule.Schedulers
 
         private static bool IsManuallyTurnedOn = false;
         private static bool IsManuallyTurnedOff = false;
-
-        private static SendTelemetryData _sendTelemetryData = new SendTelemetryData();
+        private static double timerIntervalHome;
+        private static double timerIntervalGate;
         private static SendDataAzure _sendListData = new SendDataAzure();
         private static Stopwatch stopwatchHome = new Stopwatch();
         private static Stopwatch stopwatchGate = new Stopwatch();
 
-        private static async void OnGateOpening()
-        {
-            var timerInMinutes = 5; //5 minutes window
-            var timerInterval = TimeSpan.FromMinutes(timerInMinutes).TotalSeconds;
-            stopwatchGate.Restart();
-
-            while (true)
-            {
-                var te = stopwatchGate.Elapsed.TotalSeconds;
-                IsGateOpen = te <= timerInterval;
-                if (!IsGateOpen) break;
-                await Task.Delay(TimeSpan.FromSeconds(1)); 
-            }
-        }
         private static void OnGateOpened()
         {
             //with Gate the Garage lights are going on for 5 minutes
@@ -109,20 +95,34 @@ namespace HomeModule.Schedulers
             //outside lights forced for 30 min
             SetOutsideLightsOn(IsGateOpen, true);
         }
+        private static void SetGateTimerInterval()
+        {
+            //if home is secured, then check data in every minute otherwise in every 60 minutes
+            var timerInMinutes = 5; //5 minutes window
+            timerIntervalGate = TimeSpan.FromMinutes(timerInMinutes).TotalSeconds;
+            stopwatchGate.Restart();
+        }
 
-        //this will be fired every time when someone moves at home
-        public static async void OnSomeoneMovingAtHome()
+        private static void SetHomeTimerInterval()
         {
             //if home is secured, then check data in every minute otherwise in every 60 minutes
             var timerInMinutes = TelemetryDataClass.isHomeSecured ? 1 : 60;
-            var timerInterval = TimeSpan.FromMinutes(timerInMinutes).TotalSeconds;
+            timerIntervalHome = TimeSpan.FromMinutes(timerInMinutes).TotalSeconds;
             stopwatchHome.Restart();
+        }
+        //this will be fired every time when someone moves at home
+        public static async void CheckSomeoneMoving()
+        {
+            stopwatchHome.Start();
+            stopwatchGate.Start();
             while (true)
             {
-                var te = stopwatchHome.Elapsed.TotalSeconds;
-                IsSomeoneAtHome = te <= timerInterval;
-                if (!IsSomeoneAtHome) break;
-                await Task.Delay(TimeSpan.FromSeconds(1)); 
+                var elapsedSecHome = stopwatchHome.Elapsed.TotalSeconds;
+                IsSomeoneAtHome = elapsedSecHome <= timerIntervalHome;
+
+                var elapsedSecGate = stopwatchGate.Elapsed.TotalSeconds;
+                IsGateOpen = elapsedSecGate <= timerIntervalGate;
+                await Task.Delay(TimeSpan.FromSeconds(1));
             }
         }
         private static async void SomeoneAtHomeChanged()
@@ -130,7 +130,6 @@ namespace HomeModule.Schedulers
             //send this message only if home is not secured and either started moving or stopped moving
             if (!TelemetryDataClass.isHomeSecured)
             {
-                //turn on-off outside lights based someone is at home or not
                 SetOutsideLightsOn(IsSomeoneAtHome);
 
                 TelemetryDataClass.isSomeoneAtHome = IsSomeoneAtHome;
@@ -162,7 +161,8 @@ namespace HomeModule.Schedulers
                     time = Program.DateTimeTZ().ToString("HH:mm"),
                     status = HomeSecurity.alertingSensors
                 };
-                await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo);
+                Console.WriteLine($"secured message sent, sensors:{HomeSecurity.alertingSensors}");
+                //await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo);
             }
         }
         public static void SetOutsideLightsOn(bool setLightsOn = true, bool isForcedToTurnOn = false, bool isForcedToTurnOff = false)
@@ -200,20 +200,14 @@ namespace HomeModule.Schedulers
                 bool isLightsAreOn = TelemetryDataClass.isGarageLightsOn || TelemetryDataClass.isOutsideLightsOn;
 
                 //the following manual modes are comes if one pushes the button from the app
-                if (IsManuallyTurnedOn)
+                if (IsManuallyTurnedOn || IsManuallyTurnedOff)
                 {
-                    SetOutsideLightsOn();
                     await Task.Delay(TimeSpan.FromMinutes(30)); //check statuses every 30 minutes
-                    IsManuallyTurnedOn = false;
-                }
-                if (IsManuallyTurnedOff)
-                {
-                    SetOutsideLightsOn(false);
-                    await Task.Delay(TimeSpan.FromMinutes(30)); //check statuses every 30 minutes
-                    IsManuallyTurnedOff = false;
+                    IsManuallyTurnedOn = IsManuallyTurnedOff = false;
                 }
                 //check the day/night conditions to turn lights on/off
-                if (!IsManuallyTurnedOn && !IsManuallyTurnedOff)
+                //if (!IsManuallyTurnedOn && !IsManuallyTurnedOff)
+                else
                 {
                     //during day time and night time turn off the lights if they are suddenly on
                     if (isNotLightsTime && isLightsAreOn)

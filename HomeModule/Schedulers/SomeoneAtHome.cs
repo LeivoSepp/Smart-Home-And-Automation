@@ -28,6 +28,24 @@ namespace HomeModule.Schedulers
         }
         private static bool _isSomeoneAtHome;
 
+        //this has a state if someone is at home
+        public static bool IsSomeoneMoving
+        {
+            get { return _isSomeoneMoving; }
+            set
+            {
+                if (_isSomeoneMoving != value)
+                {
+                    _isSomeoneMoving = value;
+                    if (_isSomeoneMoving)
+                    {
+                        OnSomeoneMovingAtHome();
+                    }
+                }
+            }
+        }
+        private static bool _isSomeoneMoving;
+
         //this will be fired every time when the gates will open/close
         public static bool IsGateOpening
         {
@@ -81,7 +99,7 @@ namespace HomeModule.Schedulers
                 var te = stopwatchGate.Elapsed.TotalSeconds;
                 IsGateOpen = te <= timerInterval;
                 if (!IsGateOpen) break;
-                await Task.Delay(TimeSpan.FromSeconds(1)); //check the stopper statuses every second
+                await Task.Delay(TimeSpan.FromSeconds(1)); 
             }
         }
         private static void OnGateOpened()
@@ -104,17 +122,17 @@ namespace HomeModule.Schedulers
                 var te = stopwatchHome.Elapsed.TotalSeconds;
                 IsSomeoneAtHome = te <= timerInterval;
                 if (!IsSomeoneAtHome) break;
-                await Task.Delay(TimeSpan.FromSeconds(1)); //check the stopper statuses every second
+                await Task.Delay(TimeSpan.FromSeconds(1)); 
             }
         }
         private static async void SomeoneAtHomeChanged()
         {
-            //turn on-off outside lights based someone is at home or not
-            SetOutsideLightsOn(IsSomeoneAtHome);
-
-            //send this alert only if home is not secured and either started moving or stopped moving
+            //send this message only if home is not secured and either started moving or stopped moving
             if (!TelemetryDataClass.isHomeSecured)
             {
+                //turn on-off outside lights based someone is at home or not
+                SetOutsideLightsOn(IsSomeoneAtHome);
+
                 TelemetryDataClass.isSomeoneAtHome = IsSomeoneAtHome;
                 TelemetryDataClass.SourceInfo = $"Someone is at home: {IsSomeoneAtHome}";
                 var monitorData = new
@@ -124,8 +142,7 @@ namespace HomeModule.Schedulers
                     UtcOffset = Program.DateTimeTZ().Offset.Hours,
                     DateAndTime = Program.DateTimeTZ().DateTime,
                 };
-                Console.WriteLine($"Send data, not secured");
-                //await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo);
+                await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo);
             }
 
             //run the alert only if home is secured and someone is moving
@@ -145,7 +162,6 @@ namespace HomeModule.Schedulers
                     time = Program.DateTimeTZ().ToString("HH:mm"),
                     status = HomeSecurity.alertingSensors
                 };
-                Console.WriteLine($"Send data, secured");
                 await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo);
             }
         }
@@ -159,7 +175,8 @@ namespace HomeModule.Schedulers
             var _receiveData = new ReceiveData();
             string cmd = ((setLightsOn && isLightsTime) || IsManuallyTurnedOn) && !IsManuallyTurnedOff ? CommandNames.TURN_ON_OUTSIDE_LIGHT : CommandNames.TURN_OFF_OUTSIDE_LIGHT;
             _receiveData.ProcessCommand(cmd);
-            Console.WriteLine($"Outside lights are {(TelemetryDataClass.isOutsideLightsOn ? "on" : "off")} {Program.DateTimeTZ().DateTime:dd.MM HH:mm}");
+            Console.WriteLine($"Outside lights are {(TelemetryDataClass.isOutsideLightsOn ? "on" : "off")} {Program.DateTimeTZ().DateTime:dd.MM HH:mm:ss}");
+            //Console.WriteLine($"setLightsOn:{setLightsOn} isLightsTim:{isLightsTime} ismanuallyOn:{IsManuallyTurnedOn} insManuallyOff:{IsManuallyTurnedOff} isSleepTime:{isSleepTime} isDarkTime:{isDarkTime} cmd:{cmd}");
         }
         public static void SetGarageLightsOn(bool isLightsOn = true)
         {

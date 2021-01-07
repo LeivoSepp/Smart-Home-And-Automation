@@ -70,34 +70,34 @@
                   "Binds": [ "/home/pi/homemodule:/temp" ]
                 }
               }
+            },
+            "env": {
+              "mappedFolder": { "value": "/temp" },
+              "netatmoClientId": { "value": "${netatmoClientId}" },
+              "netatmoClientSecret": { "value": "${netatmoClientSecret}" },
+              "netatmoUsername": { "value": "${netatmoUsername}" },
+              "netatmoPassword": { "value": "${netatmoPassword}" },
+              "deviceIDIndoor": { "value": "${deviceIDIndoor}" },
+              "deviceIDOutdoor": { "value": "${deviceIDOutdoor}" },
+              "EnergyPriceFuncURL": { "value": "${EnergyPriceFuncURL}" },
+              "EnergyPriceFuncCode": { "value": "${EnergyPriceFuncCode}" },
+              "OutsideLightShellyIP": { "value": "${OutsideLightShellyIP}" },
+              "PianoHeatingShellyIP": { "value": "${PianoHeatingShellyIP}" }
             }
           },
-          "env": {
-            "mappedFolder": { "value": "/temp" },
-            "netatmoClientId": { "value": "${netatmoClientId}" },
-            "netatmoClientSecret": { "value": "${netatmoClientSecret}" },
-            "netatmoUsername": { "value": "${netatmoUsername}" },
-            "netatmoPassword": { "value": "${netatmoPassword}" },
-            "deviceIDIndoor": { "value": "${deviceIDIndoor}" },
-            "deviceIDOutdoor": { "value": "${deviceIDOutdoor}" },
-            "EnergyPriceFuncURL": { "value": "${EnergyPriceFuncURL}" },
-            "EnergyPriceFuncCode": { "value": "${EnergyPriceFuncCode}" },
-            "OutsideLightShellyIP": { "value": "${OutsideLightShellyIP}" },
-            "PianoHeatingShellyIP": { "value": "${PianoHeatingShellyIP}" }
-          }
-        },
-        "StreamAnalyticsEdge": {
-          "version": "1.0.0",
-          "type": "docker",
-          "status": "running",
-          "restartPolicy": "always",
-          "settings": {
-            "image": "mcr.microsoft.com/azure-stream-analytics/azureiotedge:1.0.8",
-            "createOptions": {}
-          },
-          "env": {
-            "PlanId": {
-              "value": "stream-analytics-on-iot-edge"
+          "StreamAnalyticsEdge": {
+            "version": "1.0.0",
+            "type": "docker",
+            "status": "running",
+            "restartPolicy": "always",
+            "settings": {
+              "image": "mcr.microsoft.com/azure-stream-analytics/azureiotedge:1.0.8",
+              "createOptions": {}
+            },
+            "env": {
+              "PlanId": {
+                "value": "stream-analytics-on-iot-edge"
+              }
             }
           }
         }

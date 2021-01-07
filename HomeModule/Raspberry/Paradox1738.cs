@@ -99,7 +99,7 @@ namespace HomeModule.Raspberry
             {
                 try
                 {
-                    if (zones.Any(x => x.IsZoneOpen)) SomeoneAtHome.OnSomeoneMovingAtHome();
+                    SomeoneAtHome.IsSomeoneMoving = zones.Any(x => x.IsZoneOpen);
                     //making string of the alerting sensors
                     alertingSensors = null;
                     zones.ForEach(x => { if (x.IsZoneOpen) { alertingSensors += $"{x.ZoneName}, "; } });

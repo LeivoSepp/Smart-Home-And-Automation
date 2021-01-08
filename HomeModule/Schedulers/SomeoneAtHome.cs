@@ -1,8 +1,10 @@
 ﻿using CoordinateSharp;
 using HomeModule.Azure;
 using HomeModule.MCP;
+using HomeModule.Raspberry;
 using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace HomeModule.Schedulers
@@ -149,7 +151,12 @@ namespace HomeModule.Schedulers
             {
                 bool forceOutsideLightsOn = true;
                 SetOutsideLightsOn(true, forceOutsideLightsOn); //forcing outside lights ON
-                TelemetryDataClass.SourceInfo = $"Home secured, someone moving {HomeSecurity.alertingSensors}";
+                TelemetryDataClass.SourceInfo = $"Home secured, someone moving {Paradox1738.alertingSensors.FirstOrDefault(x => x.IsZoneOpen).ZoneName}";
+                string sensorsOpen = "Someone moving: ";
+                foreach (var x in Paradox1738.alertingSensors)
+                {
+                    sensorsOpen += $"{x.ZoneOpenTime} {x.ZoneName}, ";
+                }
                 var monitorData = new
                 {
                     DeviceID = "SecurityController",
@@ -159,10 +166,11 @@ namespace HomeModule.Schedulers
                     DateAndTime = Program.DateTimeTZ().DateTime,
                     date = Program.DateTimeTZ().ToString("dd.MM"),
                     time = Program.DateTimeTZ().ToString("HH:mm"),
-                    status = HomeSecurity.alertingSensors
+                    status = sensorsOpen,
+                    Paradox1738.alertingSensors
                 };
-                Console.WriteLine($"secured message sent, sensors:{HomeSecurity.alertingSensors}");
                 await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo);
+                Paradox1738.alertingSensors.ForEach(x => Console.WriteLine($"Someone moving: {x.ZoneOpenTime} {x.ZoneName}"));
             }
         }
         public static void SetOutsideLightsOn(bool setLightsOn = true, bool isForcedToTurnOn = false, bool isForcedToTurnOff = false)

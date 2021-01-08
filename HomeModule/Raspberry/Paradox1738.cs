@@ -14,7 +14,7 @@ namespace HomeModule.Raspberry
     {
         static SerialPort _serialPort;
         private SendDataAzure _sendListData;
-        public static string alertingSensors = "";
+        public static List<Zone> alertingSensors = new List<Zone>();
 
         public async void ParadoxSecurity()
         {
@@ -65,10 +65,16 @@ namespace HomeModule.Raspberry
                     //save the IRState into zone's list
                     bool IsZoneOpen = false;
                     if (EventID == "04") IsZoneOpen = true;
-                    zones.Where(x => x.Data == MessageID).Select(x => { x.IsZoneOpen = IsZoneOpen; return x; }).ToList();
-                    Message = zones.Where(x => x.Data == MessageID).Select(x => $"{x.ZoneName} {(x.IsZoneOpen ? "Open" : "Closed")}").DefaultIfEmpty($"NoName {MessageID}").First();
-                    Console.Write($"{Program.DateTimeTZ().DateTime:HH:mm:ss,ff} {Message}");
+                    zones.Where(x => x.Data == MessageID).Select(x => { x.IsZoneOpen = IsZoneOpen; x.ZoneOpenTime = Program.DateTimeTZ(); return x; }).ToList();
+                    Message = zones.Where(x => x.Data == MessageID).Select(x => $"{x.ZoneOpenTime:HH:mm:ss,ff} {x.ZoneName} {(x.IsZoneOpen ? "Open" : "Closed")}").DefaultIfEmpty($"NoName {MessageID}").First();
+                    Console.Write($"{Message}");
                     Console.WriteLine();
+
+                    //add alerting sensors to the list if home secured
+                    if (TelemetryDataClass.isHomeSecured)
+                        if(IsZoneOpen) alertingSensors.Add(zones.FirstOrDefault(x => x.IsZoneOpen));
+                    else
+                        alertingSensors.Clear();
                 }
             }
         }
@@ -99,10 +105,8 @@ namespace HomeModule.Raspberry
             {
                 try
                 {
+
                     SomeoneAtHome.IsSomeoneMoving = zones.Any(x => x.IsZoneOpen);
-                    //making string of the alerting sensors
-                    alertingSensors = null;
-                    zones.ForEach(x => { if (x.IsZoneOpen) { alertingSensors += $"{x.ZoneName}, "; } });
 
                     _doorValue = zones.First(ir => ir.Data == "11").IsZoneOpen;
                     _iRValue = zones.First(ir => ir.Data == "21").IsZoneOpen;
@@ -299,6 +303,7 @@ namespace HomeModule.Raspberry
         public string Data { get; set; }
         public string ZoneName { get; set; }
         public bool IsZoneOpen { get; set; }
+        public DateTimeOffset ZoneOpenTime { get; set; }
     }
     class Trouble
     {

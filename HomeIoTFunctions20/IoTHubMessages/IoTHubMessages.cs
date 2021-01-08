@@ -91,14 +91,14 @@ namespace HomeIoTFunctions20.IoTHubMessages
         public static async void SendEmail(JObject jObject, IAsyncCollector<SendGridMessage> messageCollector)
         {
             string source = jObject.Value<string>("SourceInfo");
-            //string status = jObject.Value<string>("status");
+            string status = jObject.Value<string>("status");
             string date = jObject.Value<string>("date");
             string time = jObject.Value<string>("time");
             string subject = $"{source} at {date} {time}";
 
             var message = new SendGridMessage();
             message.AddTos(EmailsTo);
-            message.AddContent("text/plain", $"Hello, \n\nSmart security announcement at {time}, your lovely home recognized an activity: {source} \n\nYour Sweet Home\n{patterns}");
+            message.AddContent("text/plain", $"Hello, \n\nSmart security announcement at {time}, your lovely home recognized an activity.\n {status} \n\nYour Sweet Home\n{patterns}");
             message.SetFrom(SendEmailFrom);
             message.SetSubject(subject);
             await messageCollector.AddAsync(message);

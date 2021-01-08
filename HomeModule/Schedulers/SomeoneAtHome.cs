@@ -95,6 +95,7 @@ namespace HomeModule.Schedulers
             //outside lights forced for 30 min
             SetOutsideLightsOn(IsGateOpen, true);
         }
+        //this will be fired every time when someone opens the gate
         private static void SetGateTimerInterval()
         {
             //if home is secured, then check data in every minute otherwise in every 60 minutes
@@ -102,7 +103,7 @@ namespace HomeModule.Schedulers
             timerIntervalGate = TimeSpan.FromMinutes(timerInMinutes).TotalSeconds;
             stopwatchGate.Restart();
         }
-
+        //this will be fired every time when someone moves at home
         private static void SetHomeTimerInterval()
         {
             //if home is secured, then check data in every minute otherwise in every 60 minutes
@@ -110,7 +111,6 @@ namespace HomeModule.Schedulers
             timerIntervalHome = TimeSpan.FromMinutes(timerInMinutes).TotalSeconds;
             stopwatchHome.Restart();
         }
-        //this will be fired every time when someone moves at home
         public static async void CheckSomeoneMoving()
         {
             stopwatchHome.Start();
@@ -162,7 +162,7 @@ namespace HomeModule.Schedulers
                     status = HomeSecurity.alertingSensors
                 };
                 Console.WriteLine($"secured message sent, sensors:{HomeSecurity.alertingSensors}");
-                //await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo);
+                await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo);
             }
         }
         public static void SetOutsideLightsOn(bool setLightsOn = true, bool isForcedToTurnOn = false, bool isForcedToTurnOff = false)

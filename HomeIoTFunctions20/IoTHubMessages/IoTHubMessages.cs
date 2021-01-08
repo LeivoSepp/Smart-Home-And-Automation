@@ -16,7 +16,7 @@ namespace HomeIoTFunctions20.IoTHubMessages
 {
     public static class IoTHubMessages
     {
-        static List<EmailAddress> EmailsTo = new List<EmailAddress>();
+        static List<EmailAddress> EmailsTo;
         static string SendEmailFrom;
         //This function is listsening IoT Hub messages (actually messages which are coming from HomePI Edge StreamAnalytics or GaragePI directly) 
         //all messages are forwarded to CosmosDB and some of the messages will sent to SendGrid (e-mail)
@@ -38,73 +38,58 @@ namespace HomeIoTFunctions20.IoTHubMessages
                 .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables()
                 .Build();
+
             var SendEmailTo = config["SendEmailsTo"];
             SendEmailFrom = config["SendEmailFrom"];
+            EmailsTo = new List<EmailAddress>();
             List<string> emailList = SendEmailTo.Split(",").ToList();
             foreach (var item in emailList)
             {
                 EmailsTo.Add(new EmailAddress(item));
             }
-            try
+            log.LogInformation($"C# IoT Hub trigger function processed a message: {eventMessages.Length}");
+            string jsonStr;
+            foreach (var eventData in eventMessages)
             {
-
-                log.LogInformation($"C# IoT Hub trigger function processed a message: {eventMessages.Length}");
-                string jsonStr;
-
-
-                foreach (var eventData in eventMessages)
+                try
                 {
-                    try
+                    if (eventData.SystemProperties.EnqueuedTimeUtc >= DateTime.UtcNow.AddMinutes(-1))
+                        jsonStr = Encoding.UTF8.GetString(eventData.Body.Array);
+                    else
+                        return;
+
+                    if (JToken.Parse(jsonStr) is JObject)
                     {
-                        if (eventData.SystemProperties.EnqueuedTimeUtc >= DateTime.UtcNow.AddMinutes(-1))
-                            jsonStr = Encoding.UTF8.GetString(eventData.Body.Array);
-                        else
-                            return;
+                        JObject json = JsonConvert.DeserializeObject<JObject>(jsonStr);
+                        log.LogInformation($"JObject: {json}");
 
-                        if (JToken.Parse(jsonStr) is JObject)
-                        {
-                            JObject json = JsonConvert.DeserializeObject<JObject>(jsonStr);
-                            log.LogInformation($"JObject: {json}");
-
-                            if (json.Value<bool>("isHomeSecured") && json.Value<string>("DeviceID") == "SecurityController")
-                                SendEmail(json, messageCollector);
-                            //if (json.Value<string>("SourceInfo") == "Someone is at home: True" || json.Value<string>("SourceInfo") == "Someone is at home: False")
-                            //    SendEmail(json, messageCollector);
-
-
-                            await output.AddAsync(json);
-                        }
-                        else //array, from the Stream Analytics it comes as an Array
-                        {
-                            JArray json = JsonConvert.DeserializeObject<JArray>(jsonStr);
-                            foreach (JObject doc in json)
-                            {
-                                if (doc.Value<bool>("isHomeSecured"))
-                                    SendEmail(doc, messageCollector);
-
-                                log.LogInformation($"JArray: {doc}");
-                                await output.AddAsync(doc);
-                            }
-                        }
-                        //log.LogInformation($"events: {eventData.SystemProperties.EnqueuedTimeUtc}");
-                        //log.LogInformation($"C# IoT Hub trigger function processed a message: {Encoding.UTF8.GetString(eventData.Body.Array)}");
+                        if (json.Value<bool>("isHomeSecured") && json.Value<string>("DeviceID") == "SecurityController")
+                            SendEmail(json, messageCollector);
+                        //if (json.Value<string>("SourceInfo") == "Someone is at home: True" || json.Value<string>("SourceInfo") == "Someone is at home: False")
+                        //    SendEmail(json, messageCollector);
+                        await output.AddAsync(json);
                     }
-                    catch (Exception ex)
+                    else //array, from the Stream Analytics it comes as an Array
                     {
-                        log.LogInformation($"Caught exception: {ex.Message}");
+                        JArray json = JsonConvert.DeserializeObject<JArray>(jsonStr);
+                        foreach (JObject doc in json)
+                        {
+                            if (doc.Value<bool>("isHomeSecured"))
+                                SendEmail(doc, messageCollector);
+
+                            log.LogInformation($"JArray: {doc}");
+                            await output.AddAsync(doc);
+                        }
                     }
                 }
+                catch (Exception ex)
+                {
+                    log.LogInformation($"Caught exception: {ex.Message}");
+                }
             }
-            catch (Exception e)
-            {
-
-                log.LogInformation($"Exception when reading messages: {e.Message}");
-            }
-
         }
         public static async void SendEmail(JObject jObject, IAsyncCollector<SendGridMessage> messageCollector)
         {
-
             string source = jObject.Value<string>("SourceInfo");
             //string status = jObject.Value<string>("status");
             string date = jObject.Value<string>("date");
@@ -118,7 +103,7 @@ namespace HomeIoTFunctions20.IoTHubMessages
             message.SetSubject(subject);
             await messageCollector.AddAsync(message);
         }
-        static string patterns = @"
+        static readonly string patterns = @"
     * 
     * PATTERNS
     * 

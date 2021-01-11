@@ -98,21 +98,10 @@ namespace HomeIoTFunctions20.IoTHubMessages
 
             var message = new SendGridMessage();
             message.AddTos(EmailsTo);
-            message.AddContent("text/plain", $"Hello, \n\nSmart security announcement at {time}, your lovely home recognized an activity.\n {status} \n\nYour Sweet Home\n{patterns}");
+            message.AddContent("text/plain", $"Hello, \n\nSmart security announcement at {time}, your lovely home recognized an activity.\n {status} \n\nYour Sweet Home");
             message.SetFrom(SendEmailFrom);
             message.SetSubject(subject);
             await messageCollector.AddAsync(message);
         }
-        static readonly string patterns = @"
-    * 
-    * PATTERNS
-    * 
-    1. Entry 1, door closed. Entrance, when the door is closed beforehand, with closing the door afterwards.
-    2. Entry 2, door left open. Entrance when the door is closed beforehand, without closing the door afterwards.
-    3. Exit 1_1/1_2/1_3, door closed. Exit when the door is closed beforehand, with closing the door afterwards.
-    4. Exit 2, door left open. Exit when the door is closed beforehand, without closing the door afterwards.
-    5. Entry-Exit 1, door closed. Entrance / exit when the door is opened beforehand, with closing the door afterwards.
-    6. Entry-Exit 2, door left open. Entrance / exit when the door is opened beforehand, without closing the door afterwards.
-";
     }
 }

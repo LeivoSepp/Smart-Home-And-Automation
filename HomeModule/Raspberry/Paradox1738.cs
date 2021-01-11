@@ -65,14 +65,21 @@ namespace HomeModule.Raspberry
                     //save the IRState into zone's list
                     bool IsZoneOpen = false;
                     if (EventID == "04") IsZoneOpen = true;
+                    //update existing list with the IR statuses and activating/closing time
                     zones.Where(x => x.Data == MessageID).Select(x => { x.IsZoneOpen = IsZoneOpen; x.ZoneOpenTime = Program.DateTimeTZ(); return x; }).ToList();
                     Message = zones.Where(x => x.Data == MessageID).Select(x => $"{x.ZoneOpenTime:HH:mm:ss,ff} {x.ZoneName} {(x.IsZoneOpen ? "Open" : "Closed")}").DefaultIfEmpty($"NoName {MessageID}").First();
                     Console.Write($"{Message}");
                     Console.WriteLine();
 
-                    //add alerting sensors to the list if home secured
+                    //add alerting sensors into list if home secured
                     if (TelemetryDataClass.isHomeSecured)
-                        if(IsZoneOpen) alertingSensors.Add(zones.FirstOrDefault(x => x.IsZoneOpen));
+                    {
+                        if (IsZoneOpen)
+                        {
+                            Zone zone = zones.FirstOrDefault(x => x.IsZoneOpen);
+                            alertingSensors.Add(new Zone() { IsZoneOpen = zone.IsZoneOpen, ZoneName = zone.ZoneName, ZoneOpenTime = zone.ZoneOpenTime, Data = zone.Data });
+                        }
+                    }
                     else
                         alertingSensors.Clear();
                 }
@@ -94,8 +101,9 @@ namespace HomeModule.Raspberry
             List<State> Exit3 = new List<State> { NONE, IR, ALL, IR, NONE };
             List<State> Exit4 = new List<State> { NONE, IR, ALL, DOOR, NONE };
             List<State> DoorOpenClose = new List<State> { NONE, DOOR, NONE };
-            List<State> RepeatDoor = new List<State> { DOOR, ALL }; //repeat
-            List<State> RepeatIR = new List<State> { IR, ALL }; //repeat
+            List<State> RepeatDoorAll = new List<State> { DOOR, ALL }; //repeat
+            List<State> RepeatAllDoor = new List<State> { ALL, DOOR }; //repeat
+            List<State> RepeatIRAll = new List<State> { IR, ALL }; //repeat
             bool _doorValue, _iRValue;
             bool smokeDetector = false;
             string status = "No pattern";
@@ -112,7 +120,7 @@ namespace HomeModule.Raspberry
                     _iRValue = zones.First(ir => ir.Data == "21").IsZoneOpen;
                     smokeDetector = zones.First(ir => ir.Data == "71").IsZoneOpen;
 
-                    //save the door and IR statuses to put them into queue
+                    //save the door and IR statuses for the queue
                     State _state = new State { DoorValue = _doorValue, IRValue = _iRValue };
 
                     if (_queue.Count > 6)
@@ -127,10 +135,11 @@ namespace HomeModule.Raspberry
                     if (_state != lastItem)
                     {
                         _queue.Add(_state);
-                        if (RemoveDuplicate(_queue, RepeatDoor)) Console.WriteLine($"Door duplicate removed");
-                        if (RemoveDuplicate(_queue, RepeatIR)) Console.WriteLine($"IR duplicate removed");
+                        if (RemoveDuplicate(_queue, RepeatDoorAll)) Console.WriteLine($"Door-All duplicate removed");
+                        if (RemoveDuplicate(_queue, RepeatAllDoor)) Console.WriteLine($"All-Door duplicate removed");
+                        if (RemoveDuplicate(_queue, RepeatIRAll)) Console.WriteLine($"IR-All duplicate removed");
 
-                        if (_queue.Count > 2) //only check pattern if there are more than 3 events 
+                        if (_queue.Count > 2) //only check pattern if there are more than 3 events in queue 
                         {
                             if (ContainsPattern(_queue, Entry)) status = "Entry";
                             if (ContainsPattern(_queue, Entry2)) status = "Entry2";
@@ -145,7 +154,7 @@ namespace HomeModule.Raspberry
                     if (status != "No pattern")
                     {
                         _queue.Clear(); //clear queue and pattern
-                        _queue.Add(NONE); //add first all-closed pattern
+                        _queue.Add(new State { DoorValue = false, IRValue = false }); //add first all-closed pattern
 
                         TelemetryDataClass.SourceInfo = $"Door: {status}";
                         var monitorData = new

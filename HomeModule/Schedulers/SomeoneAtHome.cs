@@ -152,10 +152,10 @@ namespace HomeModule.Schedulers
                 bool forceOutsideLightsOn = true;
                 SetOutsideLightsOn(true, forceOutsideLightsOn); //forcing outside lights ON
                 TelemetryDataClass.SourceInfo = $"Home secured, someone moving {Paradox1738.alertingSensors.FirstOrDefault(x => x.IsZoneOpen).ZoneName}";
-                string sensorsOpen = "Someone moving: ";
+                string sensorsOpen = "Look where someone is moving:\n\n";
                 foreach (var x in Paradox1738.alertingSensors)
                 {
-                    sensorsOpen += $"{x.ZoneOpenTime} {x.ZoneName}, ";
+                    sensorsOpen += $"{x.ZoneOpenTime:G} {x.ZoneName}\n";
                 }
                 var monitorData = new
                 {
@@ -170,7 +170,7 @@ namespace HomeModule.Schedulers
                     Paradox1738.alertingSensors
                 };
                 await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo);
-                Paradox1738.alertingSensors.ForEach(x => Console.WriteLine($"Someone moving: {x.ZoneOpenTime} {x.ZoneName}"));
+                Paradox1738.alertingSensors.ForEach(x => Console.WriteLine($"Zone open: {x.ZoneOpenTime} {x.ZoneName}"));
             }
         }
         public static void SetOutsideLightsOn(bool setLightsOn = true, bool isForcedToTurnOn = false, bool isForcedToTurnOff = false)
@@ -184,7 +184,6 @@ namespace HomeModule.Schedulers
             string cmd = ((setLightsOn && isLightsTime) || IsManuallyTurnedOn) && !IsManuallyTurnedOff ? CommandNames.TURN_ON_OUTSIDE_LIGHT : CommandNames.TURN_OFF_OUTSIDE_LIGHT;
             _receiveData.ProcessCommand(cmd);
             Console.WriteLine($"Outside lights are {(TelemetryDataClass.isOutsideLightsOn ? "on" : "off")} {Program.DateTimeTZ().DateTime:dd.MM HH:mm:ss}");
-            //Console.WriteLine($"setLightsOn:{setLightsOn} isLightsTim:{isLightsTime} ismanuallyOn:{IsManuallyTurnedOn} insManuallyOff:{IsManuallyTurnedOff} isSleepTime:{isSleepTime} isDarkTime:{isDarkTime} cmd:{cmd}");
         }
         public static void SetGarageLightsOn(bool isLightsOn = true)
         {
@@ -210,11 +209,9 @@ namespace HomeModule.Schedulers
                 //the following manual modes are comes if one pushes the button from the app
                 if (IsManuallyTurnedOn || IsManuallyTurnedOff)
                 {
-                    await Task.Delay(TimeSpan.FromMinutes(30)); //check statuses every 30 minutes
+                    await Task.Delay(TimeSpan.FromMinutes(30)); //wait here for 30 minutes, lights are on or off
                     IsManuallyTurnedOn = IsManuallyTurnedOff = false;
                 }
-                //check the day/night conditions to turn lights on/off
-                //if (!IsManuallyTurnedOn && !IsManuallyTurnedOff)
                 else
                 {
                     //during day time and night time turn off the lights if they are suddenly on

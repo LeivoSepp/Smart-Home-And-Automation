@@ -16,7 +16,7 @@ namespace HomeModule.Schedulers
         static readonly double Lon = 24.703521;
 
         //this has a state if someone is at home
-        private static bool IsSomeoneAtHome
+        public static bool IsSomeoneAtHome
         {
             get { return _isSomeoneAtHome; }
             set
@@ -29,24 +29,6 @@ namespace HomeModule.Schedulers
             }
         }
         private static bool _isSomeoneAtHome;
-
-        //this has a state if someone is moving at home
-        public static bool IsSomeoneMoving
-        {
-            get { return _isSomeoneMoving; }
-            set
-            {
-                if (_isSomeoneMoving != value)
-                {
-                    _isSomeoneMoving = value;
-                    if (_isSomeoneMoving)
-                    {
-                        SetHomeTimerInterval();
-                    }
-                }
-            }
-        }
-        private static bool _isSomeoneMoving;
 
         //this will be fired every time when the gates will open/close
         public static bool IsGateOpening
@@ -84,10 +66,8 @@ namespace HomeModule.Schedulers
 
         private static bool IsManuallyTurnedOn = false;
         private static bool IsManuallyTurnedOff = false;
-        private static double timerIntervalHome;
         private static double timerIntervalGate;
         private static SendDataAzure _sendListData = new SendDataAzure();
-        private static Stopwatch stopwatchHome = new Stopwatch();
         private static Stopwatch stopwatchGate = new Stopwatch();
 
         private static void OnGateOpened()
@@ -105,23 +85,11 @@ namespace HomeModule.Schedulers
             timerIntervalGate = TimeSpan.FromMinutes(timerInMinutes).TotalSeconds;
             stopwatchGate.Restart();
         }
-        //this will be fired every time when someone moves at home
-        private static void SetHomeTimerInterval()
-        {
-            //if home is secured, then check data in every minute otherwise in every 60 minutes
-            var timerInMinutes = TelemetryDataClass.isHomeSecured ? 1 : 60;
-            timerIntervalHome = TimeSpan.FromMinutes(timerInMinutes).TotalSeconds;
-            stopwatchHome.Restart();
-        }
         public static async void CheckSomeoneMoving()
         {
-            stopwatchHome.Start();
             stopwatchGate.Start();
             while (true)
             {
-                var elapsedSecHome = stopwatchHome.Elapsed.TotalSeconds;
-                IsSomeoneAtHome = elapsedSecHome <= timerIntervalHome;
-
                 var elapsedSecGate = stopwatchGate.Elapsed.TotalSeconds;
                 IsGateOpen = elapsedSecGate <= timerIntervalGate;
                 await Task.Delay(TimeSpan.FromSeconds(1));
@@ -143,7 +111,8 @@ namespace HomeModule.Schedulers
                     UtcOffset = Program.DateTimeTZ().Offset.Hours,
                     DateAndTime = Program.DateTimeTZ().DateTime,
                 };
-                await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo);
+                //await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo);
+                Console.WriteLine("someone at home");
             }
 
             //run the alert only if home is secured and someone is moving
@@ -155,7 +124,7 @@ namespace HomeModule.Schedulers
                 string sensorsOpen = "Look where someone is moving:\n\n";
                 foreach (var x in Paradox1738.alertingSensors)
                 {
-                    sensorsOpen += $"{x.ZoneOpenTime:G} {x.ZoneName}\n";
+                    sensorsOpen += $"{x.ZoneEventTime:G} {x.ZoneName}\n";
                 }
                 var monitorData = new
                 {
@@ -170,7 +139,7 @@ namespace HomeModule.Schedulers
                     Paradox1738.alertingSensors
                 };
                 await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo);
-                Paradox1738.alertingSensors.ForEach(x => Console.WriteLine($"Zone open: {x.ZoneOpenTime} {x.ZoneName}"));
+                Paradox1738.alertingSensors.ForEach(x => Console.WriteLine($"Zone open: {x.ZoneEventTime} {x.ZoneName}"));
             }
         }
         public static void SetOutsideLightsOn(bool setLightsOn = true, bool isForcedToTurnOn = false, bool isForcedToTurnOff = false)

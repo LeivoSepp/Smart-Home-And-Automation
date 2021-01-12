@@ -66,8 +66,9 @@ namespace HomeModule.Raspberry
                     bool IsZoneOpen = false;
                     if (EventID == "04") IsZoneOpen = true;
                     //update existing list with the IR statuses and activating/closing time
-                    zones.Where(x => x.Data == MessageID).Select(x => { x.IsZoneOpen = IsZoneOpen; x.ZoneOpenTime = Program.DateTimeTZ(); return x; }).ToList();
-                    Message = zones.Where(x => x.Data == MessageID).Select(x => $"{x.ZoneOpenTime:HH:mm:ss,ff} {x.ZoneName} {(x.IsZoneOpen ? "Open" : "Closed")}").DefaultIfEmpty($"NoName {MessageID}").First();
+                    zones.Where(x => x.Data == MessageID).Select(x => { x.IsZoneOpen = IsZoneOpen; x.ZoneEventTime = Program.DateTimeTZ(); return x; }).ToList();
+                    zones.Sort((x, y) => DateTimeOffset.Compare(x.ZoneEventTime, y.ZoneEventTime)); //sort the zones by date
+                    Message = zones.Where(x => x.Data == MessageID).Select(x => $"{x.ZoneEventTime:HH:mm:ss,ff} {x.ZoneName} {(x.IsZoneOpen ? "Open" : "Closed")}").DefaultIfEmpty($"NoName {MessageID}").First();
                     Console.Write($"{Message}");
                     Console.WriteLine();
 
@@ -77,7 +78,7 @@ namespace HomeModule.Raspberry
                         if (IsZoneOpen)
                         {
                             Zone zone = zones.FirstOrDefault(x => x.IsZoneOpen);
-                            alertingSensors.Add(new Zone() { IsZoneOpen = zone.IsZoneOpen, ZoneName = zone.ZoneName, ZoneOpenTime = zone.ZoneOpenTime, Data = zone.Data });
+                            alertingSensors.Add(new Zone() { IsZoneOpen = zone.IsZoneOpen, ZoneName = zone.ZoneName, ZoneEventTime = zone.ZoneEventTime, Data = zone.Data });
                         }
                     }
                     else
@@ -104,8 +105,9 @@ namespace HomeModule.Raspberry
             List<State> RepeatDoorAll = new List<State> { DOOR, ALL }; //repeat
             List<State> RepeatAllDoor = new List<State> { ALL, DOOR }; //repeat
             List<State> RepeatIRAll = new List<State> { IR, ALL }; //repeat
-            bool _doorValue, _iRValue;
-            bool smokeDetector = false;
+            bool isDoorOpen, isIrOpen;
+            bool isSmokeOpen = false;
+            bool isQueueCleared = false;
             string status = "No pattern";
             List<State> _queue = new List<State>();
 
@@ -113,15 +115,35 @@ namespace HomeModule.Raspberry
             {
                 try
                 {
+                    //check the last sensor time to calculate is there someone at home
+                    Zone LastActiveZone = zones.Last();
+                    var timerInMinutes = TelemetryDataClass.isHomeSecured ? 1 : 60;
+                    var LastMovement = (Program.DateTimeTZ() - LastActiveZone.ZoneEventTime).TotalMinutes;
+                    SomeoneAtHome.IsSomeoneAtHome = LastMovement < timerInMinutes || LastActiveZone.IsZoneOpen;
 
-                    SomeoneAtHome.IsSomeoneMoving = zones.Any(x => x.IsZoneOpen);
+                    Zone doorZone = zones.First(ir => ir.Data == "11");
+                    Zone IrZone = zones.First(ir => ir.Data == "21");
+                    Zone smokeZone = zones.First(ir => ir.Data == "71");
+                    isDoorOpen = doorZone.IsZoneOpen;
+                    isIrOpen = IrZone.IsZoneOpen;
+                    isSmokeOpen = smokeZone.IsZoneOpen;
 
-                    _doorValue = zones.First(ir => ir.Data == "11").IsZoneOpen;
-                    _iRValue = zones.First(ir => ir.Data == "21").IsZoneOpen;
-                    smokeDetector = zones.First(ir => ir.Data == "71").IsZoneOpen;
+                    //if door and IR is closed more that 2 minutes then clear the queue
+                    var clearDuration = TimeSpan.FromSeconds(120).TotalSeconds;
+                    var doorLastActive = (Program.DateTimeTZ() - doorZone.ZoneEventTime).TotalSeconds;
+                    var iRLastActive = (Program.DateTimeTZ() - IrZone.ZoneEventTime).TotalSeconds;
+                    var smallestLastActive = doorLastActive < iRLastActive ? doorLastActive : iRLastActive;
+                    var isClearTime = smallestLastActive % clearDuration >= clearDuration - 1;
+                    if (isClearTime && !isDoorOpen && !isQueueCleared)
+                    {
+                        _queue.Clear();
+                        _queue.Add(new State { DoorValue = false, IRValue = false });
+                        Console.WriteLine($"Door queue cleared at {Program.DateTimeTZ():G}");
+                    }
+                    isQueueCleared = isClearTime;
 
                     //save the door and IR statuses for the queue
-                    State _state = new State { DoorValue = _doorValue, IRValue = _iRValue };
+                    State _state = new State { DoorValue = isDoorOpen, IRValue = isIrOpen };
 
                     if (_queue.Count > 6)
                     {
@@ -312,7 +334,7 @@ namespace HomeModule.Raspberry
         public string Data { get; set; }
         public string ZoneName { get; set; }
         public bool IsZoneOpen { get; set; }
-        public DateTimeOffset ZoneOpenTime { get; set; }
+        public DateTimeOffset ZoneEventTime { get; set; }
     }
     class Trouble
     {

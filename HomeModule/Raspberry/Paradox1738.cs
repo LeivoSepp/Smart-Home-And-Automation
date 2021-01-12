@@ -118,8 +118,8 @@ namespace HomeModule.Raspberry
                     //check the last sensor time to calculate is there someone at home
                     Zone LastActiveZone = zones.Last();
                     var timerInMinutes = TelemetryDataClass.isHomeSecured ? 1 : 60;
-                    var LastMovement = (Program.DateTimeTZ() - LastActiveZone.ZoneEventTime).TotalMinutes;
-                    SomeoneAtHome.IsSomeoneAtHome = LastMovement < timerInMinutes || LastActiveZone.IsZoneOpen;
+                    var DurationUntilHouseIsEmpty = !LastActiveZone.IsZoneOpen ? (Program.DateTimeTZ() - LastActiveZone.ZoneEventTime).TotalMinutes : 0;
+                    SomeoneAtHome.IsSomeoneAtHome = DurationUntilHouseIsEmpty < timerInMinutes;
 
                     Zone doorZone = zones.First(ir => ir.Data == "11");
                     Zone IrZone = zones.First(ir => ir.Data == "21");

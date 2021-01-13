@@ -59,6 +59,7 @@ namespace HomeModule.Raspberry
                 bool isUserAction = EventCategory == Category.USER;
                 bool isTrouble = EventCategory == Category.TROUBLE;
                 bool isStatus = EventCategory == Category.STATUS;
+                bool isInstaller = EventCategory == Category.INSTALLER;
 
                 if (isZoneAction)
                 {
@@ -83,6 +84,22 @@ namespace HomeModule.Raspberry
                     }
                     else
                         alertingSensors.Clear();
+                }
+                else
+                {
+                    if(isTrouble)
+                    {
+                        Message = troubles.Where(x => x.Data == MessageID).Select(x => x.TroubleName).DefaultIfEmpty($"NoName {MessageID}").First();
+                    }
+                    if(isStatus)
+                    {
+                        Message = statuses.Where(x => x.Data == MessageID).Select(x => x.StatusMessage).DefaultIfEmpty($"NoName {MessageID}").First();
+                    }
+                    if (isInstaller)
+                    {
+                        Message = installers.Where(x => x.Data == MessageID).Select(x => x.InstallerMessage).DefaultIfEmpty($"NoName {MessageID}").First();
+                    }
+                    Console.WriteLine($"{Program.DateTimeTZ():HH:mm:ss,ff} Event: {Event} MessageID: {Message}");
                 }
             }
         }
@@ -128,17 +145,16 @@ namespace HomeModule.Raspberry
                     isIrOpen = IrZone.IsZoneOpen;
                     isSmokeOpen = smokeZone.IsZoneOpen;
 
-                    //if door and IR is closed more that 2 minutes then clear the queue
+                    //if door or IR is closed more that 2 minutes then clear the queue
                     var clearDuration = TimeSpan.FromSeconds(120).TotalSeconds;
-                    var doorLastActive = (Program.DateTimeTZ() - doorZone.ZoneEventTime).TotalSeconds;
-                    var iRLastActive = (Program.DateTimeTZ() - IrZone.ZoneEventTime).TotalSeconds;
-                    var smallestLastActive = doorLastActive < iRLastActive ? doorLastActive : iRLastActive;
-                    var isClearTime = smallestLastActive % clearDuration >= clearDuration - 1;
+                    var durationUntilReset = doorZone.ZoneEventTime > IrZone.ZoneEventTime ? 
+                        (Program.DateTimeTZ() - doorZone.ZoneEventTime).TotalSeconds : 
+                        (Program.DateTimeTZ() - IrZone.ZoneEventTime).TotalSeconds;
+                    var isClearTime = durationUntilReset % clearDuration >= clearDuration - 1;
                     if (isClearTime && !isDoorOpen && !isQueueCleared)
                     {
                         _queue.Clear();
                         _queue.Add(new State { DoorValue = false, IRValue = false });
-                        Console.WriteLine($"Door queue cleared at {Program.DateTimeTZ():G}");
                     }
                     isQueueCleared = isClearTime;
 
@@ -274,16 +290,21 @@ namespace HomeModule.Raspberry
             new Event(){Data = "34", EventCategory = Category.USER, EventName = "Arming"},
             new Event(){Data = "3C", EventCategory = Category.USER, EventName = "Disarming"},
             new Event(){Data = "40", EventCategory = Category.USER, EventName = "Disarming after Alarm"},
+            new Event(){Data = "44", EventCategory = Category.UNKNOWN, EventName = "Unknown_44"},
             new Event(){Data = "50", EventCategory = Category.ZONE, EventName = "Zone in Alarm"},
+            new Event(){Data = "54", EventCategory = Category.ZONE, EventName = "24h zone in Alarm"},
             new Event(){Data = "58", EventCategory = Category.ZONE, EventName = "Zone Alarm restore"},
+            new Event(){Data = "5C", EventCategory = Category.ZONE, EventName = "24h zone Alarm restore"},
             new Event(){Data = "70", EventCategory = Category.TROUBLE, EventName = "Trouble fail"},
-            new Event(){Data = "74", EventCategory = Category.TROUBLE, EventName = "Trouble back to normal"}
+            new Event(){Data = "74", EventCategory = Category.TROUBLE, EventName = "Trouble restore"},
+            new Event(){Data = "78", EventCategory = Category.INSTALLER, EventName = "Installer mode"}
         };
         public static List<Status> statuses = new List<Status>
         {
             new Status(){Data = "01", StatusMessage = "Zones open"},
             new Status(){Data = "11", StatusMessage = "Zones closed"},
             new Status(){Data = "21", StatusMessage = "Alarm21/Bell"},
+            new Status(){Data = "31", StatusMessage = "Silent alarm"},
             new Status(){Data = "41", StatusMessage = "Alarm41/Bell"},
             new Status(){Data = "51", StatusMessage = "Alarm occurred during arm"},
             new Status(){Data = "61", StatusMessage = "ArmCode61"},
@@ -297,16 +318,22 @@ namespace HomeModule.Raspberry
             new Trouble(){Data = "21", TroubleName = "Battery"},
             new Trouble(){Data = "51", TroubleName = "Bell"}
         };
+        public static List<Installer> installers = new List<Installer>
+        {
+            new Installer(){Data = "41", InstallerMessage = "Enter installer mode"},
+            new Installer(){Data = "51", InstallerMessage = "Exit installer mode"}
+        };
         public static List<Zone> zones = new List<Zone>
         {
             new Zone(){Data = "11", IsZoneOpen=false, ZoneName = "DOOR"},
-            new Zone(){Data = "21", IsZoneOpen=false, ZoneName = "ENTRY/PIANO",},
+            new Zone(){Data = "21", IsZoneOpen=false, ZoneName = "ENTRY",},
             new Zone(){Data = "31", IsZoneOpen=false, ZoneName = "LIVING ROOM"},
             new Zone(){Data = "41", IsZoneOpen=false, ZoneName = "OFFICE"},
             new Zone(){Data = "51", IsZoneOpen=false, ZoneName = "HALL"},
             new Zone(){Data = "61", IsZoneOpen=false, ZoneName = "BEDROOM"},
             new Zone(){Data = "71", IsZoneOpen=false, ZoneName = "FIRE"},
-            new Zone(){Data = "81", IsZoneOpen=false, ZoneName = "TECHNO",}
+            new Zone(){Data = "81", IsZoneOpen=false, ZoneName = "TECHNO"},
+            new Zone(){Data = "91", IsZoneOpen=false, ZoneName = "PIANO"}
          };
     }
     static class Helpers
@@ -328,6 +355,8 @@ namespace HomeModule.Raspberry
         public const int STATUS = 2;
         public const int TROUBLE = 3;
         public const int USER = 4;
+        public const int INSTALLER = 5;
+        public const int UNKNOWN = 6;
     }
     class Zone
     {
@@ -345,5 +374,10 @@ namespace HomeModule.Raspberry
     {
         public string Data { get; set; }
         public string StatusMessage { get; set; }
+    }
+    class Installer
+    {
+        public string Data { get; set; }
+        public string InstallerMessage { get; set; }
     }
 }

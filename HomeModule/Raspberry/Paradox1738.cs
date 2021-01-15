@@ -74,7 +74,7 @@ namespace HomeModule.Raspberry
                     //update existing list with the IR statuses and activating/closing time
                     Zones.Where(x => x.Byte2 == Byte2id).Select(x => { x.IsZoneOpen = IsZoneOpen; x.ZoneEventTime = Program.DateTimeTZ(); return x; }).ToList();
                     Zones.Sort((x, y) => DateTimeOffset.Compare(x.ZoneEventTime, y.ZoneEventTime)); //sort the zones by date
-                    Message = Zones.Where(x => x.Byte2 == Byte2id).Select(x => $"{x.ZoneName} {(x.IsZoneOpen ? "Open" : "Closed")}").DefaultIfEmpty($"Zone_{Byte2id}").First();
+                    Message = Zones.Where(x => x.Byte2 == Byte2id).Select(x => $"{x.ZoneName}").DefaultIfEmpty($"Zone_{Byte2id}").First();
 
                     //add alerting sensors into list if home secured
                     if (TelemetryDataClass.isHomeSecured)
@@ -98,9 +98,10 @@ namespace HomeModule.Raspberry
                 if (isNonReportEvents) Message = NonReportableEvents.Where(x => x.Byte2 == Byte2id).Select(x => x.Name).DefaultIfEmpty($"NonReportEvent_{Byte2id}").First();
                 if (isSpecialReport) Message = SpecialReportings.Where(x => x.Byte2 == Byte2id).Select(x => x.Name).DefaultIfEmpty($"SpecialReporting_{Byte2id}").First();
                 if (isRemoteControl) Message = $"Remote_{Byte2id}";
-                if (isAccessCode) Message = $"AccessCode_{Byte2id}";
+                if (isAccessCode) Message = GetAccessCode(Byte1id, Byte2id);
 
-                Console.WriteLine($"{Program.DateTimeTZ():HH:mm:ss,ff} {Event}, {Message}");
+                if (!(isStatus && (Byte2id == "01" || Byte2id == "11"))) //not show System Ready/Not ready messages
+                    Console.WriteLine($"{Program.DateTimeTZ():HH:mm:ss,ff} {Event}, {Message}");
             }
         }
 
@@ -280,6 +281,49 @@ namespace HomeModule.Raspberry
             }
             public bool DoorValue;
             public bool IRValue;
+        }
+
+        public string GetAccessCode(string Byte1, string Byte2)
+        {
+            int count = 0;
+            bool found = false;
+            string[] AccessCodeStart = new string[6] { "28", "2C", "34", "3C", "40", "44" };
+            for (int i = 0; i < AccessCodeStart.Length; i++)
+            {
+                var startCode = Convert.ToInt32(AccessCodeStart[i], 16);
+                for (int j = 0; j < 4; j++)
+                {
+                    var code = (startCode + j).ToString("X2");
+                    if (Byte1 == code)
+                    {
+                        count = j;
+                        found = true;
+                        break;
+                    }
+                }
+                if (found) break;
+            }
+            var byte2 = Convert.ToInt32(Byte2, 16);
+            int output = byte2 / 16 + count * 16;
+            string AccessCode = output < 10 ? $"User Code 00{output}" : $"User Code 0{output}";
+            if (count == 0)
+            {
+                switch(output)
+                {
+                    case 1:
+                        AccessCode = "Master code";
+                        break;
+                    case 2:
+                        AccessCode = "Master Code 1";
+                        break;
+                    case 3:
+                        AccessCode = "Master Code 2";
+                        break;
+                }
+            }
+            if (count == 3)
+                AccessCode = "Duress Code";
+            return AccessCode;
         }
 
         public static List<Event> events = new List<Event>

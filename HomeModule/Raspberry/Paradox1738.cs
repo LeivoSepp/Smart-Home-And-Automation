@@ -48,12 +48,13 @@ namespace HomeModule.Raspberry
                 }
                 catch (Exception e) { Console.WriteLine($"Timeout {e}"); }
 
-                string Byte1id = DataStream[0].ToString("X2");
-                string Event = events.Where(x => x.Byte1 == Byte1id).Select(x => x.EventName).DefaultIfEmpty($"Event?_{Byte1id}").First();
-                int EventCategory = events.Where(x => x.Byte1 == Byte1id).Select(x => x.EventCategory).DefaultIfEmpty(DataStream[0]).First();
+                int EventId = DataStream[0] >> 2;
+                int CategoryId = ((DataStream[0] & 3) << 4) + (DataStream[1] >> 4);
 
-                string Byte2id = DataStream[1].ToString("X2");
-                string Message = Byte2id;
+                string Event = events.Where(x => x.EventId == EventId).Select(x => x.EventName).DefaultIfEmpty($"Event_{EventId}").First();
+                int EventCategory = events.Where(x => x.EventId == EventId).Select(x => x.EventCategory).DefaultIfEmpty(EventId).First();
+
+                string Message = CategoryId.ToString();
 
                 bool isZoneEvent = EventCategory == Category.ZONE;
                 bool isStatus = EventCategory == Category.STATUS;
@@ -70,11 +71,11 @@ namespace HomeModule.Raspberry
                 {
                     //save the IRState into zone's list
                     bool IsZoneOpen = false;
-                    if (Byte1id == "04") IsZoneOpen = true;
+                    if (EventId == 1) IsZoneOpen = true;
                     //update existing list with the IR statuses and activating/closing time
-                    Zones.Where(x => x.Byte2 == Byte2id).Select(x => { x.IsZoneOpen = IsZoneOpen; x.ZoneEventTime = Program.DateTimeTZ(); return x; }).ToList();
+                    Zones.Where(x => x.CategoryId == CategoryId).Select(x => { x.IsZoneOpen = IsZoneOpen; x.ZoneEventTime = Program.DateTimeTZ(); return x; }).ToList();
                     Zones.Sort((x, y) => DateTimeOffset.Compare(x.ZoneEventTime, y.ZoneEventTime)); //sort the zones by date
-                    Message = Zones.Where(x => x.Byte2 == Byte2id).Select(x => $"{x.ZoneName}").DefaultIfEmpty($"Zone_{Byte2id}").First();
+                    Message = Zones.Where(x => x.CategoryId == CategoryId).Select(x => $"{x.ZoneName}").DefaultIfEmpty($"Zone_{CategoryId}").First();
 
                     //add alerting sensors into list if home secured
                     if (TelemetryDataClass.isHomeSecured)
@@ -82,7 +83,7 @@ namespace HomeModule.Raspberry
                         if (IsZoneOpen)
                         {
                             Zone zone = Zones.FirstOrDefault(x => x.IsZoneOpen);
-                            alertingSensors.Add(new Zone() { IsZoneOpen = zone.IsZoneOpen, ZoneName = zone.ZoneName, ZoneEventTime = zone.ZoneEventTime, Byte2 = zone.Byte2 });
+                            alertingSensors.Add(new Zone() { IsZoneOpen = zone.IsZoneOpen, ZoneName = zone.ZoneName, ZoneEventTime = zone.ZoneEventTime, CategoryId = zone.CategoryId });
                         }
                     }
                     else
@@ -90,17 +91,17 @@ namespace HomeModule.Raspberry
                         alertingSensors.Clear();
                     }
                 }
-                if (isStatus) Message = PartitionStatuses.Where(x => x.Byte2 == Byte2id).Select(x => x.Name).DefaultIfEmpty($"Status_{Byte2id}").First();
-                if (isTrouble) Message = SystemTroubles.Where(x => x.Byte2 == Byte2id).Select(x => x.Name).DefaultIfEmpty($"Trouble_{Byte2id}").First();
-                if (isSpecialAlarm) Message = SpecialAlarms.Where(x => x.Byte2 == Byte2id).Select(x => x.Name).DefaultIfEmpty($"SpecialAlarm_{Byte2id}").First();
-                if (isSpecialArm) Message = SpecialArms.Where(x => x.Byte2 == Byte2id).Select(x => x.Name).DefaultIfEmpty($"SpecialArm_{Byte2id}").First();
-                if (isSpecialDisarm) Message = SpecialDisarms.Where(x => x.Byte2 == Byte2id).Select(x => x.Name).DefaultIfEmpty($"SpecialDisarm_{Byte2id}").First();
-                if (isNonReportEvents) Message = NonReportableEvents.Where(x => x.Byte2 == Byte2id).Select(x => x.Name).DefaultIfEmpty($"NonReportEvent_{Byte2id}").First();
-                if (isSpecialReport) Message = SpecialReportings.Where(x => x.Byte2 == Byte2id).Select(x => x.Name).DefaultIfEmpty($"SpecialReporting_{Byte2id}").First();
-                if (isRemoteControl) Message = $"Remote_{Byte2id}";
-                if (isAccessCode) Message = GetAccessCode(Byte1id, Byte2id);
+                if (isStatus) Message = PartitionStatuses.Where(x => x.CategoryId == CategoryId).Select(x => x.Name).DefaultIfEmpty($"Status_{CategoryId}").First();
+                if (isTrouble) Message = SystemTroubles.Where(x => x.CategoryId == CategoryId).Select(x => x.Name).DefaultIfEmpty($"Trouble_{CategoryId}").First();
+                if (isSpecialAlarm) Message = SpecialAlarms.Where(x => x.CategoryId == CategoryId).Select(x => x.Name).DefaultIfEmpty($"SpecialAlarm_{CategoryId}").First();
+                if (isSpecialArm) Message = SpecialArms.Where(x => x.CategoryId == CategoryId).Select(x => x.Name).DefaultIfEmpty($"SpecialArm_{CategoryId}").First();
+                if (isSpecialDisarm) Message = SpecialDisarms.Where(x => x.CategoryId == CategoryId).Select(x => x.Name).DefaultIfEmpty($"SpecialDisarm_{CategoryId}").First();
+                if (isNonReportEvents) Message = NonReportableEvents.Where(x => x.CategoryId == CategoryId).Select(x => x.Name).DefaultIfEmpty($"NonReportEvent_{CategoryId}").First();
+                if (isSpecialReport) Message = SpecialReportings.Where(x => x.CategoryId == CategoryId).Select(x => x.Name).DefaultIfEmpty($"SpecialReporting_{CategoryId}").First();
+                if (isRemoteControl) Message = $"Remote_{CategoryId}";
+                if (isAccessCode) Message = GetAccessCode(CategoryId);
 
-                if (!(isStatus && (Byte2id == "01" || Byte2id == "11"))) //not show System Ready/Not ready messages
+                if (!(isStatus && (CategoryId == 0 || CategoryId == 1))) //not show System Ready/Not ready messages
                     Console.WriteLine($"{Program.DateTimeTZ():HH:mm:ss,ff} {Event}, {Message}");
             }
         }
@@ -127,7 +128,10 @@ namespace HomeModule.Raspberry
             bool isSmokeOpen = false;
             bool isQueueCleared = false;
             string status = "No pattern";
-            List<State> _queue = new List<State>();
+            List<State> _queue = new List<State>
+            {
+                new State { DoorValue = false, IRValue = false }
+            };
 
             while (true)
             {
@@ -139,9 +143,9 @@ namespace HomeModule.Raspberry
                     var DurationUntilHouseIsEmpty = !LastActiveZone.IsZoneOpen ? (Program.DateTimeTZ() - LastActiveZone.ZoneEventTime).TotalMinutes : 0;
                     SomeoneAtHome.IsSomeoneAtHome = DurationUntilHouseIsEmpty < timerInMinutes;
 
-                    Zone doorZone = Zones.First(ir => ir.Byte2 == "11");
-                    Zone IrZone = Zones.First(ir => ir.Byte2 == "21");
-                    Zone smokeZone = Zones.First(ir => ir.Byte2 == "71");
+                    Zone doorZone = Zones.First(ir => ir.CategoryId == 1);
+                    Zone IrZone = Zones.First(ir => ir.CategoryId == 2);
+                    Zone smokeZone = Zones.First(ir => ir.CategoryId == 7);
                     isDoorOpen = doorZone.IsZoneOpen;
                     isIrOpen = IrZone.IsZoneOpen;
                     isSmokeOpen = smokeZone.IsZoneOpen;
@@ -152,10 +156,11 @@ namespace HomeModule.Raspberry
                         (Program.DateTimeTZ() - doorZone.ZoneEventTime).TotalSeconds :
                         (Program.DateTimeTZ() - IrZone.ZoneEventTime).TotalSeconds;
                     var isClearTime = durationUntilReset % clearDuration >= clearDuration - 1;
-                    if (isClearTime && !isDoorOpen && !isQueueCleared)
+                    if (isClearTime && !isDoorOpen && !isQueueCleared && _queue.Count > 1)
                     {
                         _queue.Clear();
                         _queue.Add(new State { DoorValue = false, IRValue = false });
+                        Console.WriteLine($"{Program.DateTimeTZ():T} queue cleared");
                     }
                     isQueueCleared = isClearTime;
 
@@ -283,194 +288,143 @@ namespace HomeModule.Raspberry
             public bool IRValue;
         }
 
-        public string GetAccessCode(string Byte1, string Byte2)
+        public string GetAccessCode(int code)
         {
-            int count = 0;
-            bool found = false;
-            string[] AccessCodeStart = new string[6] { "28", "2C", "34", "3C", "40", "44" };
-            for (int i = 0; i < AccessCodeStart.Length; i++)
-            {
-                var startCode = Convert.ToInt32(AccessCodeStart[i], 16);
-                for (int j = 0; j < 4; j++)
-                {
-                    var code = (startCode + j).ToString("X2");
-                    if (Byte1 == code)
-                    {
-                        count = j;
-                        found = true;
-                        break;
-                    }
-                }
-                if (found) break;
-            }
-            var byte2 = Convert.ToInt32(Byte2, 16);
-            int output = byte2 / 16 + count * 16;
-            string AccessCode = output < 10 ? $"User Code 00{output}" : $"User Code 0{output}";
-            if (count == 0)
-            {
-                switch(output)
-                {
-                    case 1:
-                        AccessCode = "Master code";
-                        break;
-                    case 2:
-                        AccessCode = "Master Code 1";
-                        break;
-                    case 3:
-                        AccessCode = "Master Code 2";
-                        break;
-                }
-            }
-            if (count == 3)
-                AccessCode = "Duress Code";
+            string AccessCode = code < 10 ? $"User Code 00{code}" : $"User Code 0{code}";
+            if (code == 1) AccessCode = "Master code";
+            if (code == 2) AccessCode = "Master Code 1";
+            if (code == 3) AccessCode = "Master Code 2";
+            if (code == 48) AccessCode = "Duress Code";
             return AccessCode;
         }
 
         public static List<Event> events = new List<Event>
         {
-            new Event(){Byte1 = "00", EventCategory = Category.ZONE, EventName = "Zone OK"},
-            new Event(){Byte1 = "04", EventCategory = Category.ZONE, EventName = "Zone Open"},
-            new Event(){Byte1 = "08", EventCategory = Category.STATUS, EventName = "Partition Status"},
-            new Event(){Byte1 = "14", EventCategory = Category.NON_REPORT_EVENTS, EventName = "Non-Reportable Events"},
-            new Event(){Byte1 = "18", EventCategory = Category.REMOTE_CONTROL, EventName = "Arm/Disarm with Remote Control"},
-            new Event(){Byte1 = "1C", EventCategory = Category.REMOTE_CONTROL, EventName = "Button Pressed on Remote (B)"},
-            new Event(){Byte1 = "20", EventCategory = Category.REMOTE_CONTROL, EventName = "Button Pressed on Remote (C)"},
-            new Event(){Byte1 = "24", EventCategory = Category.REMOTE_CONTROL, EventName = "Button Pressed on Remote (D)"},
-            new Event(){Byte1 = "28", EventCategory = Category.ACCESS_CODE, EventName = "Bypass programming"},
-            new Event(){Byte1 = "29", EventCategory = Category.ACCESS_CODE, EventName = "Bypass programming"},
-            new Event(){Byte1 = "2A", EventCategory = Category.ACCESS_CODE, EventName = "Bypass programming"},
-            new Event(){Byte1 = "2B", EventCategory = Category.ACCESS_CODE, EventName = "Bypass programming"},
-            new Event(){Byte1 = "2C", EventCategory = Category.ACCESS_CODE, EventName = "User Activated PGM"},
-            new Event(){Byte1 = "2D", EventCategory = Category.ACCESS_CODE, EventName = "User Activated PGM"},
-            new Event(){Byte1 = "2E", EventCategory = Category.ACCESS_CODE, EventName = "User Activated PGM"},
-            new Event(){Byte1 = "2F", EventCategory = Category.ACCESS_CODE, EventName = "User Activated PGM"},
-            new Event(){Byte1 = "30", EventCategory = Category.ZONE, EventName = "Zone with delay is breached"},
-            new Event(){Byte1 = "34", EventCategory = Category.ACCESS_CODE, EventName = "Arm"},
-            new Event(){Byte1 = "35", EventCategory = Category.ACCESS_CODE, EventName = "Arm"},
-            new Event(){Byte1 = "36", EventCategory = Category.ACCESS_CODE, EventName = "Arm"},
-            new Event(){Byte1 = "37", EventCategory = Category.ACCESS_CODE, EventName = "Arm"},
-            new Event(){Byte1 = "38", EventCategory = Category.SPECIAL_ARM, EventName = "Special Arm"},
-            new Event(){Byte1 = "3C", EventCategory = Category.ACCESS_CODE, EventName = "Disarm"},
-            new Event(){Byte1 = "3D", EventCategory = Category.ACCESS_CODE, EventName = "Disarm"},
-            new Event(){Byte1 = "3E", EventCategory = Category.ACCESS_CODE, EventName = "Disarm"},
-            new Event(){Byte1 = "3F", EventCategory = Category.ACCESS_CODE, EventName = "Disarm"},
-            new Event(){Byte1 = "40", EventCategory = Category.ACCESS_CODE, EventName = "Disarm after Alarm"},
-            new Event(){Byte1 = "41", EventCategory = Category.ACCESS_CODE, EventName = "Disarm after Alarm"},
-            new Event(){Byte1 = "42", EventCategory = Category.ACCESS_CODE, EventName = "Disarm after Alarm"},
-            new Event(){Byte1 = "43", EventCategory = Category.ACCESS_CODE, EventName = "Disarm after Alarm"},
-            new Event(){Byte1 = "44", EventCategory = Category.ACCESS_CODE, EventName = "Cancel Alarm"},
-            new Event(){Byte1 = "45", EventCategory = Category.ACCESS_CODE, EventName = "Cancel Alarm"},
-            new Event(){Byte1 = "46", EventCategory = Category.ACCESS_CODE, EventName = "Cancel Alarm"},
-            new Event(){Byte1 = "47", EventCategory = Category.ACCESS_CODE, EventName = "Cancel Alarm"},
-            new Event(){Byte1 = "48", EventCategory = Category.SPECIAL_DISARM, EventName = "Special Disarm"},
-            new Event(){Byte1 = "4C", EventCategory = Category.ZONE, EventName = "Zone Bypassed on arming"},
-            new Event(){Byte1 = "50", EventCategory = Category.ZONE, EventName = "Zone in Alarm"},
-            new Event(){Byte1 = "54", EventCategory = Category.ZONE, EventName = "Fire Alarm"},
-            new Event(){Byte1 = "58", EventCategory = Category.ZONE, EventName = "Zone Alarm restore"},
-            new Event(){Byte1 = "5C", EventCategory = Category.ZONE, EventName = "Fire Alarm restore"},
-            new Event(){Byte1 = "60", EventCategory = Category.SPECIAL_ALARM, EventName = "Special alarm"},
-            new Event(){Byte1 = "64", EventCategory = Category.ZONE, EventName = "Auto zone shutdown"},
-            new Event(){Byte1 = "68", EventCategory = Category.ZONE, EventName = "Zone tamper"},
-            new Event(){Byte1 = "6C", EventCategory = Category.ZONE, EventName = "Zone tamper restore"},
-            new Event(){Byte1 = "70", EventCategory = Category.TROUBLE, EventName = "System Trouble"},
-            new Event(){Byte1 = "74", EventCategory = Category.TROUBLE, EventName = "System Trouble restore"},
-            new Event(){Byte1 = "78", EventCategory = Category.SPECIAL_REPORT, EventName = "Special Reporting"},
-            new Event(){Byte1 = "7C", EventCategory = Category.ZONE, EventName = "Wireless Transmitter Supervision Loss"},
-            new Event(){Byte1 = "80", EventCategory = Category.ZONE, EventName = "Wireless Transmitter Supervision Loss Restore"},
-            new Event(){Byte1 = "84", EventCategory = Category.ZONE, EventName = "Arming with a Keyswitch"},
-            new Event(){Byte1 = "88", EventCategory = Category.ZONE, EventName = "Disarming with a Keyswitch"},
-            new Event(){Byte1 = "8C", EventCategory = Category.ZONE, EventName = "Disarm after Alarm with a Keyswitch"},
-            new Event(){Byte1 = "90", EventCategory = Category.ZONE, EventName = "Cancel Alarm with a Keyswitch"},
-            new Event(){Byte1 = "94", EventCategory = Category.ZONE, EventName = "Wireless Transmitter Low Battery"},
-            new Event(){Byte1 = "98", EventCategory = Category.ZONE, EventName = "Wireless Transmitter Low Battery Restore"}
+            new Event(){EventId = 0, EventCategory = Category.ZONE, EventName = "Zone OK"},
+            new Event(){EventId = 1, EventCategory = Category.ZONE, EventName = "Zone Open"},
+            new Event(){EventId = 2, EventCategory = Category.STATUS, EventName = "Partition Status"},
+            new Event(){EventId = 5, EventCategory = Category.NON_REPORT_EVENTS, EventName = "Non-Reportable Events"},
+            new Event(){EventId = 6, EventCategory = Category.REMOTE_CONTROL, EventName = "Arm/Disarm with Remote Control"},
+            new Event(){EventId = 7, EventCategory = Category.REMOTE_CONTROL, EventName = "Button Pressed on Remote (B)"},
+            new Event(){EventId = 8, EventCategory = Category.REMOTE_CONTROL, EventName = "Button Pressed on Remote (C)"},
+            new Event(){EventId = 9, EventCategory = Category.REMOTE_CONTROL, EventName = "Button Pressed on Remote (D)"},
+            new Event(){EventId = 10, EventCategory = Category.ACCESS_CODE, EventName = "Bypass programming"},
+            new Event(){EventId = 11, EventCategory = Category.ACCESS_CODE, EventName = "User Activated PGM"},
+            new Event(){EventId = 12, EventCategory = Category.ZONE, EventName = "Zone with delay is breached"},
+            new Event(){EventId = 13, EventCategory = Category.ACCESS_CODE, EventName = "Arm"},
+            new Event(){EventId = 14, EventCategory = Category.SPECIAL_ARM, EventName = "Special Arm"},
+            new Event(){EventId = 15, EventCategory = Category.ACCESS_CODE, EventName = "Disarm"},
+            new Event(){EventId = 16, EventCategory = Category.ACCESS_CODE, EventName = "Disarm after Alarm"},
+            new Event(){EventId = 17, EventCategory = Category.ACCESS_CODE, EventName = "Cancel Alarm"},
+            new Event(){EventId = 18, EventCategory = Category.SPECIAL_DISARM, EventName = "Special Disarm"},
+            new Event(){EventId = 19, EventCategory = Category.ZONE, EventName = "Zone Bypassed on arming"},
+            new Event(){EventId = 20, EventCategory = Category.ZONE, EventName = "Zone in Alarm"},
+            new Event(){EventId = 21, EventCategory = Category.ZONE, EventName = "Fire Alarm"},
+            new Event(){EventId = 22, EventCategory = Category.ZONE, EventName = "Zone Alarm restore"},
+            new Event(){EventId = 23, EventCategory = Category.ZONE, EventName = "Fire Alarm restore"},
+            new Event(){EventId = 24, EventCategory = Category.SPECIAL_ALARM, EventName = "Special alarm"},
+            new Event(){EventId = 25, EventCategory = Category.ZONE, EventName = "Auto zone shutdown"},
+            new Event(){EventId = 26, EventCategory = Category.ZONE, EventName = "Zone tamper"},
+            new Event(){EventId = 27, EventCategory = Category.ZONE, EventName = "Zone tamper restore"},
+            new Event(){EventId = 28, EventCategory = Category.TROUBLE, EventName = "System Trouble"},
+            new Event(){EventId = 29, EventCategory = Category.TROUBLE, EventName = "System Trouble restore"},
+            new Event(){EventId = 30, EventCategory = Category.SPECIAL_REPORT, EventName = "Special Reporting"},
+            new Event(){EventId = 31, EventCategory = Category.ZONE, EventName = "Wireless Transmitter Supervision Loss"},
+            new Event(){EventId = 32, EventCategory = Category.ZONE, EventName = "Wireless Transmitter Supervision Loss Restore"},
+            new Event(){EventId = 33, EventCategory = Category.ZONE, EventName = "Arming with a Keyswitch"},
+            new Event(){EventId = 34, EventCategory = Category.ZONE, EventName = "Disarming with a Keyswitch"},
+            new Event(){EventId = 35, EventCategory = Category.ZONE, EventName = "Disarm after Alarm with a Keyswitch"},
+            new Event(){EventId = 36, EventCategory = Category.ZONE, EventName = "Cancel Alarm with a Keyswitch"},
+            new Event(){EventId = 37, EventCategory = Category.ZONE, EventName = "Wireless Transmitter Low Battery"},
+            new Event(){EventId = 38, EventCategory = Category.ZONE, EventName = "Wireless Transmitter Low Battery Restore"}
         };
         public static List<Byte2Data> PartitionStatuses = new List<Byte2Data>
         {
-            new Byte2Data(){Byte2 = "01", Name = "System not ready"},
-            new Byte2Data(){Byte2 = "11", Name = "System ready"},
-            new Byte2Data(){Byte2 = "21", Name = "Steady alarm"},
-            new Byte2Data(){Byte2 = "31", Name = "Pulsed alarm"},
-            new Byte2Data(){Byte2 = "41", Name = "Pulsed or Steady Alarm"},
-            new Byte2Data(){Byte2 = "51", Name = "Alarm in partition restored"},
-            new Byte2Data(){Byte2 = "61", Name = "Bell Squawk Activated"},
-            new Byte2Data(){Byte2 = "71", Name = "Bell Squawk Deactivated"},
-            new Byte2Data(){Byte2 = "81", Name = "Ground start"},
-            new Byte2Data(){Byte2 = "91", Name = "Disarm partition"},
-            new Byte2Data(){Byte2 = "A1", Name = "Arm partition"},
-            new Byte2Data(){Byte2 = "B1", Name = "Entry delay started"}
+            new Byte2Data(){CategoryId = 0, Name = "System not ready"},
+            new Byte2Data(){CategoryId = 1, Name = "System ready"},
+            new Byte2Data(){CategoryId = 2, Name = "Steady alarm"},
+            new Byte2Data(){CategoryId = 3, Name = "Pulsed alarm"},
+            new Byte2Data(){CategoryId = 4, Name = "Pulsed or Steady Alarm"},
+            new Byte2Data(){CategoryId = 5, Name = "Alarm in partition restored"},
+            new Byte2Data(){CategoryId = 6, Name = "Bell Squawk Activated"},
+            new Byte2Data(){CategoryId = 7, Name = "Bell Squawk Deactivated"},
+            new Byte2Data(){CategoryId = 8, Name = "Ground start"},
+            new Byte2Data(){CategoryId = 9, Name = "Disarm partition"},
+            new Byte2Data(){CategoryId = 10, Name = "Arm partition"},
+            new Byte2Data(){CategoryId = 11, Name = "Entry delay started"}
         };
         public static List<Byte2Data> SystemTroubles = new List<Byte2Data>
         {
-            new Byte2Data(){Byte2 = "11", Name = "AC Loss"},
-            new Byte2Data(){Byte2 = "21", Name = "Battery Failure"},
-            new Byte2Data(){Byte2 = "31", Name = "Auxiliary current overload"},
-            new Byte2Data(){Byte2 = "41", Name = "Bell current overload"},
-            new Byte2Data(){Byte2 = "51", Name = "Bell disconnected"},
-            new Byte2Data(){Byte2 = "61", Name = "Timer Loss"},
-            new Byte2Data(){Byte2 = "71", Name = "Fire Loop Trouble"},
-            new Byte2Data(){Byte2 = "81", Name = "Future use"},
-            new Byte2Data(){Byte2 = "91", Name = "Module Fault"},
-            new Byte2Data(){Byte2 = "A1", Name = "Printer Fault"},
-            new Byte2Data(){Byte2 = "B1", Name = "Fail to Communicate"}
+            new Byte2Data(){CategoryId =  1, Name = "AC Loss"},
+            new Byte2Data(){CategoryId =  2, Name = "Battery Failure"},
+            new Byte2Data(){CategoryId =  3, Name = "Auxiliary current overload"},
+            new Byte2Data(){CategoryId =  4, Name = "Bell current overload"},
+            new Byte2Data(){CategoryId =  5, Name = "Bell disconnected"},
+            new Byte2Data(){CategoryId =  6, Name = "Timer Loss"},
+            new Byte2Data(){CategoryId =  7, Name = "Fire Loop Trouble"},
+            new Byte2Data(){CategoryId =  8, Name = "Future use"},
+            new Byte2Data(){CategoryId =  9, Name = "Module Fault"},
+            new Byte2Data(){CategoryId = 10, Name = "Printer Fault"},
+            new Byte2Data(){CategoryId = 11, Name = "Fail to Communicate"}
         };
         public static List<Byte2Data> NonReportableEvents = new List<Byte2Data>
         {
-            new Byte2Data(){Byte2 = "01", Name = "Telephone Line Trouble"},
-            new Byte2Data(){Byte2 = "11", Name = "Reset smoke detectors"},
-            new Byte2Data(){Byte2 = "21", Name = "Instant arming"},
-            new Byte2Data(){Byte2 = "31", Name = "Stay arming"},
-            new Byte2Data(){Byte2 = "41", Name = "Force arming"},
-            new Byte2Data(){Byte2 = "51", Name = "Fast Exit (Force & Regular Only)"},
-            new Byte2Data(){Byte2 = "61", Name = "PC Fail to Communicate"},
-            new Byte2Data(){Byte2 = "71", Name = "Midnight"}
+            new Byte2Data(){CategoryId =  0, Name = "Telephone Line Trouble"},
+            new Byte2Data(){CategoryId =  1, Name = "Reset smoke detectors"},
+            new Byte2Data(){CategoryId =  2, Name = "Instant arming"},
+            new Byte2Data(){CategoryId =  3, Name = "Stay arming"},
+            new Byte2Data(){CategoryId =  4, Name = "Force arming"},
+            new Byte2Data(){CategoryId =  5, Name = "Fast Exit (Force & Regular Only)"},
+            new Byte2Data(){CategoryId =  6, Name = "PC Fail to Communicate"},
+            new Byte2Data(){CategoryId =  7, Name = "Midnight"}
         };
         public static List<Byte2Data> SpecialAlarms = new List<Byte2Data>
         {
-            new Byte2Data(){Byte2 = "01", Name = "Emergency, keys [1] [3]"},
-            new Byte2Data(){Byte2 = "11", Name = "Auxiliary, keys [4] [6]"},
-            new Byte2Data(){Byte2 = "21", Name = "Fire, keys [7] [9]"},
-            new Byte2Data(){Byte2 = "31", Name = "Recent closing"},
-            new Byte2Data(){Byte2 = "41", Name = "Auto Zone Shutdown"},
-            new Byte2Data(){Byte2 = "51", Name = "Duress alarm"},
-            new Byte2Data(){Byte2 = "61", Name = "Keypad lockout"}
+            new Byte2Data(){CategoryId =  0, Name = "Emergency, keys [1] [3]"},
+            new Byte2Data(){CategoryId =  1, Name = "Auxiliary, keys [4] [6]"},
+            new Byte2Data(){CategoryId =  2, Name = "Fire, keys [7] [9]"},
+            new Byte2Data(){CategoryId =  3, Name = "Recent closing"},
+            new Byte2Data(){CategoryId =  4, Name = "Auto Zone Shutdown"},
+            new Byte2Data(){CategoryId =  5, Name = "Duress alarm"},
+            new Byte2Data(){CategoryId =  6, Name = "Keypad lockout"}
         };
         public static List<Byte2Data> SpecialReportings = new List<Byte2Data>
         {
-            new Byte2Data(){Byte2 = "01", Name = "System power up"},
-            new Byte2Data(){Byte2 = "11", Name = "Test report"},
-            new Byte2Data(){Byte2 = "21", Name = "WinLoad Software Access"},
-            new Byte2Data(){Byte2 = "31", Name = "WinLoad Software Access finished"},
-            new Byte2Data(){Byte2 = "41", Name = "Installer enters programming mode"},
-            new Byte2Data(){Byte2 = "51", Name = "Installer exits programming mode"}
+            new Byte2Data(){CategoryId =  0, Name = "System power up"},
+            new Byte2Data(){CategoryId =  1, Name = "Test report"},
+            new Byte2Data(){CategoryId =  2, Name = "WinLoad Software Access"},
+            new Byte2Data(){CategoryId =  3, Name = "WinLoad Software Access finished"},
+            new Byte2Data(){CategoryId =  4, Name = "Installer enters programming mode"},
+            new Byte2Data(){CategoryId =  5, Name = "Installer exits programming mode"}
         };
         public static List<Byte2Data> SpecialDisarms = new List<Byte2Data>
         {
-            new Byte2Data(){Byte2 = "01", Name = "Cancel Auto Arm (timed/no movement)"},
-            new Byte2Data(){Byte2 = "11", Name = "Disarm with WinLoad Software"},
-            new Byte2Data(){Byte2 = "21", Name = "Disarm after alarm with WinLoad Software"},
-            new Byte2Data(){Byte2 = "31", Name = "Cancel Alarm with WinLoad Software"}
+            new Byte2Data(){CategoryId =  0, Name = "Cancel Auto Arm (timed/no movement)"},
+            new Byte2Data(){CategoryId =  1, Name = "Disarm with WinLoad Software"},
+            new Byte2Data(){CategoryId =  2, Name = "Disarm after alarm with WinLoad Software"},
+            new Byte2Data(){CategoryId =  3, Name = "Cancel Alarm with WinLoad Software"}
         };
         public static List<Byte2Data> SpecialArms = new List<Byte2Data>
         {
-            new Byte2Data(){Byte2 = "01", Name = "Auto arming (timed/no movement)"},
-            new Byte2Data(){Byte2 = "11", Name = "Late to Close (Auto-Arming failed)"},
-            new Byte2Data(){Byte2 = "21", Name = "No Movement Auto-Arming"},
-            new Byte2Data(){Byte2 = "31", Name = "Partial Arming (Stay, Force, Instant, Bypass)"},
-            new Byte2Data(){Byte2 = "41", Name = "One-Touch Arming"},
-            new Byte2Data(){Byte2 = "51", Name = "Arm with WinLoad Software"},
-            new Byte2Data(){Byte2 = "71", Name = "Closing Delinquency"}
+            new Byte2Data(){CategoryId =  0, Name = "Auto arming (timed/no movement)"},
+            new Byte2Data(){CategoryId =  1, Name = "Late to Close (Auto-Arming failed)"},
+            new Byte2Data(){CategoryId =  2, Name = "No Movement Auto-Arming"},
+            new Byte2Data(){CategoryId =  3, Name = "Partial Arming (Stay, Force, Instant, Bypass)"},
+            new Byte2Data(){CategoryId =  4, Name = "One-Touch Arming"},
+            new Byte2Data(){CategoryId =  5, Name = "Arm with WinLoad Software"},
+            new Byte2Data(){CategoryId =  7, Name = "Closing Delinquency"}
         };
         public static List<Zone> Zones = new List<Zone>
         {
-            new Zone(){Byte2 = "11", IsZoneOpen=false, ZoneName = "DOOR"},
-            new Zone(){Byte2 = "21", IsZoneOpen=false, ZoneName = "ENTRY",},
-            new Zone(){Byte2 = "31", IsZoneOpen=false, ZoneName = "LIVING ROOM"},
-            new Zone(){Byte2 = "41", IsZoneOpen=false, ZoneName = "OFFICE"},
-            new Zone(){Byte2 = "51", IsZoneOpen=false, ZoneName = "HALL"},
-            new Zone(){Byte2 = "61", IsZoneOpen=false, ZoneName = "BEDROOM"},
-            new Zone(){Byte2 = "71", IsZoneOpen=false, ZoneName = "FIRE"},
-            new Zone(){Byte2 = "81", IsZoneOpen=false, ZoneName = "TECHNO"},
-            new Zone(){Byte2 = "91", IsZoneOpen=false, ZoneName = "PIANO"}
+            new Zone(){CategoryId =  1, IsZoneOpen=false, ZoneName = "DOOR"},
+            new Zone(){CategoryId =  2, IsZoneOpen=false, ZoneName = "ENTRY",},
+            new Zone(){CategoryId =  3, IsZoneOpen=false, ZoneName = "LIVING ROOM"},
+            new Zone(){CategoryId =  4, IsZoneOpen=false, ZoneName = "OFFICE"},
+            new Zone(){CategoryId =  5, IsZoneOpen=false, ZoneName = "HALL"},
+            new Zone(){CategoryId =  6, IsZoneOpen=false, ZoneName = "BEDROOM"},
+            new Zone(){CategoryId =  7, IsZoneOpen=false, ZoneName = "FIRE"},
+            new Zone(){CategoryId =  8, IsZoneOpen=false, ZoneName = "TECHNO"},
+            new Zone(){CategoryId =  9, IsZoneOpen=false, ZoneName = "PIANO"}
          };
     }
     static class Helpers
@@ -482,7 +436,7 @@ namespace HomeModule.Raspberry
     }
     class Event
     {
-        public string Byte1 { get; set; }
+        public int EventId { get; set; }
         public string EventName { get; set; }
         public int EventCategory { get; set; }
     }
@@ -501,14 +455,14 @@ namespace HomeModule.Raspberry
     }
     class Zone
     {
-        public string Byte2 { get; set; }
+        public int CategoryId { get; set; }
         public string ZoneName { get; set; }
         public bool IsZoneOpen { get; set; }
         public DateTimeOffset ZoneEventTime { get; set; }
     }
     class Byte2Data
     {
-        public string Byte2 { get; set; }
+        public int CategoryId { get; set; }
         public string Name { get; set; }
     }
 }

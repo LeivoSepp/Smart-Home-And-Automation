@@ -73,22 +73,20 @@ namespace HomeModule.Raspberry
                     bool IsZoneOpen = false;
                     if (EventId == 1) IsZoneOpen = true;
                     //update existing list with the IR statuses and activating/closing time
-                    Zones.Where(x => x.CategoryId == CategoryId).Select(x => { x.IsZoneOpen = IsZoneOpen; x.ZoneEventTime = Program.DateTimeTZ(); return x; }).ToList();
-                    Zones.Sort((x, y) => DateTimeOffset.Compare(x.ZoneEventTime, y.ZoneEventTime)); //sort the zones by date
-                    Message = Zones.Where(x => x.CategoryId == CategoryId).Select(x => $"{x.ZoneName}").DefaultIfEmpty($"Zone_{CategoryId}").First();
+                    Zones.Where(x => x.ZoneId == CategoryId).Select(x => { x.IsZoneOpen = IsZoneOpen; x.ZoneEventTime = Program.DateTimeTZ(); return x; }).ToList();
+
+                    SortedByLastActive = Zones.ToList(); //copy to new list to not affect other queries which relies to Zones list.
+                    SortedByLastActive.Sort((x, y) => DateTimeOffset.Compare(x.ZoneEventTime, y.ZoneEventTime)); //sort the zones by date
+                    Message = Zones.Where(x => x.ZoneId == CategoryId).Select(x => $"{x.ZoneName}").DefaultIfEmpty($"Zone_{CategoryId}").First();
 
                     //add alerting sensors into list if home secured
-                    if (TelemetryDataClass.isHomeSecured)
+                    if (TelemetryDataClass.isHomeSecured && !alertingSensors.Any())
                     {
                         if (IsZoneOpen)
                         {
-                            Zone zone = Zones.FirstOrDefault(x => x.IsZoneOpen);
-                            alertingSensors.Add(new Zone() { IsZoneOpen = zone.IsZoneOpen, ZoneName = zone.ZoneName, ZoneEventTime = zone.ZoneEventTime, CategoryId = zone.CategoryId });
+                            Zone zone = Zones.First(x => x.ZoneId == CategoryId);
+                            alertingSensors.Add(new Zone() { IsZoneOpen = zone.IsZoneOpen, ZoneName = zone.ZoneName, ZoneEventTime = zone.ZoneEventTime, ZoneId = zone.ZoneId, ZoneEmptyDetectTime = zone.ZoneEmptyDetectTime });
                         }
-                    }
-                    else
-                    {
-                        alertingSensors.Clear();
                     }
                 }
                 if (isStatus) Message = PartitionStatuses.Where(x => x.CategoryId == CategoryId).Select(x => x.Name).DefaultIfEmpty($"Status_{CategoryId}").First();
@@ -101,8 +99,10 @@ namespace HomeModule.Raspberry
                 if (isRemoteControl) Message = $"Remote_{CategoryId}";
                 if (isAccessCode) Message = GetAccessCode(CategoryId);
 
-                if (!(isStatus && (CategoryId == 0 || CategoryId == 1))) //not show System Ready/Not ready messages
+                if (!(isStatus && (CategoryId == 0 || CategoryId == 1)) && !(EventId == 0 || EventId == 1)) //not show System Ready/Not ready messages and zone open/close messages.
+                {
                     Console.WriteLine($"{Program.DateTimeTZ():HH:mm:ss,ff} {Event}, {Message}");
+                }
             }
         }
 
@@ -138,14 +138,40 @@ namespace HomeModule.Raspberry
                 try
                 {
                     //check the last sensor time to calculate is there someone at home
-                    Zone LastActiveZone = Zones.Last();
+                    Zone LastActiveZone = SortedByLastActive.Last();
                     var timerInMinutes = TelemetryDataClass.isHomeSecured ? 1 : 60;
                     var DurationUntilHouseIsEmpty = !LastActiveZone.IsZoneOpen ? (Program.DateTimeTZ() - LastActiveZone.ZoneEventTime).TotalMinutes : 0;
                     SomeoneAtHome.IsSomeoneAtHome = DurationUntilHouseIsEmpty < timerInMinutes;
 
-                    Zone doorZone = Zones.First(ir => ir.CategoryId == 1);
-                    Zone IrZone = Zones.First(ir => ir.CategoryId == 2);
-                    Zone smokeZone = Zones.First(ir => ir.CategoryId == 7);
+                    //seconds to wait until the zone will give an "empty zone" report
+                    int timerInSecondsToCheckRoom = 120;
+                    foreach (var zone in Zones)
+                    {
+                        var durationUntilZoneIsEmpty = !zone.IsZoneOpen ? (Program.DateTimeTZ() - zone.ZoneEventTime).TotalSeconds : 0;
+                        zone.IsZoneEmpty = durationUntilZoneIsEmpty > timerInSecondsToCheckRoom;
+                        if (zone.IsZoneEmpty && zone.ZoneEmptyDetectTime != DateTime.MinValue)
+                        {
+                            //add alerting sensors into list if home secured
+                            if (TelemetryDataClass.isHomeSecured)
+                            {
+                                alertingSensors.Add(new Zone() { IsZoneOpen = zone.IsZoneOpen, ZoneName = zone.ZoneName, ZoneEventTime = zone.ZoneEventTime, ZoneId = zone.ZoneId, ZoneEmptyDetectTime = zone.ZoneEmptyDetectTime });
+                            }
+                            else
+                            {
+                                alertingSensors.Clear();
+                            }
+                            Console.WriteLine($"{zone.ZoneEmptyDetectTime:dd.MM} {zone.ZoneEmptyDetectTime:t} - {zone.ZoneEventTime:t} {zone.ZoneName}");
+                            zone.ZoneEmptyDetectTime = new DateTime();
+                        }
+                        if (!zone.IsZoneEmpty && zone.ZoneEmptyDetectTime == DateTime.MinValue)
+                        {
+                            zone.ZoneEmptyDetectTime = Program.DateTimeTZ();
+                        }
+                    }
+
+                    Zone doorZone = Zones.First(ir => ir.ZoneId == 1);
+                    Zone IrZone = Zones.First(ir => ir.ZoneId == 2);
+                    Zone smokeZone = Zones.First(ir => ir.ZoneId == 7);
                     isDoorOpen = doorZone.IsZoneOpen;
                     isIrOpen = IrZone.IsZoneOpen;
                     isSmokeOpen = smokeZone.IsZoneOpen;
@@ -416,16 +442,18 @@ namespace HomeModule.Raspberry
         };
         public static List<Zone> Zones = new List<Zone>
         {
-            new Zone(){CategoryId =  1, IsZoneOpen=false, ZoneName = "DOOR"},
-            new Zone(){CategoryId =  2, IsZoneOpen=false, ZoneName = "ENTRY",},
-            new Zone(){CategoryId =  3, IsZoneOpen=false, ZoneName = "LIVING ROOM"},
-            new Zone(){CategoryId =  4, IsZoneOpen=false, ZoneName = "OFFICE"},
-            new Zone(){CategoryId =  5, IsZoneOpen=false, ZoneName = "HALL"},
-            new Zone(){CategoryId =  6, IsZoneOpen=false, ZoneName = "BEDROOM"},
-            new Zone(){CategoryId =  7, IsZoneOpen=false, ZoneName = "FIRE"},
-            new Zone(){CategoryId =  8, IsZoneOpen=false, ZoneName = "TECHNO"},
-            new Zone(){CategoryId =  9, IsZoneOpen=false, ZoneName = "PIANO"}
+            new Zone(){ZoneId =  1, IsZoneOpen=false, IsZoneEmpty=true, ZoneEmptyDetectTime = new DateTime(), ZoneName = "DOOR"},
+            new Zone(){ZoneId =  2, IsZoneOpen=false, IsZoneEmpty=true, ZoneEmptyDetectTime = new DateTime(), ZoneName = "ENTRY",},
+            new Zone(){ZoneId =  3, IsZoneOpen=false, IsZoneEmpty=true, ZoneEmptyDetectTime = new DateTime(), ZoneName = "LIVING ROOM"},
+            new Zone(){ZoneId =  4, IsZoneOpen=false, IsZoneEmpty=true, ZoneEmptyDetectTime = new DateTime(), ZoneName = "OFFICE"},
+            new Zone(){ZoneId =  5, IsZoneOpen=false, IsZoneEmpty=true, ZoneEmptyDetectTime = new DateTime(), ZoneName = "HALL"},
+            new Zone(){ZoneId =  6, IsZoneOpen=false, IsZoneEmpty=true, ZoneEmptyDetectTime = new DateTime(), ZoneName = "BEDROOM"},
+            new Zone(){ZoneId =  7, IsZoneOpen=false, IsZoneEmpty=true, ZoneEmptyDetectTime = new DateTime(), ZoneName = "FIRE"},
+            new Zone(){ZoneId =  8, IsZoneOpen=false, IsZoneEmpty=true, ZoneEmptyDetectTime = new DateTime(), ZoneName = "TECHNO"},
+            new Zone(){ZoneId =  9, IsZoneOpen=false, IsZoneEmpty=true, ZoneEmptyDetectTime = new DateTime(), ZoneName = "PIANO"}
          };
+        public static List<Zone> SortedByLastActive = Zones.ToList();
+
     }
     static class Helpers
     {
@@ -455,10 +483,12 @@ namespace HomeModule.Raspberry
     }
     class Zone
     {
-        public int CategoryId { get; set; }
+        public int ZoneId { get; set; }
         public string ZoneName { get; set; }
         public bool IsZoneOpen { get; set; }
         public DateTimeOffset ZoneEventTime { get; set; }
+        public DateTimeOffset ZoneEmptyDetectTime { get; set; }
+        public bool IsZoneEmpty { get; set; }
     }
     class Byte2Data
     {

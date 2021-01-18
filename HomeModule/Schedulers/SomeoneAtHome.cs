@@ -116,15 +116,16 @@ namespace HomeModule.Schedulers
             }
 
             //run the alert only if home is secured and someone is moving
-            if (TelemetryDataClass.isHomeSecured && IsSomeoneAtHome)
+            if (TelemetryDataClass.isHomeSecured)
             {
                 bool forceOutsideLightsOn = true;
                 SetOutsideLightsOn(true, forceOutsideLightsOn); //forcing outside lights ON
-                TelemetryDataClass.SourceInfo = $"Home secured, someone moving {Paradox1738.alertingSensors.FirstOrDefault(x => x.IsZoneOpen).ZoneName}";
+
+                TelemetryDataClass.SourceInfo = $"Home secured {Paradox1738.alertingSensors.FirstOrDefault().ZoneName}";
                 string sensorsOpen = "Look where someone is moving:\n\n";
-                foreach (var x in Paradox1738.alertingSensors)
+                foreach (var zone in Paradox1738.alertingSensors)
                 {
-                    sensorsOpen += $"{x.ZoneEventTime:G} {x.ZoneName}\n";
+                    sensorsOpen += $"{zone.ZoneEmptyDetectTime:dd.MM} {zone.ZoneEmptyDetectTime:t} - {zone.ZoneEventTime:t} {zone.ZoneName}\n";
                 }
                 var monitorData = new
                 {
@@ -135,11 +136,10 @@ namespace HomeModule.Schedulers
                     DateAndTime = Program.DateTimeTZ().DateTime,
                     date = Program.DateTimeTZ().ToString("dd.MM"),
                     time = Program.DateTimeTZ().ToString("HH:mm"),
-                    status = sensorsOpen,
-                    Paradox1738.alertingSensors
+                    status = sensorsOpen
                 };
                 await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo);
-                Paradox1738.alertingSensors.ForEach(x => Console.WriteLine($"Zone open: {x.ZoneEventTime} {x.ZoneName}"));
+                Paradox1738.alertingSensors.ForEach(x => Console.WriteLine($"{x.ZoneEmptyDetectTime:dd.MM} {x.ZoneEmptyDetectTime:t} - {x.ZoneEventTime:t} {x.ZoneName}"));
             }
         }
         public static void SetOutsideLightsOn(bool setLightsOn = true, bool isForcedToTurnOn = false, bool isForcedToTurnOff = false)

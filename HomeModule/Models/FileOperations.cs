@@ -1,4 +1,5 @@
-﻿using System;
+﻿using HomeModule.Parameters;
+using System;
 using System.IO;
 using System.Threading.Tasks;
 
@@ -10,7 +11,7 @@ namespace HomeModule.Models
         {
             //the environment variable has been set through deployment.template.json file
             //basically it's a variable to use binding from host to container
-            string mappedFolder = Environment.GetEnvironmentVariable("mappedFolder");
+            string mappedFolder = Environment.GetEnvironmentVariable(HomeParameters.CONTAINER_MAPPED_FOLDER);
             if (!Directory.Exists(mappedFolder))
             {
                 Directory.CreateDirectory(mappedFolder);

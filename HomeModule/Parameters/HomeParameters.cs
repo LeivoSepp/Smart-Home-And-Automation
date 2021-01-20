@@ -1,0 +1,32 @@
+﻿namespace HomeModule.Parameters
+{
+    class HomeParameters
+    {
+        public const int TIMER_SECONDS_WHEN_ZONE_EMPTY = 120;
+        public const int TIMER_SECONDS_CLEAR_DOOR_QUEUE = 120;
+        public const int TIMER_MINUTES_WHEN_HOME_EMPTY = 60;
+        public const int TIMER_MINUTES_WHEN_SECURED_HOME_EMPTY = 2;
+
+        public const int TIMER_MINUTES_CHECK_CO2 = 5;
+        public const int TIMER_MINUTES_VENT_ON = 60;
+        public const int CO2_LEVEL_TO_CHECK = 900;
+
+        public const int EXTREME_SAUNA_TEMP = 110;
+        public const int MAX_SAUNA_HEATING_TIME = 180; //minutes
+
+        public const string CONTAINER_MAPPED_FOLDER = "mappedFolder";
+        public const string FILENAME_SAUNA_TIME = "SaunaStartedTime";
+        public const string FILENAME_ROOM_TEMPERATURES = "temperatureSET";
+
+
+        public const int OUTSIDE_LIGHTS_MANUAL_DURATION = 30; //minutes
+
+        public const string SLEEP_TIME = "00:00";
+        public const string WAKEUP_TIME = "07:00";
+
+        public const int CHECK_NETATMO_IN_MINUTES = 10;
+
+        public const double DEFAULT_ROOM_TEMP = 21.5;
+        public const double DEFAULT_SAUNA_TEMP = 95;
+    }
+}

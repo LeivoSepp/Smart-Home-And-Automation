@@ -1,6 +1,7 @@
 ﻿using CoordinateSharp;
 using HomeModule.Azure;
 using HomeModule.MCP;
+using HomeModule.Parameters;
 using HomeModule.Raspberry;
 using System;
 using System.Diagnostics;
@@ -80,7 +81,6 @@ namespace HomeModule.Schedulers
         //this will be fired every time when someone opens the gate
         private static void SetGateTimerInterval()
         {
-            //if home is secured, then check data in every minute otherwise in every 60 minutes
             var timerInMinutes = 5; //5 minutes window
             timerIntervalGate = TimeSpan.FromMinutes(timerInMinutes).TotalSeconds;
             stopwatchGate.Restart();
@@ -115,7 +115,7 @@ namespace HomeModule.Schedulers
                 Console.WriteLine("someone at home");
             }
 
-            //run the alert only if home is secured and someone is moving
+            //run the alert only if home is secured
             if (TelemetryDataClass.isHomeSecured)
             {
                 bool forceOutsideLightsOn = true;
@@ -140,6 +140,7 @@ namespace HomeModule.Schedulers
                 };
                 await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo);
                 Paradox1738.alertingSensors.ForEach(x => Console.WriteLine($"{x.ZoneEmptyDetectTime:dd.MM} {x.ZoneEmptyDetectTime:t} - {x.ZoneEventTime:t} {x.ZoneName}"));
+                Paradox1738.alertingSensors.Clear();
             }
         }
         public static void SetOutsideLightsOn(bool setLightsOn = true, bool isForcedToTurnOn = false, bool isForcedToTurnOff = false)
@@ -178,7 +179,7 @@ namespace HomeModule.Schedulers
                 //the following manual modes are comes if one pushes the button from the app
                 if (IsManuallyTurnedOn || IsManuallyTurnedOff)
                 {
-                    await Task.Delay(TimeSpan.FromMinutes(30)); //wait here for 30 minutes, lights are on or off
+                    await Task.Delay(TimeSpan.FromMinutes(HomeParameters.OUTSIDE_LIGHTS_MANUAL_DURATION)); //wait here for 30 minutes, lights are on or off
                     IsManuallyTurnedOn = IsManuallyTurnedOff = false;
                 }
                 else
@@ -208,8 +209,8 @@ namespace HomeModule.Schedulers
         }
         public static bool IsSleepTime()
         {
-            TimeSpan SleepTimeStart = TimeSpan.Parse("00:00");
-            TimeSpan SleepTimeEnd = TimeSpan.Parse("07:00");
+            TimeSpan SleepTimeStart = TimeSpan.Parse(HomeParameters.SLEEP_TIME);
+            TimeSpan SleepTimeEnd = TimeSpan.Parse(HomeParameters.WAKEUP_TIME);
             bool isSleepTime = HeatingParams.TimeBetween(Program.DateTimeTZ(), SleepTimeStart, SleepTimeEnd);
             return isSleepTime;
         }

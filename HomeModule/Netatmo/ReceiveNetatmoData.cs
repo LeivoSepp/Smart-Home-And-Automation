@@ -1,4 +1,5 @@
-﻿using Netatmo.Net;
+﻿using HomeModule.Parameters;
+using Netatmo.Net;
 using Netatmo.Net.Model;
 using System;
 using System.Threading.Tasks;
@@ -59,7 +60,7 @@ namespace HomeModule.Netatmo
                 {
                     Console.WriteLine("Netatmo exception thrown: " + e.ToString());
                 }
-                await Task.Delay(TimeSpan.FromMinutes(10)); //check every 10 min
+                await Task.Delay(TimeSpan.FromMinutes(HomeParameters.CHECK_NETATMO_IN_MINUTES)); //check every 10 min
             }
         }
         public void ReceiveData()

@@ -13,6 +13,7 @@ using System.Net.Http;
 using Newtonsoft.Json;
 using HomeModule.Models;
 using System.IO;
+using HomeModule.Parameters;
 
 namespace HomeModule.Azure
 {
@@ -82,7 +83,7 @@ namespace HomeModule.Azure
                         Temperatures = JsonConvert.DeserializeObject<List<SensorReading>>(HomeCommands["Temperatures"].ToString())
                     };
                     var jsonString = JsonConvert.SerializeObject(SetRoomTemperatures);
-                    var filename = fileOperations.GetFilePath("temperatureSET");
+                    var filename = fileOperations.GetFilePath(HomeParameters.FILENAME_ROOM_TEMPERATURES);
                     await fileOperations.SaveStringToLocalFile(filename, jsonString);
                     HomeTemperature.SetTemperatures(SetRoomTemperatures);
                 }
@@ -216,7 +217,7 @@ namespace HomeModule.Azure
             {
                 Pins.PinWrite(Pins.saunaHeatOutPin, PinValue.Low);
                 TelemetryDataClass.isSaunaOn = true;
-                var filename = fileOperations.GetFilePath("SaunaStartedTime");
+                var filename = fileOperations.GetFilePath(HomeParameters.FILENAME_SAUNA_TIME);
                 if (TelemetryDataClass.SaunaStartedTime == DateTime.MinValue) //if sauna hasnt been started before
                 {
                     DateTime SaunaStartedTime = Program.DateTimeTZ().DateTime;
@@ -226,7 +227,7 @@ namespace HomeModule.Azure
             }
             else if (command == CommandNames.TURN_OFF_SAUNA)
             {
-                var filename = fileOperations.GetFilePath("SaunaStartedTime");
+                var filename = fileOperations.GetFilePath(HomeParameters.FILENAME_SAUNA_TIME);
                 File.Delete(filename);
                 Pins.PinWrite(Pins.saunaHeatOutPin, PinValue.High);
                 TelemetryDataClass.isSaunaOn = false;

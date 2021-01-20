@@ -6,6 +6,7 @@ using System.Linq;
 using HomeModule.Azure;
 using System.Threading.Tasks;
 using HomeModule.Schedulers;
+using HomeModule.Parameters;
 using System.Security.Cryptography.X509Certificates;
 
 namespace HomeModule.Raspberry
@@ -79,7 +80,7 @@ namespace HomeModule.Raspberry
                     SortedByLastActive.Sort((x, y) => DateTimeOffset.Compare(x.ZoneEventTime, y.ZoneEventTime)); //sort the zones by date
                     Message = Zones.Where(x => x.ZoneId == CategoryId).Select(x => $"{x.ZoneName}").DefaultIfEmpty($"Zone_{CategoryId}").First();
 
-                    //add alerting sensors into list if home secured
+                    //if alerting sensors list is empty then add the first opened zone
                     if (TelemetryDataClass.isHomeSecured && !alertingSensors.Any())
                     {
                         if (IsZoneOpen)
@@ -124,10 +125,6 @@ namespace HomeModule.Raspberry
             List<State> RepeatDoorAll = new List<State> { DOOR, ALL }; //repeat
             List<State> RepeatAllDoor = new List<State> { ALL, DOOR }; //repeat
             List<State> RepeatIRAll = new List<State> { IR, ALL }; //repeat
-            bool isDoorOpen, isIrOpen;
-            bool isSmokeOpen = false;
-            bool isQueueCleared = false;
-            string status = "No pattern";
             List<State> _queue = new List<State>
             {
                 new State { DoorValue = false, IRValue = false }
@@ -139,26 +136,21 @@ namespace HomeModule.Raspberry
                 {
                     //check the last sensor time to calculate is there someone at home
                     Zone LastActiveZone = SortedByLastActive.Last();
-                    var timerInMinutes = TelemetryDataClass.isHomeSecured ? 1 : 60;
+                    var timerInMinutes = TelemetryDataClass.isHomeSecured ? HomeParameters.TIMER_MINUTES_WHEN_SECURED_HOME_EMPTY : HomeParameters.TIMER_MINUTES_WHEN_HOME_EMPTY;
                     var DurationUntilHouseIsEmpty = !LastActiveZone.IsZoneOpen ? (Program.DateTimeTZ() - LastActiveZone.ZoneEventTime).TotalMinutes : 0;
                     SomeoneAtHome.IsSomeoneAtHome = DurationUntilHouseIsEmpty < timerInMinutes;
 
                     //seconds to wait until the zone will give an "empty zone" report
-                    int timerInSecondsToCheckRoom = 120;
                     foreach (var zone in Zones)
                     {
                         var durationUntilZoneIsEmpty = !zone.IsZoneOpen ? (Program.DateTimeTZ() - zone.ZoneEventTime).TotalSeconds : 0;
-                        zone.IsZoneEmpty = durationUntilZoneIsEmpty > timerInSecondsToCheckRoom;
+                        zone.IsZoneEmpty = durationUntilZoneIsEmpty > HomeParameters.TIMER_SECONDS_WHEN_ZONE_EMPTY;
                         if (zone.IsZoneEmpty && zone.ZoneEmptyDetectTime != DateTime.MinValue)
                         {
                             //add alerting sensors into list if home secured
                             if (TelemetryDataClass.isHomeSecured)
                             {
                                 alertingSensors.Add(new Zone() { IsZoneOpen = zone.IsZoneOpen, ZoneName = zone.ZoneName, ZoneEventTime = zone.ZoneEventTime, ZoneId = zone.ZoneId, ZoneEmptyDetectTime = zone.ZoneEmptyDetectTime });
-                            }
-                            else
-                            {
-                                alertingSensors.Clear();
                             }
                             Console.WriteLine($"{zone.ZoneEmptyDetectTime:dd.MM} {zone.ZoneEmptyDetectTime:t} - {zone.ZoneEventTime:t} {zone.ZoneName}");
                             zone.ZoneEmptyDetectTime = new DateTime();
@@ -172,23 +164,20 @@ namespace HomeModule.Raspberry
                     Zone doorZone = Zones.First(ir => ir.ZoneId == 1);
                     Zone IrZone = Zones.First(ir => ir.ZoneId == 2);
                     Zone smokeZone = Zones.First(ir => ir.ZoneId == 7);
-                    isDoorOpen = doorZone.IsZoneOpen;
-                    isIrOpen = IrZone.IsZoneOpen;
-                    isSmokeOpen = smokeZone.IsZoneOpen;
+                    bool isDoorOpen = doorZone.IsZoneOpen;
+                    bool isIrOpen = IrZone.IsZoneOpen;
+                    bool isSmokeOpen = smokeZone.IsZoneOpen;
 
                     //if door or IR is closed more that 2 minutes then clear the queue
-                    var clearDuration = TimeSpan.FromSeconds(120).TotalSeconds;
-                    var durationUntilReset = doorZone.ZoneEventTime > IrZone.ZoneEventTime ?
-                        (Program.DateTimeTZ() - doorZone.ZoneEventTime).TotalSeconds :
-                        (Program.DateTimeTZ() - IrZone.ZoneEventTime).TotalSeconds;
-                    var isClearTime = durationUntilReset % clearDuration >= clearDuration - 1;
-                    if (isClearTime && !isDoorOpen && !isQueueCleared && _queue.Count > 1)
+                    var LastActive = doorZone.ZoneEventTime > IrZone.ZoneEventTime ? doorZone.ZoneEventTime : IrZone.ZoneEventTime;
+                    var durationUntilReset = _queue.Count > 1 ? (Program.DateTimeTZ() - LastActive).TotalSeconds : 0;
+                    bool isClearTime = durationUntilReset > HomeParameters.TIMER_SECONDS_CLEAR_DOOR_QUEUE;
+                    if (isClearTime && !isDoorOpen)
                     {
                         _queue.Clear();
                         _queue.Add(new State { DoorValue = false, IRValue = false });
                         Console.WriteLine($"{Program.DateTimeTZ():T} queue cleared");
                     }
-                    isQueueCleared = isClearTime;
 
                     //save the door and IR statuses for the queue
                     State _state = new State { DoorValue = isDoorOpen, IRValue = isIrOpen };
@@ -201,6 +190,7 @@ namespace HomeModule.Raspberry
 
                     //if list is empty, then return both open, otherwise last item
                     State lastItem = (_queue.Count != 0) ? _queue[_queue.Count - 1] : new State { DoorValue = true, IRValue = true };
+                    string status = "No pattern";
 
                     if (_state != lastItem)
                     {

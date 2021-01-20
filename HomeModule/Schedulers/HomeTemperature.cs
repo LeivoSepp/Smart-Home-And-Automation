@@ -8,6 +8,7 @@ using HomeModule.Raspberry;
 using System.Device.Gpio;
 using Newtonsoft.Json;
 using System.IO;
+using HomeModule.Parameters;
 
 namespace HomeModule.Schedulers
 {
@@ -41,7 +42,7 @@ namespace HomeModule.Schedulers
             ListOfAllSensors = UpdateSensorsTrendAndLastTemp(ListOfAllSensors, ListOfAllSensors);
             while (true)
             {
-                var filename = fileOperations.GetFilePath("temperatureSET");
+                var filename = fileOperations.GetFilePath(HomeParameters.FILENAME_ROOM_TEMPERATURES);
                 if (File.Exists(filename))
                 {
                     var dataFromFile = await fileOperations.OpenExistingFile(filename);
@@ -74,7 +75,7 @@ namespace HomeModule.Schedulers
                 else
                     Pins.PinWrite(Pins.saunaHeatOutPin, PinValue.High);
                 //if sauna extremely hot, then turn off
-                if (ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == SAUNA).Temperature > 110) _receiveData.ProcessCommand(CommandNames.TURN_OFF_SAUNA);
+                if (ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == SAUNA).Temperature > HomeParameters.EXTREME_SAUNA_TEMP) _receiveData.ProcessCommand(CommandNames.TURN_OFF_SAUNA);
 
                 //if all rooms has achieved their target temperature then turn system off
                 if (ListOfAllSensors.Temperatures.Where(x => x.isRoom).All(x => !x.isHeatingRequired)) _receiveData.ProcessCommand(CommandNames.TURN_OFF_HEATING);
@@ -82,7 +83,7 @@ namespace HomeModule.Schedulers
                 //if all room temperatures together has changed more that 3 degrees then send it out to database
                 if (Math.Abs(SumOfTemperatureDeltas) > 4)
                 {
-                    TelemetryDataClass.SourceInfo = $"Room temp changed {SumOfTemperatureDeltas:0.0}.";
+                    TelemetryDataClass.SourceInfo = $"Room temp changed {SumOfTemperatureDeltas:0.0}";
                     var monitorData = new
                     {
                         DeviceID = "RoomTemperatures",

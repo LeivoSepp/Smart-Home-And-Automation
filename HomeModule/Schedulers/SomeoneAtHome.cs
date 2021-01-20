@@ -115,6 +115,7 @@ namespace HomeModule.Schedulers
                 Console.WriteLine("someone at home");
             }
 
+            //check if the last sensor was added into list during the home was secured
             bool isLastZoneSecured = false;
             string lastZoneName = null;
             if (Paradox1738.alertingSensors.Any())
@@ -124,7 +125,7 @@ namespace HomeModule.Schedulers
                 isLastZoneSecured = LastZone.IsHomeSecured;
             }
 
-            //run the alert only if home is secured
+            //run the alert only if home is secured and there are some alerting sensor
             if (TelemetryDataClass.isHomeSecured && isLastZoneSecured)
             {
                 bool forceOutsideLightsOn = true;
@@ -134,8 +135,8 @@ namespace HomeModule.Schedulers
                 string sensorsOpen = "Look where someone is moving:\n\n";
                 foreach (var zone in Paradox1738.alertingSensors)
                 {
-                    if (zone.IsHomeSecured)
-                        sensorsOpen += $"{zone.ZoneEmptyDetectTime:dd.MM} {zone.ZoneEmptyDetectTime:t} - {zone.ZoneEventTime:t} {zone.ZoneName}\n";
+                    //create a string with all zones for an e-mail
+                    if (zone.IsHomeSecured) sensorsOpen += $"{zone.ZoneEmptyDetectTime:dd.MM} {zone.ZoneEmptyDetectTime:t} - {zone.ZoneEventTime:t} {zone.ZoneName}\n";
                 }
                 var monitorData = new
                 {
@@ -150,7 +151,7 @@ namespace HomeModule.Schedulers
                 };
                 await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo);
                 Paradox1738.alertingSensors.ForEach(x => Console.WriteLine($"{x.ZoneEmptyDetectTime:dd.MM} {x.ZoneEmptyDetectTime:t} - {x.ZoneEventTime:t} {(x.IsHomeSecured ? "SECURED" : null)} {x.ZoneName}"));
-                Paradox1738.alertingSensors.RemoveAll(x => x.IsHomeSecured);
+                Paradox1738.alertingSensors.RemoveAll(x => x.IsHomeSecured); //remove all reported zones
             }
         }
         public static void SetOutsideLightsOn(bool setLightsOn = true, bool isForcedToTurnOn = false, bool isForcedToTurnOff = false)

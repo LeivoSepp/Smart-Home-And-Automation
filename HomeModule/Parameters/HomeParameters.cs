@@ -7,6 +7,8 @@
         public const int TIMER_MINUTES_WHEN_HOME_EMPTY = 60;
         public const int TIMER_MINUTES_WHEN_SECURED_HOME_EMPTY = 2;
 
+        public const int MAX_ITEMS_IN_ALERTING_LIST = 1000;
+
         public const int TIMER_MINUTES_CHECK_CO2 = 5;
         public const int TIMER_MINUTES_VENT_ON = 60;
         public const int CO2_LEVEL_TO_CHECK = 900;

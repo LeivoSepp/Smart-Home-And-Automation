@@ -115,17 +115,27 @@ namespace HomeModule.Schedulers
                 Console.WriteLine("someone at home");
             }
 
+            bool isLastZoneSecured = false;
+            string lastZoneName = null;
+            if (Paradox1738.alertingSensors.Any())
+            {
+                Zone LastZone = Paradox1738.alertingSensors.Last();
+                lastZoneName = LastZone.ZoneName;
+                isLastZoneSecured = LastZone.IsHomeSecured;
+            }
+
             //run the alert only if home is secured
-            if (TelemetryDataClass.isHomeSecured)
+            if (TelemetryDataClass.isHomeSecured && isLastZoneSecured)
             {
                 bool forceOutsideLightsOn = true;
                 SetOutsideLightsOn(true, forceOutsideLightsOn); //forcing outside lights ON
 
-                TelemetryDataClass.SourceInfo = $"Home secured {Paradox1738.alertingSensors.FirstOrDefault().ZoneName}";
+                TelemetryDataClass.SourceInfo = $"Home secured {lastZoneName}";
                 string sensorsOpen = "Look where someone is moving:\n\n";
                 foreach (var zone in Paradox1738.alertingSensors)
                 {
-                    sensorsOpen += $"{zone.ZoneEmptyDetectTime:dd.MM} {zone.ZoneEmptyDetectTime:t} - {zone.ZoneEventTime:t} {zone.ZoneName}\n";
+                    if (zone.IsHomeSecured)
+                        sensorsOpen += $"{zone.ZoneEmptyDetectTime:dd.MM} {zone.ZoneEmptyDetectTime:t} - {zone.ZoneEventTime:t} {zone.ZoneName}\n";
                 }
                 var monitorData = new
                 {
@@ -139,8 +149,8 @@ namespace HomeModule.Schedulers
                     status = sensorsOpen
                 };
                 await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo);
-                Paradox1738.alertingSensors.ForEach(x => Console.WriteLine($"{x.ZoneEmptyDetectTime:dd.MM} {x.ZoneEmptyDetectTime:t} - {x.ZoneEventTime:t} {x.ZoneName}"));
-                Paradox1738.alertingSensors.Clear();
+                Paradox1738.alertingSensors.ForEach(x => Console.WriteLine($"{x.ZoneEmptyDetectTime:dd.MM} {x.ZoneEmptyDetectTime:t} - {x.ZoneEventTime:t} {(x.IsHomeSecured ? "SECURED" : null)} {x.ZoneName}"));
+                Paradox1738.alertingSensors.RemoveAll(x => x.IsHomeSecured);
             }
         }
         public static void SetOutsideLightsOn(bool setLightsOn = true, bool isForcedToTurnOn = false, bool isForcedToTurnOff = false)

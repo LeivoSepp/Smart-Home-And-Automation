@@ -16,6 +16,7 @@ namespace HomeModule.Raspberry
         static SerialPort _serialPort;
         private SendDataAzure _sendListData;
         public static List<Zone> alertingSensors = new List<Zone>();
+        private int LastActiveZoneID = 1; //lets be door, actually this doesnt matter
 
         public async void ParadoxSecurity()
         {
@@ -74,6 +75,7 @@ namespace HomeModule.Raspberry
                     if (EventId == 1) IsZoneOpen = true;
                     //update existing list with the IR statuses and activating/closing time
                     Zones.Where(x => x.ZoneId == CategoryId).Select(x => { x.IsZoneOpen = IsZoneOpen; x.IsHomeSecured = TelemetryDataClass.isHomeSecured; x.ZoneEventTime = Program.DateTimeTZ(); return x; }).ToList();
+                    LastActiveZoneID = CategoryId; //last active zone ID used to check if anybody is home
                     Message = Zones.Where(x => x.ZoneId == CategoryId).Select(x => $"{x.ZoneName}").DefaultIfEmpty($"Zone_{CategoryId}").First();
                 }
                 if (isStatus) Message = PartitionStatuses.Where(x => x.CategoryId == CategoryId).Select(x => x.Name).DefaultIfEmpty($"Status_{CategoryId}").First();
@@ -121,7 +123,7 @@ namespace HomeModule.Raspberry
                 try
                 {
                     //check the last zone event time to report is there anybody at home
-                    Zone LastActiveZone = Zones.Last();
+                    Zone LastActiveZone = Zones.First(x => x.ZoneId == LastActiveZoneID);
                     var timerInMinutes = TelemetryDataClass.isHomeSecured ? HomeParameters.TIMER_MINUTES_WHEN_SECURED_HOME_EMPTY : HomeParameters.TIMER_MINUTES_WHEN_HOME_EMPTY;
                     var DurationUntilHouseIsEmpty = !LastActiveZone.IsZoneOpen ? (Program.DateTimeTZ() - LastActiveZone.ZoneEventTime).TotalMinutes : 0;
                     SomeoneAtHome.IsSomeoneAtHome = DurationUntilHouseIsEmpty < timerInMinutes;

@@ -15,7 +15,7 @@ namespace HomeModule.Raspberry
     {
         static SerialPort _serialPort;
         private SendDataAzure _sendListData;
-        public static List<Zone> alertingSensors = new List<Zone>();
+        public static List<AlertingZone> alertingSensors = new List<AlertingZone>();
         private int LastActiveZoneID = 1; //lets be door, actually this doesnt matter
 
         public async void ParadoxSecurity()
@@ -74,7 +74,7 @@ namespace HomeModule.Raspberry
                     bool IsZoneOpen = false;
                     if (EventId == 1) IsZoneOpen = true;
                     //update existing list with the IR statuses and activating/closing time
-                    Zones.Where(x => x.ZoneId == CategoryId).Select(x => { x.IsZoneOpen = IsZoneOpen; x.IsHomeSecured = TelemetryDataClass.isHomeSecured; x.ZoneEventTime = METHOD.DateTimeTZ(); return x; }).ToList();
+                    Zones.Where(x => x.ZoneId == CategoryId).Select(x => { x.IsZoneOpen = IsZoneOpen; x.IsHomeSecured = TelemetryDataClass.isHomeSecured; x.ZoneEventTime = METHOD.DateTimeTZ().DateTime; return x; }).ToList();
                     LastActiveZoneID = CategoryId; //last active zone ID used to check if anybody is home
                     Message = Zones.Where(x => x.ZoneId == CategoryId).Select(x => $"{x.ZoneName}").DefaultIfEmpty($"Zone_{CategoryId}").First();
                 }
@@ -117,13 +117,13 @@ namespace HomeModule.Raspberry
             {
                 new State { DoorValue = false, IRValue = false }
             };
-            DateTimeOffset lastSentTime = METHOD.DateTimeTZ();
+            DateTime lastSentTime = METHOD.DateTimeTZ().DateTime;
 
             while (true)
             {
                 try
                 {
-                    DateTimeOffset CurrentDateTime = METHOD.DateTimeTZ();
+                    DateTime CurrentDateTime = METHOD.DateTimeTZ().DateTime;
                     //check the last zone event time to report is there anybody at home
                     Zone LastActiveZone = Zones.First(x => x.ZoneId == LastActiveZoneID);
                     var timerInMinutes = TelemetryDataClass.isHomeSecured ? CONSTANT.TIMER_MINUTES_WHEN_SECURED_HOME_EMPTY : CONSTANT.TIMER_MINUTES_WHEN_HOME_EMPTY;
@@ -140,10 +140,10 @@ namespace HomeModule.Raspberry
                         {
                             DeviceID = "HomeController",
                             status = TelemetryDataClass.SourceInfo,
-                            UtcOffset = CurrentDateTime.Offset.Hours,
+                            UtcOffset = METHOD.DateTimeTZ().Offset.Hours,
                             date = CurrentDateTime.ToString("dd.MM"),
                             time = CurrentDateTime.ToString("HH:mm"),
-                            DateAndTime = CurrentDateTime.DateTime,
+                            DateAndTime = CurrentDateTime,
                             alertingSensors
                         };
                         await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo);
@@ -160,7 +160,7 @@ namespace HomeModule.Raspberry
                         if (zone.IsZoneEmpty && zone.ZoneEmptyDetectTime != DateTime.MinValue)
                         {
                             //add alerting sensors into list
-                            alertingSensors.Add(new Zone(zone.ZoneId, zone.ZoneEmptyDetectTime, zone.ZoneEventTime, zone.ZoneName, zone.IsZoneOpen, zone.IsZoneEmpty, zone.IsHomeSecured));
+                            alertingSensors.Add(new AlertingZone(zone.ZoneName, zone.ZoneEmptyDetectTime.ToString("dd.MM HH:mm"), zone.ZoneEventTime.ToString("HH:mm"), zone.IsHomeSecured));
                             Console.WriteLine($"{zone.ZoneEmptyDetectTime:dd.MM} {zone.ZoneEmptyDetectTime:t} - {zone.ZoneEventTime:t} {(zone.IsHomeSecured ? "SECURED" : null)} {zone.ZoneName} listCount:{alertingSensors.Count}");
                             zone.ZoneEmptyDetectTime = new DateTime();
                         }
@@ -233,10 +233,10 @@ namespace HomeModule.Raspberry
                             DeviceID = "SecurityController",
                             status = TelemetryDataClass.SourceInfo,
                             TelemetryDataClass.isHomeSecured,
-                            UtcOffset = CurrentDateTime.Offset.Hours,
+                            UtcOffset = METHOD.DateTimeTZ().Offset.Hours,
                             date = CurrentDateTime.ToString("dd.MM"),
                             time = CurrentDateTime.ToString("HH:mm"),
-                            DateAndTime = CurrentDateTime.DateTime
+                            DateAndTime = CurrentDateTime
                         };
                         await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo);
                         status = "No pattern";
@@ -443,15 +443,15 @@ namespace HomeModule.Raspberry
         };
         public static List<Zone> Zones = new List<Zone>
         {
-            new Zone(1, new DateTime(), new DateTime(), "DOOR"),
-            new Zone(2, new DateTime(), new DateTime(), "ENTRY"),
-            new Zone(3, new DateTime(), new DateTime(), "LIVING ROOM"),
-            new Zone(4, new DateTime(), new DateTime(), "OFFICE"),
-            new Zone(5, new DateTime(), new DateTime(), "HALL"),
-            new Zone(6, new DateTime(), new DateTime(), "BEDROOM"),
-            new Zone(7, new DateTime(), new DateTime(), "FIRE"),
-            new Zone(8, new DateTime(), new DateTime(), "TECHNO"),
-            new Zone(9, new DateTime(), new DateTime(), "PIANO")
+            new Zone(1, new DateTime(), new DateTime(), "Door"),
+            new Zone(2, new DateTime(), new DateTime(), "Entry"),
+            new Zone(3, new DateTime(), new DateTime(), "Living"),
+            new Zone(4, new DateTime(), new DateTime(), "Office"),
+            new Zone(5, new DateTime(), new DateTime(), "Hall"),
+            new Zone(6, new DateTime(), new DateTime(), "Bedroom"),
+            new Zone(7, new DateTime(), new DateTime(), "Fire"),
+            new Zone(8, new DateTime(), new DateTime(), "Techno"),
+            new Zone(9, new DateTime(), new DateTime(), "Piano")
          };
     }
     static class Helpers
@@ -482,7 +482,7 @@ namespace HomeModule.Raspberry
     }
     class Zone
     {
-        public Zone(int zoneId, DateTimeOffset zoneEmptyDetectTime, DateTimeOffset zoneEventTime, string zoneName, bool isZoneOpen = false, bool isZoneEmpty = true, bool isHomeSecured = false)
+        public Zone(int zoneId, DateTime zoneEmptyDetectTime, DateTime zoneEventTime, string zoneName, bool isZoneOpen = false, bool isZoneEmpty = true, bool isHomeSecured = false)
         {
             ZoneId = zoneId;
             IsZoneOpen = isZoneOpen;
@@ -495,8 +495,8 @@ namespace HomeModule.Raspberry
         public int ZoneId { get; set; }
         public string ZoneName { get; set; }
         public bool IsZoneOpen { get; set; }
-        public DateTimeOffset ZoneEventTime { get; set; }
-        public DateTimeOffset ZoneEmptyDetectTime { get; set; }
+        public DateTime ZoneEventTime { get; set; }
+        public DateTime ZoneEmptyDetectTime { get; set; }
         public bool IsZoneEmpty { get; set; }
         public bool IsHomeSecured { get; set; }
     }
@@ -505,4 +505,19 @@ namespace HomeModule.Raspberry
         public int CategoryId { get; set; }
         public string Name { get; set; }
     }
+    class AlertingZone
+    {
+        public AlertingZone(string zoneName, string dateStart, string timeEnd, bool isHomeSecured = false)
+        {
+            IsHomeSecured = isHomeSecured;
+            DateStart = dateStart;
+            TimeEnd = timeEnd;
+            ZoneName = zoneName;
+        }
+        public string ZoneName { get; set; }
+        public bool IsHomeSecured { get; set; }
+        public string DateStart { get; set; }
+        public string TimeEnd { get; set; }
+    }
+
 }

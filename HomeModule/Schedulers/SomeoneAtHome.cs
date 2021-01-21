@@ -121,7 +121,7 @@ namespace HomeModule.Schedulers
             string lastZoneName = null;
             if (Paradox1738.alertingSensors.Any())
             {
-                Zone LastZone = Paradox1738.alertingSensors.Last();
+                AlertingZone LastZone = Paradox1738.alertingSensors.Last();
                 lastZoneName = LastZone.ZoneName;
                 isLastZoneSecured = LastZone.IsHomeSecured;
             }
@@ -137,7 +137,7 @@ namespace HomeModule.Schedulers
                 foreach (var zone in Paradox1738.alertingSensors)
                 {
                     //create a string with all zones for an e-mail
-                    if (zone.IsHomeSecured) sensorsOpen += $"{zone.ZoneEmptyDetectTime:dd.MM} {zone.ZoneEmptyDetectTime:t} - {zone.ZoneEventTime:t} {zone.ZoneName}\n";
+                    if (zone.IsHomeSecured) sensorsOpen += $"{zone.DateStart} - {zone.TimeEnd} {zone.ZoneName}\n";
                 }
                 var monitorData = new
                 {
@@ -151,7 +151,7 @@ namespace HomeModule.Schedulers
                     status = sensorsOpen
                 };
                 await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo);
-                Paradox1738.alertingSensors.ForEach(x => Console.WriteLine($"{x.ZoneEmptyDetectTime:dd.MM} {x.ZoneEmptyDetectTime:t} - {x.ZoneEventTime:t} {(x.IsHomeSecured ? "SECURED" : null)} {x.ZoneName}"));
+                Paradox1738.alertingSensors.ForEach(x => Console.WriteLine($"{x.DateStart} - {x.TimeEnd} {(x.IsHomeSecured ? "SECURED" : null)} {x.ZoneName}"));
                 Paradox1738.alertingSensors.RemoveAll(x => x.IsHomeSecured); //remove all reported zones
             }
         }

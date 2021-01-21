@@ -321,7 +321,7 @@ namespace HomeModule.Azure
     public class Shelly
     {
         public static string OutsideLight = Environment.GetEnvironmentVariable("OutsideLightShellyIP");
-        public static string PianoLoungeHeating = Environment.GetEnvironmentVariable("PianoHeatingShellyIP");
+        public static string PianoHeating = Environment.GetEnvironmentVariable("PianoHeatingShellyIP");
         public static async Task<bool> ShellySwitch(bool turnOn, string ipAddress)
         {
             string TurnOnCommand = turnOn ? "on" : "off";

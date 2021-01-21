@@ -15,9 +15,9 @@ namespace HomeModule.Schedulers
     class HomeTemperature
     {
         internal const string BEDROOM = "Bedroom";
-        internal const string LIVING_ROOM = "Living Room";
-        internal const string PIANO_LOUNGE = "Piano Lounge";
-        internal const string HOME_OFFICE = "Home Office";
+        internal const string LIVING = "Living";
+        internal const string PIANO = "Piano";
+        internal const string OFFICE = "Office";
         internal const string SAUNA = "Sauna";
         internal const string WARM_WATER = "Warm water";
         internal const string INFLOW_MAIN = "Main inflow";
@@ -57,17 +57,17 @@ namespace HomeModule.Schedulers
                 SumOfTemperatureDeltas += ListOfAllSensors.Temperatures.Where(x => x.isRoom).Sum(x => Math.Abs(x.Temperature - x.LastTemperature));
 
                 //turn on-off room heating actuators
-                if (ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == LIVING_ROOM).isHeatingRequired)
+                if (ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == LIVING).isHeatingRequired)
                     Pins.PinWrite(Pins.livingRoomHeatControlOut, PinValue.High);
                 else
                     Pins.PinWrite(Pins.livingRoomHeatControlOut, PinValue.Low);
-                if (ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == HOME_OFFICE).isHeatingRequired)
+                if (ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == OFFICE).isHeatingRequired)
                     Pins.PinWrite(Pins.homeOfficeHeatControlOut, PinValue.High);
                 else
                     Pins.PinWrite(Pins.homeOfficeHeatControlOut, PinValue.Low);
 
-                bool isShellyOn = ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == PIANO_LOUNGE).isHeatingRequired;
-                await Shelly.ShellySwitch(isShellyOn, Shelly.PianoLoungeHeating);
+                bool isShellyOn = ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == PIANO).isHeatingRequired;
+                await Shelly.ShellySwitch(isShellyOn, Shelly.PianoHeating);
 
                 //manage sauna temperature
                 if (ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == SAUNA).isHeatingRequired && TelemetryDataClass.isSaunaOn)

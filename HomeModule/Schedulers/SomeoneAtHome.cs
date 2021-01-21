@@ -1,7 +1,6 @@
 ﻿using CoordinateSharp;
 using HomeModule.Azure;
-using HomeModule.MCP;
-using HomeModule.Parameters;
+using HomeModule.Helpers;
 using HomeModule.Raspberry;
 using System;
 using System.Diagnostics;
@@ -97,6 +96,8 @@ namespace HomeModule.Schedulers
         }
         private static async void SomeoneAtHomeChanged()
         {
+            DateTimeOffset CurrentDateTime = METHOD.DateTimeTZ();
+
             //send this message only if home is not secured and either started moving or stopped moving
             if (!TelemetryDataClass.isHomeSecured)
             {
@@ -108,14 +109,14 @@ namespace HomeModule.Schedulers
                 {
                     DeviceID = "HomeController",
                     TelemetryDataClass.SourceInfo,
-                    UtcOffset = Program.DateTimeTZ().Offset.Hours,
-                    DateAndTime = Program.DateTimeTZ().DateTime,
+                    UtcOffset = CurrentDateTime.Offset.Hours,
+                    DateAndTime = CurrentDateTime.DateTime,
                 };
                 //await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo);
                 Console.WriteLine("someone at home");
             }
 
-            //check if the last sensor was added into list during the home was secured
+            //check if the last zone was added into list during the home was secured
             bool isLastZoneSecured = false;
             string lastZoneName = null;
             if (Paradox1738.alertingSensors.Any())
@@ -125,7 +126,7 @@ namespace HomeModule.Schedulers
                 isLastZoneSecured = LastZone.IsHomeSecured;
             }
 
-            //run the alert only if home is secured and there are some alerting sensor
+            //run the alert only if home is secured and there are some alerting zone
             if (TelemetryDataClass.isHomeSecured && isLastZoneSecured)
             {
                 bool forceOutsideLightsOn = true;
@@ -143,10 +144,10 @@ namespace HomeModule.Schedulers
                     DeviceID = "SecurityController",
                     TelemetryDataClass.SourceInfo,
                     TelemetryDataClass.isHomeSecured,
-                    UtcOffset = Program.DateTimeTZ().Offset.Hours,
-                    DateAndTime = Program.DateTimeTZ().DateTime,
-                    date = Program.DateTimeTZ().ToString("dd.MM"),
-                    time = Program.DateTimeTZ().ToString("HH:mm"),
+                    UtcOffset = CurrentDateTime.Offset.Hours,
+                    DateAndTime = CurrentDateTime.DateTime,
+                    date = CurrentDateTime.ToString("dd.MM"),
+                    time = CurrentDateTime.ToString("HH:mm"),
                     status = sensorsOpen
                 };
                 await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo);
@@ -164,7 +165,7 @@ namespace HomeModule.Schedulers
             var _receiveData = new ReceiveData();
             string cmd = ((setLightsOn && isLightsTime) || IsManuallyTurnedOn) && !IsManuallyTurnedOff ? CommandNames.TURN_ON_OUTSIDE_LIGHT : CommandNames.TURN_OFF_OUTSIDE_LIGHT;
             _receiveData.ProcessCommand(cmd);
-            Console.WriteLine($"Outside lights are {(TelemetryDataClass.isOutsideLightsOn ? "on" : "off")} {Program.DateTimeTZ().DateTime:dd.MM HH:mm:ss}");
+            Console.WriteLine($"Outside lights are {(TelemetryDataClass.isOutsideLightsOn ? "on" : "off")} {METHOD.DateTimeTZ().DateTime:dd.MM HH:mm:ss}");
         }
         public static void SetGarageLightsOn(bool isLightsOn = true)
         {
@@ -172,7 +173,7 @@ namespace HomeModule.Schedulers
             var _receiveData = new ReceiveData();
             string cmd = isLightsOn && isDarkTime ? CommandNames.TURN_ON_GARAGE_LIGHT : CommandNames.TURN_OFF_GARAGE_LIGHT;
             _receiveData.ProcessCommand(cmd);
-            Console.WriteLine($"Garage lights are {(TelemetryDataClass.isGarageLightsOn ? "on" : "off")} {Program.DateTimeTZ().DateTime:dd.MM HH:mm}");
+            Console.WriteLine($"Garage lights are {(TelemetryDataClass.isGarageLightsOn ? "on" : "off")} {METHOD.DateTimeTZ().DateTime:dd.MM HH:mm}");
         }
 
         //turn lights off is it's already DayTime but people are moving constantly around
@@ -190,7 +191,7 @@ namespace HomeModule.Schedulers
                 //the following manual modes are comes if one pushes the button from the app
                 if (IsManuallyTurnedOn || IsManuallyTurnedOff)
                 {
-                    await Task.Delay(TimeSpan.FromMinutes(HomeParameters.OUTSIDE_LIGHTS_MANUAL_DURATION)); //wait here for 30 minutes, lights are on or off
+                    await Task.Delay(TimeSpan.FromMinutes(CONSTANT.OUTSIDE_LIGHTS_MANUAL_DURATION)); //wait here for 30 minutes, lights are on or off
                     IsManuallyTurnedOn = IsManuallyTurnedOff = false;
                 }
                 else
@@ -215,14 +216,14 @@ namespace HomeModule.Schedulers
             var coordinate = new Coordinate(Lat, Lon, DateTime.Now);
             var sunset = (DateTime)coordinate.CelestialInfo.SunSet;
             var sunrise = (DateTime)coordinate.CelestialInfo.SunRise;
-            bool isDarkTime = HeatingParams.TimeBetween(Program.DateTimeTZ().ToUniversalTime(), sunset.TimeOfDay, sunrise.TimeOfDay);
+            bool isDarkTime = METHOD.TimeBetween(METHOD.DateTimeTZ().ToUniversalTime(), sunset.TimeOfDay, sunrise.TimeOfDay);
             return isDarkTime;
         }
         public static bool IsSleepTime()
         {
-            TimeSpan SleepTimeStart = TimeSpan.Parse(HomeParameters.SLEEP_TIME);
-            TimeSpan SleepTimeEnd = TimeSpan.Parse(HomeParameters.WAKEUP_TIME);
-            bool isSleepTime = HeatingParams.TimeBetween(Program.DateTimeTZ(), SleepTimeStart, SleepTimeEnd);
+            TimeSpan SleepTimeStart = TimeSpan.Parse(CONSTANT.SLEEP_TIME);
+            TimeSpan SleepTimeEnd = TimeSpan.Parse(CONSTANT.WAKEUP_TIME);
+            bool isSleepTime = METHOD.TimeBetween(METHOD.DateTimeTZ(), SleepTimeStart, SleepTimeEnd);
             return isSleepTime;
         }
     }

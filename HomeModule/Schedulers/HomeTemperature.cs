@@ -8,7 +8,7 @@ using HomeModule.Raspberry;
 using System.Device.Gpio;
 using Newtonsoft.Json;
 using System.IO;
-using HomeModule.Parameters;
+using HomeModule.Helpers;
 
 namespace HomeModule.Schedulers
 {
@@ -33,7 +33,7 @@ namespace HomeModule.Schedulers
             var _receiveData = new ReceiveData();
             var _sensorsClient = new RinsenOneWireClient();
             var _sendListData = new SendDataAzure();
-            var fileOperations = new FileOperations();
+            var Methods = new METHOD();
             //currentSumOfTempDeltas is some bigger number than the delta (0,5) is used to determine temperature changes
             double SumOfTemperatureDeltas = 10;
             //initiate the list with the temps and names
@@ -42,10 +42,10 @@ namespace HomeModule.Schedulers
             ListOfAllSensors = UpdateSensorsTrendAndLastTemp(ListOfAllSensors, ListOfAllSensors);
             while (true)
             {
-                var filename = fileOperations.GetFilePath(HomeParameters.FILENAME_ROOM_TEMPERATURES);
+                var filename = Methods.GetFilePath(CONSTANT.FILENAME_ROOM_TEMPERATURES);
                 if (File.Exists(filename))
                 {
-                    var dataFromFile = await fileOperations.OpenExistingFile(filename);
+                    var dataFromFile = await Methods.OpenExistingFile(filename);
                     SensorReadings SetRoomTemps = JsonConvert.DeserializeObject<SensorReadings>(dataFromFile);
                     SetTemperatures(SetRoomTemps);
                 }
@@ -75,7 +75,7 @@ namespace HomeModule.Schedulers
                 else
                     Pins.PinWrite(Pins.saunaHeatOutPin, PinValue.High);
                 //if sauna extremely hot, then turn off
-                if (ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == SAUNA).Temperature > HomeParameters.EXTREME_SAUNA_TEMP) _receiveData.ProcessCommand(CommandNames.TURN_OFF_SAUNA);
+                if (ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == SAUNA).Temperature > CONSTANT.EXTREME_SAUNA_TEMP) _receiveData.ProcessCommand(CommandNames.TURN_OFF_SAUNA);
 
                 //if all rooms has achieved their target temperature then turn system off
                 if (ListOfAllSensors.Temperatures.Where(x => x.isRoom).All(x => !x.isHeatingRequired)) _receiveData.ProcessCommand(CommandNames.TURN_OFF_HEATING);
@@ -87,9 +87,9 @@ namespace HomeModule.Schedulers
                     var monitorData = new
                     {
                         DeviceID = "RoomTemperatures",
-                        UtcOffset = Program.DateTimeTZ().Offset.Hours,
-                        DateAndTime = Program.DateTimeTZ().DateTime,
-                        time = Program.DateTimeTZ().ToString("HH:mm"),
+                        UtcOffset = METHOD.DateTimeTZ().Offset.Hours,
+                        DateAndTime = METHOD.DateTimeTZ().DateTime,
+                        time = METHOD.DateTimeTZ().ToString("HH:mm"),
                         TelemetryDataClass.SourceInfo,
                         ListOfAllSensors.Temperatures
                     };

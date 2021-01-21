@@ -1,6 +1,5 @@
 ﻿using HomeModule.Azure;
-using HomeModule.Models;
-using HomeModule.Parameters;
+using HomeModule.Helpers;
 using System;
 using System.Globalization;
 using System.IO;
@@ -11,17 +10,17 @@ namespace HomeModule.Schedulers
     class SaunaHeating
     {
         private ReceiveData _receiveData = new ReceiveData();
-        private FileOperations fileOperations = new FileOperations();
+        private readonly METHOD Methods = new METHOD();
         public async void CheckHeatingTime()
         {
             while (true)
             {
                 if (TelemetryDataClass.SaunaStartedTime == DateTime.MinValue)
                 {
-                    var filename = fileOperations.GetFilePath(HomeParameters.FILENAME_SAUNA_TIME);
+                    var filename = Methods.GetFilePath(CONSTANT.FILENAME_SAUNA_TIME);
                     if (File.Exists(filename)) //this mean that sauna has been started and system has suddenly restarted/updated
                     {
-                        var result = await fileOperations.OpenExistingFile(filename);
+                        var result = await Methods.OpenExistingFile(filename);
                         if (DateTime.TryParseExact(result, "dd.MM.yyyy HH:mm", CultureInfo.InvariantCulture, DateTimeStyles.None, out var SaunaStartedTime))
                         {
                             TelemetryDataClass.SaunaStartedTime = SaunaStartedTime;
@@ -30,13 +29,13 @@ namespace HomeModule.Schedulers
                 }
                 if (TelemetryDataClass.SaunaStartedTime != DateTime.MinValue)
                 {
-                    int TotalTimeSaunaHeatedInMinutes = (int)(Program.DateTimeTZ().DateTime - TelemetryDataClass.SaunaStartedTime).TotalMinutes;
+                    int TotalTimeSaunaHeatedInMinutes = (int)(METHOD.DateTimeTZ().DateTime - TelemetryDataClass.SaunaStartedTime).TotalMinutes;
                     string cmd = CommandNames.NO_COMMAND;
                     //turn saun on if it has heating time but not turned on
-                    if (TotalTimeSaunaHeatedInMinutes < HomeParameters.MAX_SAUNA_HEATING_TIME && !TelemetryDataClass.isSaunaOn)
+                    if (TotalTimeSaunaHeatedInMinutes < CONSTANT.MAX_SAUNA_HEATING_TIME && !TelemetryDataClass.isSaunaOn)
                         cmd = CommandNames.TURN_ON_SAUNA;
                     //turn sauna off if the time is over
-                    if (TotalTimeSaunaHeatedInMinutes > HomeParameters.MAX_SAUNA_HEATING_TIME)
+                    if (TotalTimeSaunaHeatedInMinutes > CONSTANT.MAX_SAUNA_HEATING_TIME)
                         cmd = CommandNames.TURN_OFF_SAUNA;
                     _receiveData.ProcessCommand(cmd);
                 }

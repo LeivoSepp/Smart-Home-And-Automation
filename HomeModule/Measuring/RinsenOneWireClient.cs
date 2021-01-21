@@ -4,7 +4,7 @@ using HomeModule.Models;
 using System.Threading.Tasks;
 using HomeModule.Schedulers;
 using System.Linq;
-using HomeModule.Parameters;
+using HomeModule.Helpers;
 
 namespace HomeModule.Measuring
 {
@@ -14,11 +14,11 @@ namespace HomeModule.Measuring
         public async Task<SensorReadings> ReadSensors()
         {
             SensorReadings AllSensors = new SensorReadings();
-            AllSensors.Temperatures.Add(new SensorReading("28-FF-8C-BB-70-16-04-6F", HomeTemperature.BEDROOM, HomeParameters.DEFAULT_ROOM_TEMP, true));
-            AllSensors.Temperatures.Add(new SensorReading("28-FF-0E-56-70-16-04-F3", HomeTemperature.HOME_OFFICE, HomeParameters.DEFAULT_ROOM_TEMP, true));
-            AllSensors.Temperatures.Add(new SensorReading("28-FF-31-80-70-16-05-4E", HomeTemperature.LIVING_ROOM, HomeParameters.DEFAULT_ROOM_TEMP, true));
-            AllSensors.Temperatures.Add(new SensorReading("28-FF-83-8D-70-16-05-1F", HomeTemperature.PIANO_LOUNGE, HomeParameters.DEFAULT_ROOM_TEMP, true));
-            AllSensors.Temperatures.Add(new SensorReading("28-FF-FD-B6-70-16-04-52", HomeTemperature.SAUNA, HomeParameters.DEFAULT_SAUNA_TEMP, false));
+            AllSensors.Temperatures.Add(new SensorReading("28-FF-8C-BB-70-16-04-6F", HomeTemperature.BEDROOM, CONSTANT.DEFAULT_ROOM_TEMP, true));
+            AllSensors.Temperatures.Add(new SensorReading("28-FF-0E-56-70-16-04-F3", HomeTemperature.HOME_OFFICE, CONSTANT.DEFAULT_ROOM_TEMP, true));
+            AllSensors.Temperatures.Add(new SensorReading("28-FF-31-80-70-16-05-4E", HomeTemperature.LIVING_ROOM, CONSTANT.DEFAULT_ROOM_TEMP, true));
+            AllSensors.Temperatures.Add(new SensorReading("28-FF-83-8D-70-16-05-1F", HomeTemperature.PIANO_LOUNGE, CONSTANT.DEFAULT_ROOM_TEMP, true));
+            AllSensors.Temperatures.Add(new SensorReading("28-FF-FD-B6-70-16-04-52", HomeTemperature.SAUNA, CONSTANT.DEFAULT_SAUNA_TEMP, false));
             AllSensors.Temperatures.Add(new SensorReading("28-FF-C2-36-64-16-04-B4", HomeTemperature.WARM_WATER, 0, false));
             AllSensors.Temperatures.Add(new SensorReading("28-F5-FC-A8-0C-00-00-0E", HomeTemperature.INFLOW_MAIN, 0, false));
             AllSensors.Temperatures.Add(new SensorReading("28-99-CA-A8-0C-00-00-A8", HomeTemperature.RETURN_MAIN, 0, false));

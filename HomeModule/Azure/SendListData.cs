@@ -4,6 +4,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
 using Newtonsoft.Json;
+using HomeModule.Helpers;
 
 namespace HomeModule.Azure
 {
@@ -33,7 +34,7 @@ namespace HomeModule.Azure
                     pipeMessage.Properties.Add(prop.Key, prop.Value);
                 }
                 await moduleClient.SendEventAsync("output1", pipeMessage);
-                Console.WriteLine($"Azure IoT Hub message: {counterValue}. {SourceInfo}: {Program.DateTimeTZ().DateTime}");
+                Console.WriteLine($"Azure IoT Hub message: {counterValue}. {SourceInfo}: {METHOD.DateTimeTZ().DateTime}");
             }
             return MessageResponse.Completed;
         }

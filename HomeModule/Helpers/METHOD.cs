@@ -1,17 +1,32 @@
-﻿using HomeModule.Parameters;
-using System;
+﻿using System;
 using System.IO;
 using System.Threading.Tasks;
 
-namespace HomeModule.Models
+namespace HomeModule.Helpers
 {
-    class FileOperations
+    class METHOD
     {
+        public static DateTimeOffset DateTimeTZ()
+        {
+            TimeZoneInfo eet = TimeZoneInfo.FindSystemTimeZoneById("EET");
+            TimeSpan timeSpan = eet.GetUtcOffset(System.DateTime.UtcNow);
+            DateTimeOffset LocalTimeTZ = new DateTimeOffset(System.DateTime.UtcNow).ToOffset(timeSpan);
+            return LocalTimeTZ;
+        }
+        public static bool TimeBetween(DateTimeOffset datetime, TimeSpan start, TimeSpan end)
+        {
+            TimeSpan now = datetime.TimeOfDay;
+            // see if start comes before end
+            if (start < end)
+                return start <= now && now <= end;
+            // start is after end, so do the inverse comparison
+            return !(end < now && now < start);
+        }
         public string GetFilePath(string filename)
         {
             //the environment variable has been set through deployment.template.json file
             //basically it's a variable to use binding from host to container
-            string mappedFolder = Environment.GetEnvironmentVariable(HomeParameters.CONTAINER_MAPPED_FOLDER);
+            string mappedFolder = Environment.GetEnvironmentVariable(CONSTANT.CONTAINER_MAPPED_FOLDER);
             if (!Directory.Exists(mappedFolder))
             {
                 Directory.CreateDirectory(mappedFolder);

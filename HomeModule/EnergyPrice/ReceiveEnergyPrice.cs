@@ -1,4 +1,4 @@
-﻿using HomeModule.Models;
+﻿using HomeModule.Helpers;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using System;
@@ -12,31 +12,30 @@ namespace HomeModule.EnergyPrice
     class ReceiveEnergyPrice
     {
         private List<EnergyPriceClass> energyPriceToday;
-        private FileOperations fileOperations;
+        private METHOD Methods;
         public async Task<List<EnergyPriceClass>> QueryEnergyPriceAsync()
         {
-            fileOperations = new FileOperations();
-            string fileToday = $"CurrentEnergyPrice{Program.DateTimeTZ():dd-MM-yyyy}";
-            string fileYesterday = $"CurrentEnergyPrice{Program.DateTimeTZ().AddDays(-1):dd-MM-yyyy}";
-            fileToday = fileOperations.GetFilePath(fileToday);
+            Methods = new METHOD();
+            string fileToday = $"CurrentEnergyPrice{METHOD.DateTimeTZ():dd-MM-yyyy}";
+            string fileYesterday = $"CurrentEnergyPrice{METHOD.DateTimeTZ().AddDays(-1):dd-MM-yyyy}";
+            fileToday = Methods.GetFilePath(fileToday);
             //delete yesterday file, we dont need to collect them
-            fileYesterday = fileOperations.GetFilePath(fileYesterday);
+            fileYesterday = Methods.GetFilePath(fileYesterday);
             if (File.Exists(fileYesterday)) File.Delete(fileYesterday);
 
             if (File.Exists(fileToday)) //is there already file with today energy prices
             {
-                var dataFromFile = await fileOperations.OpenExistingFile(fileToday);
+                var dataFromFile = await Methods.OpenExistingFile(fileToday);
                 energyPriceToday = JsonConvert.DeserializeObject<List<EnergyPriceClass>>(dataFromFile.ToString());
-                return energyPriceToday;
             }
             if (!File.Exists(fileToday)) //file with today energy price is missing
             {
                 try
                 {
-                    string MarketPriceToday = Program.DateTimeTZ().ToString("dd.MM.yyyy");
+                    string MarketPriceToday = METHOD.DateTimeTZ().ToString("dd.MM.yyyy");
                     energyPriceToday = await GetMarketPrice(MarketPriceToday);
                     var jsonString = JsonConvert.SerializeObject(energyPriceToday);
-                    await fileOperations.SaveStringToLocalFile(fileToday, jsonString);
+                    await Methods.SaveStringToLocalFile(fileToday, jsonString);
                 }
                 catch (Exception e)
                 {

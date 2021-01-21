@@ -1,6 +1,6 @@
-﻿namespace HomeModule.Parameters
+﻿namespace HomeModule.Helpers
 {
-    class HomeParameters
+    class CONSTANT
     {
         public const int TIMER_SECONDS_WHEN_ZONE_EMPTY = 120;
         public const int TIMER_SECONDS_CLEAR_DOOR_QUEUE = 120;
@@ -30,5 +30,9 @@
 
         public const double DEFAULT_ROOM_TEMP = 21.5;
         public const double DEFAULT_SAUNA_TEMP = 95;
+
+        public const int NORMAL_HEATING = 1; //heating rooms an warm water
+        public const int REDUCED_HEATING = 2; //creating only warm water
+        public const int EVU_STOP = 3; //heating off at all
     }
 }

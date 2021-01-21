@@ -1,6 +1,7 @@
 ﻿using HomeModule.Netatmo;
 using System.Threading.Tasks;
 using System;
+using HomeModule.Helpers;
 
 namespace HomeModule.Azure
 {
@@ -52,8 +53,8 @@ namespace HomeModule.Azure
                 NetatmoDataClass.TemperatureOut,
                 NetatmoDataClass.Noise,
                 NetatmoDataClass.BatteryPercent,
-                UtcOffset = Program.DateTimeTZ().Offset.Hours,
-                DateAndTime = Program.DateTimeTZ().DateTime,
+                UtcOffset = METHOD.DateTimeTZ().Offset.Hours,
+                DateAndTime = METHOD.DateTimeTZ().DateTime,
                 TelemetryDataClass.SourceInfo
             };
 

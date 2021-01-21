@@ -102,13 +102,5 @@ namespace HomeModule
             _sendData = new SendTelemetryData();
             _sendData.SendTelemetryEventsAsync();
         }
-        public static DateTimeOffset DateTimeTZ()
-        {
-            TimeZoneInfo eet = TimeZoneInfo.FindSystemTimeZoneById("EET");
-            TimeSpan timeSpan = eet.GetUtcOffset(System.DateTime.UtcNow);
-            DateTimeOffset LocalTimeTZ = new DateTimeOffset(System.DateTime.UtcNow).ToOffset(timeSpan);
-            return LocalTimeTZ;
-        }
-
     }
 }

@@ -6,7 +6,7 @@ using System.Linq;
 using HomeModule.Azure;
 using System.Threading.Tasks;
 using HomeModule.Schedulers;
-using HomeModule.Parameters;
+using HomeModule.Helpers;
 using System.Security.Cryptography.X509Certificates;
 
 namespace HomeModule.Raspberry
@@ -74,7 +74,7 @@ namespace HomeModule.Raspberry
                     bool IsZoneOpen = false;
                     if (EventId == 1) IsZoneOpen = true;
                     //update existing list with the IR statuses and activating/closing time
-                    Zones.Where(x => x.ZoneId == CategoryId).Select(x => { x.IsZoneOpen = IsZoneOpen; x.IsHomeSecured = TelemetryDataClass.isHomeSecured; x.ZoneEventTime = Program.DateTimeTZ(); return x; }).ToList();
+                    Zones.Where(x => x.ZoneId == CategoryId).Select(x => { x.IsZoneOpen = IsZoneOpen; x.IsHomeSecured = TelemetryDataClass.isHomeSecured; x.ZoneEventTime = METHOD.DateTimeTZ(); return x; }).ToList();
                     LastActiveZoneID = CategoryId; //last active zone ID used to check if anybody is home
                     Message = Zones.Where(x => x.ZoneId == CategoryId).Select(x => $"{x.ZoneName}").DefaultIfEmpty($"Zone_{CategoryId}").First();
                 }
@@ -90,7 +90,7 @@ namespace HomeModule.Raspberry
 
                 if (!(isStatus && (CategoryId == 0 || CategoryId == 1)) && !(EventId == 0 || EventId == 1)) //not show System Ready/Not ready messages and zone open/close messages.
                 {
-                    Console.WriteLine($"{Program.DateTimeTZ():HH:mm:ss,ff} {Event}, {Message}");
+                    Console.WriteLine($"{METHOD.DateTimeTZ():HH:mm:ss,ff} {Event}, {Message}");
                 }
             }
         }
@@ -122,17 +122,18 @@ namespace HomeModule.Raspberry
             {
                 try
                 {
+                    DateTimeOffset CurrentDateTime = METHOD.DateTimeTZ();
                     //check the last zone event time to report is there anybody at home
                     Zone LastActiveZone = Zones.First(x => x.ZoneId == LastActiveZoneID);
-                    var timerInMinutes = TelemetryDataClass.isHomeSecured ? HomeParameters.TIMER_MINUTES_WHEN_SECURED_HOME_EMPTY : HomeParameters.TIMER_MINUTES_WHEN_HOME_EMPTY;
-                    var DurationUntilHouseIsEmpty = !LastActiveZone.IsZoneOpen ? (Program.DateTimeTZ() - LastActiveZone.ZoneEventTime).TotalMinutes : 0;
+                    var timerInMinutes = TelemetryDataClass.isHomeSecured ? CONSTANT.TIMER_MINUTES_WHEN_SECURED_HOME_EMPTY : CONSTANT.TIMER_MINUTES_WHEN_HOME_EMPTY;
+                    var DurationUntilHouseIsEmpty = !LastActiveZone.IsZoneOpen ? (CurrentDateTime - LastActiveZone.ZoneEventTime).TotalMinutes : 0;
                     SomeoneAtHome.IsSomeoneAtHome = DurationUntilHouseIsEmpty < timerInMinutes;
 
                     //check each zone in 2 minutes window to report the zone active time
                     foreach (var zone in Zones)
                     {
-                        var durationUntilZoneIsEmpty = !zone.IsZoneOpen ? (Program.DateTimeTZ() - zone.ZoneEventTime).TotalSeconds : 0;
-                        zone.IsZoneEmpty = durationUntilZoneIsEmpty > HomeParameters.TIMER_SECONDS_WHEN_ZONE_EMPTY;
+                        var durationUntilZoneIsEmpty = !zone.IsZoneOpen ? (CurrentDateTime - zone.ZoneEventTime).TotalSeconds : 0;
+                        zone.IsZoneEmpty = durationUntilZoneIsEmpty > CONSTANT.TIMER_SECONDS_WHEN_ZONE_EMPTY;
                         if (zone.IsZoneEmpty && zone.ZoneEmptyDetectTime != DateTime.MinValue)
                         {
                             //add alerting sensors into list
@@ -142,11 +143,11 @@ namespace HomeModule.Raspberry
                         }
                         if (!zone.IsZoneEmpty && zone.ZoneEmptyDetectTime == DateTime.MinValue)
                         {
-                            zone.ZoneEmptyDetectTime = Program.DateTimeTZ();
+                            zone.ZoneEmptyDetectTime = CurrentDateTime;
                         }
                     }
                     //maximum is 1000 items in alertingSensor list
-                    if (alertingSensors.Count >= HomeParameters.MAX_ITEMS_IN_ALERTING_LIST) alertingSensors.RemoveAt(0);
+                    if (alertingSensors.Count >= CONSTANT.MAX_ITEMS_IN_ALERTING_LIST) alertingSensors.RemoveAt(0);
 
                     Zone doorZone = Zones.First(ir => ir.ZoneId == 1);
                     Zone IrZone = Zones.First(ir => ir.ZoneId == 2);
@@ -157,13 +158,13 @@ namespace HomeModule.Raspberry
 
                     //if door or IR is closed more that 2 minutes then clear the queue
                     var LastActive = doorZone.ZoneEventTime > IrZone.ZoneEventTime ? doorZone.ZoneEventTime : IrZone.ZoneEventTime;
-                    var durationUntilReset = _queue.Count > 1 ? (Program.DateTimeTZ() - LastActive).TotalSeconds : 0;
-                    bool isClearTime = durationUntilReset > HomeParameters.TIMER_SECONDS_CLEAR_DOOR_QUEUE;
+                    var durationUntilReset = _queue.Count > 1 ? (CurrentDateTime - LastActive).TotalSeconds : 0;
+                    bool isClearTime = durationUntilReset > CONSTANT.TIMER_SECONDS_CLEAR_DOOR_QUEUE;
                     if (isClearTime && !isDoorOpen)
                     {
                         _queue.Clear();
                         _queue.Add(new State { DoorValue = false, IRValue = false });
-                        Console.WriteLine($"{Program.DateTimeTZ():T} queue cleared");
+                        Console.WriteLine($"{CurrentDateTime:T} queue cleared");
                     }
 
                     //save the door and IR statuses for the queue
@@ -209,10 +210,10 @@ namespace HomeModule.Raspberry
                             DeviceID = "SecurityController",
                             status = TelemetryDataClass.SourceInfo,
                             TelemetryDataClass.isHomeSecured,
-                            UtcOffset = Program.DateTimeTZ().Offset.Hours,
-                            date = Program.DateTimeTZ().ToString("dd.MM"),
-                            time = Program.DateTimeTZ().ToString("HH:mm"),
-                            DateAndTime = Program.DateTimeTZ().DateTime
+                            UtcOffset = CurrentDateTime.Offset.Hours,
+                            date = CurrentDateTime.ToString("dd.MM"),
+                            time = CurrentDateTime.ToString("HH:mm"),
+                            DateAndTime = CurrentDateTime.DateTime
                         };
                         await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo);
                         status = "No pattern";

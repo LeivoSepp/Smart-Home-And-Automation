@@ -13,14 +13,14 @@ using System.Net.Http;
 using Newtonsoft.Json;
 using HomeModule.Models;
 using System.IO;
-using HomeModule.Parameters;
+using HomeModule.Helpers;
 
 namespace HomeModule.Azure
 {
     class ReceiveData
     {
         private SendTelemetryData _sendDataAzure;
-        private readonly FileOperations fileOperations = new FileOperations();
+        private readonly METHOD Methods = new METHOD();
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
         private async Task<MethodResponse> HomeEdgeDeviceManagement(MethodRequest methodRequest, object userContext)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
@@ -83,8 +83,8 @@ namespace HomeModule.Azure
                         Temperatures = JsonConvert.DeserializeObject<List<SensorReading>>(HomeCommands["Temperatures"].ToString())
                     };
                     var jsonString = JsonConvert.SerializeObject(SetRoomTemperatures);
-                    var filename = fileOperations.GetFilePath(HomeParameters.FILENAME_ROOM_TEMPERATURES);
-                    await fileOperations.SaveStringToLocalFile(filename, jsonString);
+                    var filename = Methods.GetFilePath(CONSTANT.FILENAME_ROOM_TEMPERATURES);
+                    await Methods.SaveStringToLocalFile(filename, jsonString);
                     HomeTemperature.SetTemperatures(SetRoomTemperatures);
                 }
             }
@@ -188,7 +188,7 @@ namespace HomeModule.Azure
                 Console.WriteLine(reportedProperties);
             }
         }
-        static DateTime dateTimeVentilation = Program.DateTimeTZ().DateTime;
+        static DateTime dateTimeVentilation = METHOD.DateTimeTZ().DateTime;
         public async void ProcessCommand(string command)
         {
             if (command == CommandNames.NO_COMMAND)
@@ -217,17 +217,17 @@ namespace HomeModule.Azure
             {
                 Pins.PinWrite(Pins.saunaHeatOutPin, PinValue.Low);
                 TelemetryDataClass.isSaunaOn = true;
-                var filename = fileOperations.GetFilePath(HomeParameters.FILENAME_SAUNA_TIME);
+                var filename = Methods.GetFilePath(CONSTANT.FILENAME_SAUNA_TIME);
                 if (TelemetryDataClass.SaunaStartedTime == DateTime.MinValue) //if sauna hasnt been started before
                 {
-                    DateTime SaunaStartedTime = Program.DateTimeTZ().DateTime;
-                    await fileOperations.SaveStringToLocalFile(filename, SaunaStartedTime.ToString("dd.MM.yyyy HH:mm"));
+                    DateTime SaunaStartedTime = METHOD.DateTimeTZ().DateTime;
+                    await Methods.SaveStringToLocalFile(filename, SaunaStartedTime.ToString("dd.MM.yyyy HH:mm"));
                     TelemetryDataClass.SaunaStartedTime = SaunaStartedTime;
                 }
             }
             else if (command == CommandNames.TURN_OFF_SAUNA)
             {
-                var filename = fileOperations.GetFilePath(HomeParameters.FILENAME_SAUNA_TIME);
+                var filename = Methods.GetFilePath(CONSTANT.FILENAME_SAUNA_TIME);
                 File.Delete(filename);
                 Pins.PinWrite(Pins.saunaHeatOutPin, PinValue.High);
                 TelemetryDataClass.isSaunaOn = false;
@@ -256,13 +256,13 @@ namespace HomeModule.Azure
                 Pins.PinWrite(Pins.ventOutPin, PinValue.High);
                 ManualVentLogic.VENT_ON = true; //to enable 30min ventilation, same behavior as Co2 over 900
                 TelemetryDataClass.isVentilationOn = true;
-                dateTimeVentilation = Program.DateTimeTZ().DateTime;
+                dateTimeVentilation = METHOD.DateTimeTZ().DateTime;
             }
             else if (command == CommandNames.CLOSE_VENT)
             {
                 Pins.PinWrite(Pins.ventOutPin, PinValue.Low);
                 ManualVentLogic.VENT_ON = false;
-                TelemetryDataClass.VentilationInMinutes = (int)(Program.DateTimeTZ().DateTime - dateTimeVentilation).TotalMinutes;
+                TelemetryDataClass.VentilationInMinutes = (int)(METHOD.DateTimeTZ().DateTime - dateTimeVentilation).TotalMinutes;
                 TelemetryDataClass.SourceInfo = "Ventilation turned off";
                 var _sendData = new Pins();
                 await _sendData.SendData();

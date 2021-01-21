@@ -121,7 +121,8 @@ namespace HomeModule.Schedulers
             string lastZoneName = null;
             if (Paradox1738.alertingSensors.Any())
             {
-                AlertingZone LastZone = Paradox1738.alertingSensors.Last();
+                Paradox1738.alertingSensors.Reverse();
+                AlertingZone LastZone = Paradox1738.alertingSensors.First();
                 lastZoneName = LastZone.ZoneName;
                 isLastZoneSecured = LastZone.IsHomeSecured;
             }

@@ -50,10 +50,8 @@ namespace HomeModule.Helpers
             byte[] buffer = System.Text.Encoding.UTF8.GetBytes(content.ToCharArray());
             if (File.Exists(filename)) File.Delete(filename);
 
-            using (FileStream SourceStream = File.Open(filename, FileMode.OpenOrCreate))
-            {
-                await SourceStream.WriteAsync(buffer, 0, buffer.Length);
-            }
+            using FileStream SourceStream = File.Open(filename, FileMode.OpenOrCreate);
+            await SourceStream.WriteAsync(buffer, 0, buffer.Length);
         }
     }
 }

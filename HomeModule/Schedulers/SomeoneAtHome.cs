@@ -151,7 +151,7 @@ namespace HomeModule.Schedulers
                     time = CurrentDateTime.ToString("HH:mm"),
                     status = sensorsOpen
                 };
-                await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo);
+                await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo, "output");
                 Paradox1738.alertingSensors.ForEach(x => Console.WriteLine($"{x.DateStart} - {x.TimeEnd} {(x.IsHomeSecured ? "SECURED" : null)} {x.ZoneName}"));
                 //Paradox1738.alertingSensors.RemoveAll(x => x.IsHomeSecured); //remove all reported zones
             }

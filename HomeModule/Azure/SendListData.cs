@@ -11,7 +11,7 @@ namespace HomeModule.Azure
     class SendDataAzure
     {
         static int counter;
-        public async Task<MessageResponse> PipeMessage(object inputdata, ModuleClient userContext, string SourceInfo)
+        public async Task<MessageResponse> PipeMessage(object inputdata, ModuleClient userContext, string SourceInfo, string output)
         {
             int counterValue = Interlocked.Increment(ref counter);
 
@@ -33,7 +33,7 @@ namespace HomeModule.Azure
                 {
                     pipeMessage.Properties.Add(prop.Key, prop.Value);
                 }
-                await moduleClient.SendEventAsync("output1", pipeMessage);
+                await moduleClient.SendEventAsync(output, pipeMessage);
                 Console.WriteLine($"Azure IoT Hub message: {counterValue}. {SourceInfo}: {METHOD.DateTimeTZ().DateTime}");
             }
             return MessageResponse.Completed;

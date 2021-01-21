@@ -235,9 +235,9 @@ namespace HomeModule.Raspberry
                 TelemetryDataClass.WaterHeatingInMinutes,
                 TelemetryDataClass.VentilationInMinutes,
                 UtcOffset = METHOD.DateTimeTZ().Offset.Hours,
-                DateAndTime = METHOD.DateTimeTZ().DateTime,
+                DateAndTime = METHOD.DateTimeTZ(),
             };
-            await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo);
+            await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo, "outputStream");
             return;
         }
         static DateTime dateTimeRoomHeat = METHOD.DateTimeTZ().DateTime;

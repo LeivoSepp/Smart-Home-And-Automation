@@ -93,7 +93,7 @@ namespace HomeModule.Schedulers
                         TelemetryDataClass.SourceInfo,
                         ListOfAllSensors.Temperatures
                     };
-                    await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo);
+                    await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo, "output");
                     SumOfTemperatureDeltas = 0; //resetting to start summing up again
                 }
                 await Task.Delay(TimeSpan.FromMinutes(1)); //check temperatures every minute

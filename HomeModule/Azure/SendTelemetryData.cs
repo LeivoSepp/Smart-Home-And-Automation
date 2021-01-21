@@ -58,7 +58,7 @@ namespace HomeModule.Azure
                 TelemetryDataClass.SourceInfo
             };
 
-            await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo);
+            await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo, "outputStream");
         }
     }
 }

@@ -107,9 +107,9 @@
       "properties.desired": {
         "schemaVersion": "1.0",
         "routes": {
-          "HomeModuleToStreamAnlyticsEdge": "FROM /messages/modules/HomeModule/outputs/* INTO BrokeredEndpoint(\"/modules/StreamAnalyticsEdge/inputs/Input1h\")",
+          "HomeModuleToStreamAnlyticsEdge": "FROM /messages/modules/HomeModule/outputs/outputStream INTO BrokeredEndpoint(\"/modules/StreamAnalyticsEdge/inputs/Input1h\")",
           "StreamAnalyticsEdgeToIoTHub": "FROM /messages/modules/StreamAnalyticsEdge/outputs/* INTO $upstream",
-          "HomeModuleToIoTHub": "FROM /messages/modules/HomeModule/outputs/* INTO $upstream"
+          "HomeModuleToIoTHub": "FROM /messages/modules/HomeModule/outputs/output INTO $upstream"
         },
         "storeAndForwardConfiguration": {
           "timeToLiveSecs": 7200

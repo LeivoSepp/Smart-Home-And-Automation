@@ -136,18 +136,15 @@ namespace HomeModule.Raspberry
                     if(isTimeToSendData)
                     {
                         alertingSensors.Reverse();
-                        TelemetryDataClass.SourceInfo = $"Zones activity data {alertingSensors.Count}";
+                        TelemetryDataClass.SourceInfo = $"Zones activity {alertingSensors.Count}";
                         var monitorData = new
                         {
                             DeviceID = "HomeController",
                             status = TelemetryDataClass.SourceInfo,
-                            UtcOffset = METHOD.DateTimeTZ().Offset.Hours,
-                            date = CurrentDateTime.ToString("dd.MM"),
-                            time = CurrentDateTime.ToString("HH:mm"),
                             DateAndTime = CurrentDateTime,
                             alertingSensors
                         };
-                        await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo);
+                        await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo, "output");
 
                         alertingSensors.Clear();
                         lastSentTime = CurrentDateTime;
@@ -239,7 +236,7 @@ namespace HomeModule.Raspberry
                             time = CurrentDateTime.ToString("HH:mm"),
                             DateAndTime = CurrentDateTime
                         };
-                        await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo);
+                        await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo, "output");
                         status = "No pattern";
                     }
                 }

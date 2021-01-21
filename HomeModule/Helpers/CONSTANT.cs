@@ -6,6 +6,7 @@
         public const int TIMER_SECONDS_CLEAR_DOOR_QUEUE = 120;
         public const int TIMER_MINUTES_WHEN_HOME_EMPTY = 60;
         public const int TIMER_MINUTES_WHEN_SECURED_HOME_EMPTY = 2;
+        public const int TIMER_MINUTES_TO_SEND_ZONE_COSMOS = 10;
 
         public const int MAX_ITEMS_IN_ALERTING_LIST = 1000;
 

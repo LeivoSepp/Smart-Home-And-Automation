@@ -117,6 +117,7 @@ namespace HomeModule.Raspberry
             {
                 new State { DoorValue = false, IRValue = false }
             };
+            DateTimeOffset lastSentTime = METHOD.DateTimeTZ();
 
             while (true)
             {
@@ -128,6 +129,28 @@ namespace HomeModule.Raspberry
                     var timerInMinutes = TelemetryDataClass.isHomeSecured ? CONSTANT.TIMER_MINUTES_WHEN_SECURED_HOME_EMPTY : CONSTANT.TIMER_MINUTES_WHEN_HOME_EMPTY;
                     var DurationUntilHouseIsEmpty = !LastActiveZone.IsZoneOpen ? (CurrentDateTime - LastActiveZone.ZoneEventTime).TotalMinutes : 0;
                     SomeoneAtHome.IsSomeoneAtHome = DurationUntilHouseIsEmpty < timerInMinutes;
+
+
+                    var DurationUntilToSendData = alertingSensors.Any() ? (CurrentDateTime - lastSentTime).TotalMinutes : 0;
+                    var isTimeToSendData = DurationUntilToSendData > CONSTANT.TIMER_MINUTES_TO_SEND_ZONE_COSMOS;
+                    if(isTimeToSendData)
+                    {
+                        TelemetryDataClass.SourceInfo = $"Zones activity data {alertingSensors.Count}";
+                        var monitorData = new
+                        {
+                            DeviceID = "HomeController",
+                            status = TelemetryDataClass.SourceInfo,
+                            UtcOffset = CurrentDateTime.Offset.Hours,
+                            date = CurrentDateTime.ToString("dd.MM"),
+                            time = CurrentDateTime.ToString("HH:mm"),
+                            DateAndTime = CurrentDateTime.DateTime,
+                            alertingSensors
+                        };
+                        await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo);
+
+                        alertingSensors.Clear();
+                        lastSentTime = CurrentDateTime;
+                    }
 
                     //check each zone in 2 minutes window to report the zone active time
                     foreach (var zone in Zones)

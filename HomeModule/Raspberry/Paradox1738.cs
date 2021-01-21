@@ -135,6 +135,7 @@ namespace HomeModule.Raspberry
                     var isTimeToSendData = DurationUntilToSendData > CONSTANT.TIMER_MINUTES_TO_SEND_ZONE_COSMOS;
                     if(isTimeToSendData)
                     {
+                        alertingSensors.Reverse();
                         TelemetryDataClass.SourceInfo = $"Zones activity data {alertingSensors.Count}";
                         var monitorData = new
                         {

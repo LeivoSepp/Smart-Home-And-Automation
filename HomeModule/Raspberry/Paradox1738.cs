@@ -519,5 +519,4 @@ namespace HomeModule.Raspberry
         public string DateStart { get; set; }
         public string TimeEnd { get; set; }
     }
-
 }

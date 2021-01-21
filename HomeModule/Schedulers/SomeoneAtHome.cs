@@ -152,7 +152,7 @@ namespace HomeModule.Schedulers
                 };
                 await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo);
                 Paradox1738.alertingSensors.ForEach(x => Console.WriteLine($"{x.DateStart} - {x.TimeEnd} {(x.IsHomeSecured ? "SECURED" : null)} {x.ZoneName}"));
-                Paradox1738.alertingSensors.RemoveAll(x => x.IsHomeSecured); //remove all reported zones
+                //Paradox1738.alertingSensors.RemoveAll(x => x.IsHomeSecured); //remove all reported zones
             }
         }
         public static void SetOutsideLightsOn(bool setLightsOn = true, bool isForcedToTurnOn = false, bool isForcedToTurnOff = false)

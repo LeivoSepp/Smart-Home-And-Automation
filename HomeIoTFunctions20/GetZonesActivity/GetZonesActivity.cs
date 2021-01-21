@@ -20,7 +20,7 @@ namespace HomeIoTFunctions20.GetZonesActivity
                 databaseName: "FreeCosmosDB",
                 collectionName: "TelemetryData",
                 ConnectionStringSetting = "CosmosDBConnection",
-                SqlQuery = "SELECT c.ZoneName, c.DateStart, c.TimeEnd, c.IsHomeSecured FROM Zones f JOIN c IN f.alertingSensors WHERE f.DateAndTime > {Date} ORDER BY f._ts DESC"
+                SqlQuery = "SELECT c.ZoneName, c.DateStart, c.TimeEnd, c.IsHomeSecured FROM Zones f JOIN c IN f.alertingSensors WHERE f.DateAndTime > {Date} AND f.DateAndTime < DateTimeAdd('d', 1, {Date}) ORDER BY f._ts DESC"
                 )]
                 JArray input,
             ILogger log)

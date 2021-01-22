@@ -138,8 +138,8 @@ namespace HomeModule.Raspberry
                         if (zone.IsZoneEmpty && zone.ZoneEmptyDetectTime != DateTime.MinValue)
                         {
                             //add alerting sensors into list
-                            alertingSensors.Add(new AlertingZone(zone.ZoneName, zone.ZoneEmptyDetectTime.ToString("dd.MM HH:mm"), zone.ZoneEventTime.ToString("HH:mm"), zone.IsHomeSecured));
-                            Console.WriteLine($"{zone.ZoneEmptyDetectTime:dd.MM} {zone.ZoneEmptyDetectTime:t} - {zone.ZoneEventTime:t} {(zone.IsHomeSecured ? "SECURED" : null)} {zone.ZoneName} listCount:{alertingSensors.Count}");
+                            alertingSensors.Add(new AlertingZone(zone.ZoneName, zone.ZoneEmptyDetectTime.ToString("dd.MM"), zone.ZoneEmptyDetectTime.ToString("HH:mm"), zone.ZoneEventTime.ToString("HH:mm"), zone.IsHomeSecured));
+                            Console.WriteLine($" {zone.ZoneName} {zone.ZoneEmptyDetectTime:t} - {zone.ZoneEventTime:t} {zone.ZoneEmptyDetectTime:dd.MM} {(zone.IsHomeSecured ? "SECURED" : null)}");
                             zone.ZoneEmptyDetectTime = new DateTime();
                         }
                         if (!zone.IsZoneEmpty && zone.ZoneEmptyDetectTime == DateTime.MinValue)
@@ -210,14 +210,14 @@ namespace HomeModule.Raspberry
 
                         if (_queue.Count > 2) //only check pattern if there are more than 3 events in queue 
                         {
-                            if (ContainsPattern(_queue, Entry)) status = "Entry";
-                            if (ContainsPattern(_queue, Entry2)) status = "Entry2";
-                            if (ContainsPattern(_queue, Exit)) status = "Exit";
-                            if (ContainsPattern(_queue, Exit1)) status = "Exit1";
-                            if (ContainsPattern(_queue, Exit2)) status = "Exit2";
-                            if (ContainsPattern(_queue, Exit3)) status = "Exit3";
-                            if (ContainsPattern(_queue, Exit4)) status = "Exit4";
-                            if (ContainsPattern(_queue, DoorOpenClose)) status = "No En/Ex, open-closed";
+                            if (ContainsPattern(_queue, Entry)) status = "entry";
+                            if (ContainsPattern(_queue, Entry2)) status = "entry 2";
+                            if (ContainsPattern(_queue, Exit)) status = "exit";
+                            if (ContainsPattern(_queue, Exit1)) status = "exit 1";
+                            if (ContainsPattern(_queue, Exit2)) status = "exit 2";
+                            if (ContainsPattern(_queue, Exit3)) status = "exit 3";
+                            if (ContainsPattern(_queue, Exit4)) status = "exit 4";
+                            if (ContainsPattern(_queue, DoorOpenClose)) status = "door open-closed";
                         }
                     }
                     if (status != "No pattern")
@@ -225,14 +225,15 @@ namespace HomeModule.Raspberry
                         _queue.Clear(); //clear queue and pattern
                         _queue.Add(new State { DoorValue = false, IRValue = false }); //add first all-closed pattern
 
-                        TelemetryDataClass.SourceInfo = $"Door: {status}";
+                        TelemetryDataClass.SourceInfo = $"Home {status}";
                         var monitorData = new
                         {
                             DeviceID = "SecurityController",
                             door = "Home",
                             status = TelemetryDataClass.SourceInfo,
                             TelemetryDataClass.isHomeSecured,
-                            date = CurrentDateTime.ToString("dd.MM HH:mm"),
+                            date = CurrentDateTime.ToString("dd.MM"),
+                            time = CurrentDateTime.ToString("HH:mm"),
                             DateAndTime = CurrentDateTime
                         };
                         await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo, "output");
@@ -504,16 +505,18 @@ namespace HomeModule.Raspberry
     }
     class AlertingZone
     {
-        public AlertingZone(string zoneName, string dateStart, string timeEnd, bool isHomeSecured = false)
+        public AlertingZone(string zoneName, string dateStart, string timeStart, string timeEnd, bool isHomeSecured = false)
         {
             IsHomeSecured = isHomeSecured;
             DateStart = dateStart;
+            TimeStart = timeStart;
             TimeEnd = timeEnd;
             ZoneName = zoneName;
         }
         public string ZoneName { get; set; }
         public bool IsHomeSecured { get; set; }
         public string DateStart { get; set; }
+        public string TimeStart { get; set; }
         public string TimeEnd { get; set; }
     }
 }

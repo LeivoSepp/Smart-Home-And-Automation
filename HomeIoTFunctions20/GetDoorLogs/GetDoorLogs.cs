@@ -21,7 +21,7 @@ namespace HomeIoTFunctions20.GetDoorLogs
                 databaseName: "FreeCosmosDB",
                 collectionName: "TelemetryData",
                 ConnectionStringSetting = "CosmosDBConnection",
-                SqlQuery = "SELECT c.date, c.status, c.door  FROM c WHERE c.DeviceID = 'SecurityController' AND c.door <> '' AND c.DateAndTime > {Date} AND c.DateAndTime < DateTimeAdd('d', 1, {Date}) ORDER BY c._ts DESC"
+                SqlQuery = "SELECT c.date, c.time, c.status, c.door  FROM c WHERE c.DeviceID = 'SecurityController' AND c.door <> '' AND c.DateAndTime > {Date} AND c.DateAndTime < DateTimeAdd('d', 1, {Date}) ORDER BY c._ts DESC"
                 )]
                 JArray output,
             ILogger log)

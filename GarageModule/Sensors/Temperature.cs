@@ -89,7 +89,7 @@ namespace GarageModule.Sensors
                         if (isGarageDoorOpen)
                         {
                             //add alerting sensors into list
-                            alertingSensors.Add(new AlertingZone("Garage", dateTimeDoorOpen.ToString("dd.MM HH:mm"), DateTimeTZ().DateTime.ToString("HH:mm")));
+                            alertingSensors.Add(new AlertingZone("Garage", dateTimeDoorOpen.ToString("dd.MM"), dateTimeDoorOpen.ToString("HH:mm"), DateTimeTZ().DateTime.ToString("HH:mm")));
                             isGarageDoorOpen = false;
                             status = "Garage door closed";
                             //send data once when the door was closed
@@ -116,7 +116,8 @@ namespace GarageModule.Sensors
                 door = "Garage",
                 status,
                 isHomeSecured,
-                date = DateTimeTZ().ToString("dd.MM HH:mm"),
+                date = DateTimeTZ().ToString("dd.MM"),
+                time = DateTimeTZ().ToString("HH:mm"),
                 DateAndTime = DateTimeTZ().DateTime,
                 alertingSensors
             };
@@ -137,16 +138,18 @@ namespace GarageModule.Sensors
     }
     class AlertingZone
     {
-        public AlertingZone(string zoneName, string dateStart, string timeEnd, bool isHomeSecured = false)
+        public AlertingZone(string zoneName, string dateStart, string timeStart, string timeEnd, bool isHomeSecured = false)
         {
             IsHomeSecured = isHomeSecured;
             DateStart = dateStart;
+            TimeStart = timeStart;
             TimeEnd = timeEnd;
             ZoneName = zoneName;
         }
         public string ZoneName { get; set; }
         public bool IsHomeSecured { get; set; }
         public string DateStart { get; set; }
+        public string TimeStart { get; set; }
         public string TimeEnd { get; set; }
     }
 }

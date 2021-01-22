@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Microsoft.Azure.Documents;
 using System.Collections.Generic;
+using Newtonsoft.Json.Linq;
 
 namespace HomeIoTFunctions20.GetTelemetry1h
 {
@@ -25,12 +26,9 @@ namespace HomeIoTFunctions20.GetTelemetry1h
                             "ROUND(c.BatteryPercent1h) as BatteryPercent1h " +
                             "FROM c WHERE c.Co21h <> null ORDER BY c._ts DESC"
                 )]
-            IEnumerable<Document> input,
+            JArray output,
             ILogger log)
         {
-            log.LogInformation($"Result: {input} ");
-            string msg = "{\"data\":" + JsonConvert.SerializeObject(input) + "}";
-            var output = JsonConvert.DeserializeObject(msg);
             return new OkObjectResult($"{output}");
         }
     }

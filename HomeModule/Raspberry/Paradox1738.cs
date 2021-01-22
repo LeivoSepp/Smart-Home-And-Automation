@@ -130,26 +130,6 @@ namespace HomeModule.Raspberry
                     var DurationUntilHouseIsEmpty = !LastActiveZone.IsZoneOpen ? (CurrentDateTime - LastActiveZone.ZoneEventTime).TotalMinutes : 0;
                     SomeoneAtHome.IsSomeoneAtHome = DurationUntilHouseIsEmpty < timerInMinutes;
 
-
-                    var DurationUntilToSendData = alertingSensors.Any() ? (CurrentDateTime - lastSentTime).TotalMinutes : 0;
-                    var isTimeToSendData = DurationUntilToSendData > CONSTANT.TIMER_MINUTES_TO_SEND_ZONE_COSMOS;
-                    if(isTimeToSendData)
-                    {
-                        alertingSensors.Reverse();
-                        TelemetryDataClass.SourceInfo = $"Zones activity {alertingSensors.Count}";
-                        var monitorData = new
-                        {
-                            DeviceID = "HomeController",
-                            status = TelemetryDataClass.SourceInfo,
-                            DateAndTime = CurrentDateTime,
-                            alertingSensors
-                        };
-                        await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo, "output");
-
-                        alertingSensors.Clear();
-                        lastSentTime = CurrentDateTime;
-                    }
-
                     //check each zone in 2 minutes window to report the zone active time
                     foreach (var zone in Zones)
                     {
@@ -167,6 +147,26 @@ namespace HomeModule.Raspberry
                             zone.ZoneEmptyDetectTime = CurrentDateTime;
                         }
                     }
+
+                    var DurationUntilToSendData = alertingSensors.Any() ? (CurrentDateTime - lastSentTime).TotalMinutes : 0;
+                    var isTimeToSendData = DurationUntilToSendData > CONSTANT.TIMER_MINUTES_TO_SEND_ZONE_COSMOS;
+                    if (isTimeToSendData)
+                    {
+                        alertingSensors.Reverse();
+                        TelemetryDataClass.SourceInfo = $"Zones activity {alertingSensors.Count}";
+                        var monitorData = new
+                        {
+                            DeviceID = "HomeController",
+                            status = TelemetryDataClass.SourceInfo,
+                            DateAndTime = CurrentDateTime,
+                            alertingSensors
+                        };
+                        await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo, "output");
+
+                        alertingSensors.Clear();
+                        lastSentTime = CurrentDateTime;
+                    }
+
                     //maximum is 1000 items in alertingSensor list
                     if (alertingSensors.Count >= CONSTANT.MAX_ITEMS_IN_ALERTING_LIST) alertingSensors.RemoveAt(0);
 
@@ -229,11 +229,10 @@ namespace HomeModule.Raspberry
                         var monitorData = new
                         {
                             DeviceID = "SecurityController",
+                            door = "Home",
                             status = TelemetryDataClass.SourceInfo,
                             TelemetryDataClass.isHomeSecured,
-                            UtcOffset = METHOD.DateTimeTZ().Offset.Hours,
-                            date = CurrentDateTime.ToString("dd.MM"),
-                            time = CurrentDateTime.ToString("HH:mm"),
+                            date = CurrentDateTime.ToString("dd.MM HH:mm"),
                             DateAndTime = CurrentDateTime
                         };
                         await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo, "output");

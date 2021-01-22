@@ -54,7 +54,7 @@ namespace HomeModule.Azure
                 NetatmoDataClass.Noise,
                 NetatmoDataClass.BatteryPercent,
                 UtcOffset = METHOD.DateTimeTZ().Offset.Hours,
-                DateAndTime = METHOD.DateTimeTZ().DateTime,
+                DateAndTime = METHOD.DateTimeTZ(),
                 TelemetryDataClass.SourceInfo
             };
 

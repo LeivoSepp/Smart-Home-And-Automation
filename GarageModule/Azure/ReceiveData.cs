@@ -51,7 +51,7 @@ namespace GarageModule.Azure
             reportedProperties["isGarageLightsOn"] = ReceiveDataClass.IsGarageLightsOn;
             reportedProperties["CurrentLux"] = Garage.CurrentLux;
             reportedProperties["Temperature"] = Garage.Temperature;
-            reportedProperties["isSomeoneInGarage"] = Garage.isSomeoneInGarage;
+            reportedProperties["isSomeoneInGarage"] = Garage.isGarageDoorOpen;
 
             var response = Encoding.ASCII.GetBytes(reportedProperties.ToJson());
             return new MethodResponse(response, 200);

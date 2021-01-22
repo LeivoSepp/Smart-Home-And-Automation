@@ -22,12 +22,12 @@ namespace HomeIoTFunctions20.GetZonesActivity
                 ConnectionStringSetting = "CosmosDBConnection",
                 SqlQuery = "SELECT c.ZoneName, c.DateStart, c.TimeEnd, c.IsHomeSecured FROM Zones f JOIN c IN f.alertingSensors WHERE f.DateAndTime > {Date} AND f.DateAndTime < DateTimeAdd('d', 1, {Date}) ORDER BY f._ts DESC"
                 )]
-                JArray input,
+                JArray output,
             ILogger log)
         {
-            //{Date} = "08/23/2019"
+            //{Date} = 2021-04-23
 
-            return new OkObjectResult($"{input}");
+            return new OkObjectResult($"{output}");
         }
     }
 }

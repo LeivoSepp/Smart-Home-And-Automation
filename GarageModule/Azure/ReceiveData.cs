@@ -22,7 +22,9 @@ namespace GarageModule.Azure
     class ReceiveData
     {
         Garage _sensors = new Garage();
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
         private async Task<MethodResponse> ControlGarageEdgeDevice(MethodRequest methodRequest, object userContext)
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
             ReceiveData receiveData = new ReceiveData();
             List<string> command = new List<string>();
@@ -44,14 +46,14 @@ namespace GarageModule.Azure
             foreach (string cmd in command)
             {
                 if (cmd != null)
-                    await receiveData.ProcessCommand(cmd);
+                    receiveData.ProcessCommand(cmd);
             }
 
             var reportedProperties = new TwinCollection();
             reportedProperties["isGarageLightsOn"] = ReceiveDataClass.IsGarageLightsOn;
-            reportedProperties["CurrentLux"] = Garage.CurrentLux;
+            reportedProperties["Light"] = Garage.CurrentLux;
             reportedProperties["Temperature"] = Garage.Temperature;
-            reportedProperties["isSomeoneInGarage"] = Garage.isGarageDoorOpen;
+            reportedProperties["isGarageDoorOpen"] = Garage.isGarageDoorOpen;
 
             var response = Encoding.ASCII.GetBytes(reportedProperties.ToJson());
             return new MethodResponse(response, 200);
@@ -62,17 +64,15 @@ namespace GarageModule.Azure
             // Register callback to be called when a message is received by the module
             await ioTHubModuleClient.SetMethodHandlerAsync("ManagementCommands", ControlGarageEdgeDevice, null);
         }
-        public async Task ProcessCommand(string command)
+        public void ProcessCommand(string command)
         {
             if (command == CommandNames.TURN_ON_GARAGE_LIGHTS)
             {
                 ReceiveDataClass.IsGarageLightsOn = true;
-                await _sensors.SendDataAsync();
             }
             else if (command == CommandNames.TURN_OFF_GARAGE_LIGHTS)
             {
                 ReceiveDataClass.IsGarageLightsOn = false;
-                await _sensors.SendDataAsync();
             }
         }
     }

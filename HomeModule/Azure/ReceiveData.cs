@@ -122,6 +122,7 @@ namespace HomeModule.Azure
             reportedProperties["isSomeoneAtHome"] = TelemetryDataClass.isSomeoneAtHome;
             reportedProperties["isOutsideLightsOn"] = TelemetryDataClass.isOutsideLightsOn;
             reportedProperties["isGarageLightsOn"] = TelemetryDataClass.isGarageLightsOn;
+            reportedProperties["isHomeDoorOpen"] = TelemetryDataClass.isHomeDoorOpen;
             reportedProperties["Temperatures"] = HomeTemperature.ListOfAllSensors.Temperatures;
 
             var response = Encoding.ASCII.GetBytes(reportedProperties.ToJson());

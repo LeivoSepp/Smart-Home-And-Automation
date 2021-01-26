@@ -22,6 +22,7 @@ namespace HomeModule.Azure
         public static bool isSomeoneAtHome { get; set; }
         public static bool isOutsideLightsOn { get; set; }
         public static bool isGarageLightsOn { get; set; }
+        public static bool isHomeDoorOpen { get; set; }
 
     }
     class SendTelemetryData

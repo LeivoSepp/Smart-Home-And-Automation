@@ -176,6 +176,7 @@ namespace HomeModule.Raspberry
                     bool isDoorOpen = doorZone.IsZoneOpen;
                     bool isIrOpen = IrZone.IsZoneOpen;
                     bool isSmokeOpen = smokeZone.IsZoneOpen;
+                    TelemetryDataClass.isHomeDoorOpen = isDoorOpen;
 
                     //if door or IR is closed more that 2 minutes then clear the queue
                     var LastActive = doorZone.ZoneEventTime > IrZone.ZoneEventTime ? doorZone.ZoneEventTime : IrZone.ZoneEventTime;

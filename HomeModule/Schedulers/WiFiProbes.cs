@@ -12,7 +12,8 @@ namespace HomeModule.Schedulers
 {
     class WiFiProbes
     {
-        public static List<WiFiDevice> LocalDevices = new List<WiFiDevice>();
+        public static List<Localdevice> LocalDevices = new List<Localdevice>(); 
+        private static List<WiFiDevice> PersonalDevices = new List<WiFiDevice>();
         public async void QueryWiFiProbes()
         {
             string username = Environment.GetEnvironmentVariable("KismetUser");
@@ -27,8 +28,8 @@ namespace HomeModule.Schedulers
             WiFiDevice.WifiDevices.ForEach(x => deviceMacs.Add(x.MacAddress));
 
             //create a list which has only known mobile-notebook-watches
-            LocalDevices = WiFiDevice.WifiDevices.Where(x => x.DeviceType != WiFiDevice.DEVICE).ToList();
-            LocalDevices.ForEach(x => x.StatusFrom = METHOD.DateTimeTZ().DateTime);
+            PersonalDevices = WiFiDevice.WifiDevices.Where(x => x.DeviceType != WiFiDevice.DEVICE).ToList();
+            PersonalDevices.ForEach(x => x.StatusFrom = METHOD.DateTimeTZ().DateTime);
 
             string jsonFields = System.Text.Json.JsonSerializer.Serialize(KismetField.KismetFields); //serialize kismet fields
             string jsonDevices = System.Text.Json.JsonSerializer.Serialize(deviceMacs); //serialize mac addresses
@@ -67,7 +68,7 @@ namespace HomeModule.Schedulers
                 var WifiLastActive = JsonConvert.DeserializeObject<List<WiFiDevice>>(resultLastActive.Result);
 
                 //building list of the local devce which is last seen
-                foreach (var device in LocalDevices)
+                foreach (var device in PersonalDevices)
                 {
                     foreach (var probe in WifiDevices)
                     {
@@ -93,13 +94,15 @@ namespace HomeModule.Schedulers
                         device.StatusChange = false;
                         showHeaders = true;
                     }
+                    //following list is used to send minimal data to IoTHub and to PowerApps
+                    LocalDevices.Add(new Localdevice() { DeviceOwner = device.DeviceOwner, DeviceName=device.DeviceName, DeviceType = device.DeviceType, IsPresent = device.IsPresent, StatusFrom = device.StatusFrom });
                 }
 
                 if (showHeaders) //for local debugging
                 {
                     Console.WriteLine($"   From   | Status  | Device");
                     Console.WriteLine($" -------- | ------- | ----- ");
-                    foreach (var device in LocalDevices)
+                    foreach (var device in PersonalDevices)
                     {
                         if (device.LastSeen != DateTime.MinValue) //dont show ever seen devices
                         {
@@ -165,6 +168,14 @@ namespace HomeModule.Schedulers
                 await Task.Delay(TimeSpan.FromSeconds(60)); //check statuses every 10 millisecond
             }
         }
+    }
+    class Localdevice
+    {
+        public string DeviceName { get; set; }
+        public string DeviceOwner { get; set; }
+        public int DeviceType { get; set; }
+        public bool IsPresent { get; set; }
+        public DateTime StatusFrom { get; set; }
     }
     class WiFiDevice
     {

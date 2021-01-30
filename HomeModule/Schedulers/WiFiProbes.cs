@@ -1,17 +1,22 @@
 ﻿using HomeModule.Helpers;
-using Newtonsoft.Json;
 using System;
+using System.Buffers;
+using System.Buffers.Text;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace HomeModule.Schedulers
 {
     class WiFiProbes
     {
+        private readonly METHOD Methods = new METHOD();
         public static List<Localdevice> LocalDevices = new List<Localdevice>(); 
         private static List<WiFiDevice> PersonalDevices = new List<WiFiDevice>();
         public async void QueryWiFiProbes()
@@ -19,6 +24,7 @@ namespace HomeModule.Schedulers
             string username = Environment.GetEnvironmentVariable("KismetUser");
             string password = Environment.GetEnvironmentVariable("KismetPassword");
             string urlKismet = Environment.GetEnvironmentVariable("KismetURL");
+            var filename = Methods.GetFilePath(CONSTANT.FILENAME_HOME_DEVICES);
 
             var http = new HttpClient();
             http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($"{username}:{password}")));
@@ -27,12 +33,21 @@ namespace HomeModule.Schedulers
             List<string> deviceMacs = new List<string>();
             WiFiDevice.WifiDevices.ForEach(x => deviceMacs.Add(x.MacAddress));
 
-            //create a list which has only known mobile-notebook-watches
-            PersonalDevices = WiFiDevice.WifiDevices.Where(x => x.DeviceType != WiFiDevice.DEVICE).ToList();
-            PersonalDevices.ForEach(x => x.StatusFrom = METHOD.DateTimeTZ().DateTime);
+            //open file and -> list of deices from Raspberry if it exists
+            if (File.Exists(filename)) 
+            {
+                var result = await Methods.OpenExistingFile(filename);
+                PersonalDevices = JsonSerializer.Deserialize<List<WiFiDevice>>(result);
+            }
+            else
+            {
+                //create a list which has only known mobile-notebook-watches
+                PersonalDevices = WiFiDevice.WifiDevices.Where(x => x.DeviceType != WiFiDevice.DEVICE).ToList();
+                PersonalDevices.ForEach(x => x.StatusFrom = METHOD.DateTimeTZ().DateTime);
+            }
 
-            string jsonFields = System.Text.Json.JsonSerializer.Serialize(KismetField.KismetFields); //serialize kismet fields
-            string jsonDevices = System.Text.Json.JsonSerializer.Serialize(deviceMacs); //serialize mac addresses
+            string jsonFields = JsonSerializer.Serialize(KismetField.KismetFields); //serialize kismet fields
+            string jsonDevices = JsonSerializer.Serialize(deviceMacs); //serialize mac addresses
 
             //prepare last active devices query
             int lastActive = CONSTANT.LAST_ACTIVE_DEVICES;
@@ -60,13 +75,14 @@ namespace HomeModule.Schedulers
                 //execute multimac query
                 HttpResponseMessage responseDevices = await http.PostAsync(urlDevices, httpContentDevices);
                 var resultDevices = responseDevices.Content.ReadAsStringAsync();
-                var WifiDevices = JsonConvert.DeserializeObject<List<WiFiDevice>>(resultDevices.Result);
+                var WifiDevices = JsonSerializer.Deserialize<List<WiFiDevice>>(resultDevices.Result);
 
                 //execute last active devices query
                 HttpResponseMessage responseLastActive = await http.PostAsync(urlLastActive, httpContentLastActive);
                 var resultLastActive = responseLastActive.Content.ReadAsStringAsync();
-                var WifiLastActive = JsonConvert.DeserializeObject<List<WiFiDevice>>(resultLastActive.Result);
+                var WifiLastActive = JsonSerializer.Deserialize<List<WiFiDevice>>(resultLastActive.Result);
 
+                LocalDevices.Clear(); //clear localdevices
                 //building list of the local devce which is last seen
                 foreach (var device in PersonalDevices)
                 {
@@ -97,6 +113,9 @@ namespace HomeModule.Schedulers
                     //following list is used to send minimal data to IoTHub and to PowerApps
                     LocalDevices.Add(new Localdevice() { DeviceOwner = device.DeviceOwner, DeviceName=device.DeviceName, DeviceType = device.DeviceType, IsPresent = device.IsPresent, StatusFrom = device.StatusFrom });
                 }
+                //save the data locally into Raspberry
+                var jsonString = JsonSerializer.Serialize(PersonalDevices);
+                await Methods.SaveStringToLocalFile(filename, jsonString);
 
                 if (showHeaders) //for local debugging
                 {
@@ -198,19 +217,22 @@ namespace HomeModule.Schedulers
         public DateTime StatusFrom { get; set; }
         public DateTime LastSeen { get; set; }
         public int Count { get; set; }
-        //[JsonProperty("kismet.device.base.commonname")]
+        //[JsonPropertyName("kismet.device.base.commonname")]
         public string DeviceName { get; set; }
-        [JsonProperty("kismet.device.base.macaddr")]
+        [JsonPropertyName("kismet.device.base.macaddr")]
         public string MacAddress { get; set; }
-        [JsonProperty("dot11.probedssid.ssid")]
+        [JsonPropertyName("dot11.probedssid.ssid")]
+        [JsonConverter(typeof(LongToStringJsonConverter))]
         public string ProbedSSID { get; set; }
-        [JsonProperty("dot11.device.last_bssid")]
+        [JsonPropertyName("dot11.device.last_bssid")]
+        [JsonConverter(typeof(LongToStringJsonConverter))]
         public string LastBSSID { get; set; }
-        [JsonProperty("kismet.common.signal.last_signal")]
+        [JsonPropertyName("kismet.common.signal.last_signal")]
         public int LastSignal { get; set; }
-        [JsonProperty("kismet.device.base.last_time")]
+        [JsonPropertyName("kismet.device.base.last_time")]
         public double LastTime { get; set; }
-        [JsonProperty("dot11.advertisedssid.ssid")]
+        [JsonPropertyName("dot11.advertisedssid.ssid")]
+        [JsonConverter(typeof(LongToStringJsonConverter))]
         public string SSID { get; set; }
 
         public const int MOBILE = 1;
@@ -255,6 +277,35 @@ namespace HomeModule.Schedulers
             new WiFiDevice(Environment.GetEnvironmentVariable("naaber6"), "Naabri telekas", "Naaber")
          };
     }
+    public class LongToStringJsonConverter : JsonConverter<string>
+    {
+        public LongToStringJsonConverter() { }
+
+        public override string Read(ref Utf8JsonReader reader, Type type, JsonSerializerOptions options)
+        {
+            if (reader.TokenType != JsonTokenType.Number &&
+                type == typeof(String))
+                return reader.GetString();
+
+            var span = reader.HasValueSequence ? reader.ValueSequence.ToArray() : reader.ValueSpan;
+
+            if (Utf8Parser.TryParse(span, out long number, out var bytesConsumed) && span.Length == bytesConsumed)
+                return number.ToString();
+
+            var data = reader.GetString();
+
+            throw new InvalidOperationException($"'{data}' is not a correct expected value!")
+            {
+                Source = "LongToStringJsonConverter"
+            };
+        }
+
+        public override void Write(Utf8JsonWriter writer, string value, JsonSerializerOptions options)
+        {
+            writer.WriteStringValue(value.ToString());
+        }
+    }
+
     class KismetField
     {
         public static List<string> KismetFields = new List<string>

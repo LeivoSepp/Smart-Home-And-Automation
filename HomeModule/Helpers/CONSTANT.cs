@@ -22,6 +22,7 @@ namespace HomeModule.Helpers
         public const string CONTAINER_MAPPED_FOLDER = "mappedFolder";
         public const string FILENAME_SAUNA_TIME = "SaunaStartedTime";
         public const string FILENAME_ROOM_TEMPERATURES = "temperatureSET";
+        public const string FILENAME_HOME_DEVICES = "homeDevices";
 
 
         public const int OUTSIDE_LIGHTS_MANUAL_DURATION = 30; //minutes

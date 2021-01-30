@@ -279,6 +279,7 @@ namespace HomeModule.Schedulers
     }
     public class LongToStringJsonConverter : JsonConverter<string>
     {
+        // https://geeks.ms/jorge/2020/03/18/cannot-get-the-value-of-a-token-type-number-as-a-string-con-system-text-json/
         public LongToStringJsonConverter() { }
 
         public override string Read(ref Utf8JsonReader reader, Type type, JsonSerializerOptions options)

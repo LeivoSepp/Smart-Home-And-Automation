@@ -58,7 +58,7 @@ namespace HomeModule.Netatmo
                 }
                 catch (Exception e)
                 {
-                    Console.WriteLine("Netatmo exception thrown: " + e.ToString());
+                    Console.WriteLine("Netatmo exception thrown: " + e.Message);
                 }
                 await Task.Delay(TimeSpan.FromMinutes(CONSTANT.CHECK_NETATMO_IN_MINUTES)); //check every 10 min
             }

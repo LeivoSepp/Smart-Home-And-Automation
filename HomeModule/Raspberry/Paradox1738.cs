@@ -90,7 +90,7 @@ namespace HomeModule.Raspberry
 
                 if (!(isStatus && (CategoryId == 0 || CategoryId == 1)) && !(EventId == 0 || EventId == 1)) //not show System Ready/Not ready messages and zone open/close messages.
                 {
-                    Console.WriteLine($"{METHOD.DateTimeTZ():HH:mm:ss,ff} {Event}, {Message}");
+                    //Console.WriteLine($"{METHOD.DateTimeTZ():HH:mm:ss,ff} {Event}, {Message}");
                 }
             }
         }
@@ -139,7 +139,7 @@ namespace HomeModule.Raspberry
                         {
                             //add alerting sensors into list
                             alertingSensors.Add(new AlertingZone(zone.ZoneName, zone.ZoneEmptyDetectTime.ToString("dd.MM"), zone.ZoneEmptyDetectTime.ToString("HH:mm"), zone.ZoneEventTime.ToString("HH:mm"), zone.IsHomeSecured));
-                            Console.WriteLine($" {zone.ZoneName} {zone.ZoneEmptyDetectTime:t} - {zone.ZoneEventTime:t} {zone.ZoneEmptyDetectTime:dd.MM} {(zone.IsHomeSecured ? "SECURED" : null)}");
+                            //Console.WriteLine($" {zone.ZoneName} {zone.ZoneEmptyDetectTime:t} - {zone.ZoneEventTime:t} {zone.ZoneEmptyDetectTime:dd.MM} {(zone.IsHomeSecured ? "SECURED" : null)}");
                             zone.ZoneEmptyDetectTime = new DateTime();
                         }
                         if (!zone.IsZoneEmpty && zone.ZoneEmptyDetectTime == DateTime.MinValue)
@@ -186,7 +186,7 @@ namespace HomeModule.Raspberry
                     {
                         _queue.Clear();
                         _queue.Add(new State { DoorValue = false, IRValue = false });
-                        Console.WriteLine($"{CurrentDateTime:T} queue cleared");
+                        //Console.WriteLine($"{CurrentDateTime:T} queue cleared");
                     }
 
                     //save the door and IR statuses for the queue

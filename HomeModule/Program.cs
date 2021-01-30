@@ -24,6 +24,7 @@ namespace HomeModule
         private static SaunaHeating _saunaHeating;
         private static SendTelemetryData _sendData;
         private static Paradox1738 _paradox1738;
+        private static WiFiProbes _wiFiProbes;
 
         static void Main(string[] args)
         {
@@ -94,6 +95,11 @@ namespace HomeModule
             _receiveData = new ReceiveData();
             _receiveData.ReceiveCommandsAsync();
 
+            //query WiFiProbes
+            _wiFiProbes = new WiFiProbes();
+            _wiFiProbes.QueryWiFiProbes();
+
+            //shelly's
             Shelly.CheckOutsideLightsOnStartup(Shelly.OutsideLight);
             SomeoneAtHome.CheckLightStatuses();
             SomeoneAtHome.CheckSomeoneMoving();

@@ -124,6 +124,7 @@ namespace HomeModule.Azure
             reportedProperties["isGarageLightsOn"] = TelemetryDataClass.isGarageLightsOn;
             reportedProperties["isHomeDoorOpen"] = TelemetryDataClass.isHomeDoorOpen;
             reportedProperties["Temperatures"] = HomeTemperature.ListOfAllSensors.Temperatures;
+            reportedProperties["Localdevices"] = WiFiProbes.LocalDevices;
 
             var response = Encoding.ASCII.GetBytes(reportedProperties.ToJson());
             return new MethodResponse(response, 200);

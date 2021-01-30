@@ -7,6 +7,7 @@ using System.IO;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -17,7 +18,8 @@ namespace HomeModule.Schedulers
     class WiFiProbes
     {
         private readonly METHOD Methods = new METHOD();
-        public static List<Localdevice> LocalDevices = new List<Localdevice>(); 
+        public static List<Localdevice> LocalDevices = new List<Localdevice>();
+        public static bool IsSomeMobileAtHome = false;
         private static List<WiFiDevice> PersonalDevices = new List<WiFiDevice>();
         public async void QueryWiFiProbes()
         {
@@ -116,6 +118,9 @@ namespace HomeModule.Schedulers
                 //save the data locally into Raspberry
                 var jsonString = JsonSerializer.Serialize(PersonalDevices);
                 await Methods.SaveStringToLocalFile(filename, jsonString);
+
+                //if any mobile phone is present then someone is at home
+                IsSomeMobileAtHome = PersonalDevices.Any(x => x.IsPresent && x.DeviceType == WiFiDevice.MOBILE);
 
                 if (showHeaders) //for local debugging
                 {

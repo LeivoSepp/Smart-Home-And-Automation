@@ -128,7 +128,7 @@ namespace HomeModule.Raspberry
                     Zone LastActiveZone = Zones.First(x => x.ZoneId == LastActiveZoneID);
                     var timerInMinutes = TelemetryDataClass.isHomeSecured ? CONSTANT.TIMER_MINUTES_WHEN_SECURED_HOME_EMPTY : CONSTANT.TIMER_MINUTES_WHEN_HOME_EMPTY;
                     var DurationUntilHouseIsEmpty = !LastActiveZone.IsZoneOpen ? (CurrentDateTime - LastActiveZone.ZoneEventTime).TotalMinutes : 0;
-                    SomeoneAtHome.IsSomeoneAtHome = DurationUntilHouseIsEmpty < timerInMinutes;
+                    SomeoneAtHome.IsSomeoneAtHome = DurationUntilHouseIsEmpty < timerInMinutes || WiFiProbes.IsSomeMobileAtHome;
 
                     //check each zone in 2 minutes window to report the zone active time
                     foreach (var zone in Zones)

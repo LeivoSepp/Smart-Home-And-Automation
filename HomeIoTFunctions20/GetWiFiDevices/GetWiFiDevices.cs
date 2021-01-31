@@ -28,7 +28,7 @@ namespace HomeIoTFunctions20.GetWiFiDevices
         {
             //{Date} = 2021-04-23
 
-            return new OkObjectResult(output.First());
+            return new OkObjectResult(output.First()["AllWiFiDevices"]);
         }
     }
 }

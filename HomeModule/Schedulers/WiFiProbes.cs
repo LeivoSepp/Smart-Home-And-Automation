@@ -72,7 +72,7 @@ namespace HomeModule.Schedulers
             bool showHeaders = true;
             var closeDevices = new List<WiFiDevice>();
             var temporary = new List<WiFiDevice>();
-            DateTime LastCheckTime = new DateTime();
+            //DateTime LastCheckTime = new DateTime();
 
             while (true)
             {
@@ -130,9 +130,9 @@ namespace HomeModule.Schedulers
                 var jsonString = JsonSerializer.Serialize(PersonalDevices);
                 await Methods.SaveStringToLocalFile(filename, jsonString);
 
-                var durationMacToCosmos = (CurrentDateTime - LastCheckTime).TotalMinutes;
-                bool isTimeToSendData = durationMacToCosmos > 60; //send data in every hour
-                if (isTimeToSendData)
+                //var durationMacToCosmos = (CurrentDateTime - LastCheckTime).TotalMinutes;
+                //bool isTimeToSendData = durationMacToCosmos > 60; //send data in every hour
+                if (showHeaders)
                 {
                     List<Localdevice> AllWiFiDevices = new List<Localdevice>();
                     foreach (var device in WiFiDevice.WifiDevices)
@@ -164,7 +164,7 @@ namespace HomeModule.Schedulers
                     };
                     await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo, "output");
                     Console.WriteLine($"Mac Address has been sent to Cosmos at {CurrentDateTime}");
-                    LastCheckTime = CurrentDateTime;
+                    //LastCheckTime = CurrentDateTime;
                 }
 
                 //if any mobile phone is present then someone is at home

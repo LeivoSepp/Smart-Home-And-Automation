@@ -6,7 +6,7 @@ namespace HomeModule.Helpers
     {
         public const int TIMER_SECONDS_WHEN_ZONE_EMPTY = 120; //2 minutes
         public const int TIMER_SECONDS_CLEAR_DOOR_QUEUE = 120;
-        public const int TIMER_MINUTES_WHEN_HOME_EMPTY = 60;
+        public const int TIMER_MINUTES_WHEN_HOME_EMPTY = 30;
         public const int TIMER_MINUTES_WHEN_SECURED_HOME_EMPTY = 2;
         public const int TIMER_MINUTES_TO_SEND_ZONE_COSMOS = 10;
 

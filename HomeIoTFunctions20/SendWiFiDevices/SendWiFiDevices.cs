@@ -44,4 +44,5 @@ namespace HomeIoTFunctions20.SendWiFiDevices
 
             return new OkObjectResult($"{json}");
         }
+    }
 }

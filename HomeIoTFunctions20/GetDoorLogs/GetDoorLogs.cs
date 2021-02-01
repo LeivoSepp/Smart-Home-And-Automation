@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using Microsoft.Azure.Documents;
 using Newtonsoft.Json.Linq;
 
+
 namespace HomeIoTFunctions20.GetDoorLogs
 {
     public static class GetDoorLogs

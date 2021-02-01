@@ -3,8 +3,8 @@ using System;
 using System.Text;
 using System.Threading.Tasks;
 using System.Threading;
-using Newtonsoft.Json;
 using HomeModule.Helpers;
+using System.Text.Json;
 
 namespace HomeModule.Azure
 {
@@ -19,7 +19,7 @@ namespace HomeModule.Azure
             {
                 throw new InvalidOperationException("UserContext doesn't contain " + "expected values");
             }
-            var messageJson = JsonConvert.SerializeObject(inputdata);
+            var messageJson = JsonSerializer.Serialize(inputdata);
             var message = new Message(Encoding.ASCII.GetBytes(messageJson));
             byte[] messageBytes = message.GetBytes();
             string messageString = Encoding.UTF8.GetString(messageBytes);

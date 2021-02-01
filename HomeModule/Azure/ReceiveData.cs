@@ -1,16 +1,15 @@
 ﻿using Microsoft.Azure.Devices.Client;
 using System.Text;
+using System.Text.Json;
 using HomeModule.Schedulers;
 using HomeModule.Raspberry;
 using System;
 using System.Device.Gpio;
 using Microsoft.Azure.Devices.Shared;
 using System.Threading.Tasks;
-using Newtonsoft.Json.Linq;
 using System.Collections.Generic;
 using HomeModule.Netatmo;
 using System.Net.Http;
-using Newtonsoft.Json;
 using HomeModule.Models;
 using System.IO;
 using HomeModule.Helpers;
@@ -27,60 +26,60 @@ namespace HomeModule.Azure
             List<string> command = new List<string>();
             try
             {
-                var HomeCommands = JObject.Parse(methodRequest.DataAsJson);
-                if (HomeCommands["Ventilation"] != null && ((bool)HomeCommands["Ventilation"] == !TelemetryDataClass.isVentilationOn))
+                var HomeCommands = JsonDocument.Parse(methodRequest.DataAsJson);
+                if (HomeCommands.RootElement.TryGetProperty("Ventilation", out JsonElement ventilation) && ventilation.GetBoolean() == !TelemetryDataClass.isVentilationOn)
                 {
-                    string cmd = (bool)HomeCommands["Ventilation"] ? CommandNames.OPEN_VENT : CommandNames.CLOSE_VENT;
+                    string cmd = ventilation.GetBoolean() ? CommandNames.OPEN_VENT : CommandNames.CLOSE_VENT;
                     command.Add(cmd);
                 }
-                if (HomeCommands["Sauna"] != null && ((bool)HomeCommands["Sauna"] == !TelemetryDataClass.isSaunaOn))
+                if (HomeCommands.RootElement.TryGetProperty("Sauna", out JsonElement sauna) && (sauna.GetBoolean() == !TelemetryDataClass.isSaunaOn))
                 {
-                    string cmd = (bool)HomeCommands["Sauna"] ? CommandNames.TURN_ON_SAUNA : CommandNames.TURN_OFF_SAUNA;
+                    string cmd = sauna.GetBoolean() ? CommandNames.TURN_ON_SAUNA : CommandNames.TURN_OFF_SAUNA;
                     command.Add(cmd);
                 }
-                if (HomeCommands["Water"] != null && ((bool)HomeCommands["Water"] == !TelemetryDataClass.isWaterHeatingOn))
+                if (HomeCommands.RootElement.TryGetProperty("Water", out JsonElement water) && water.GetBoolean() == !TelemetryDataClass.isWaterHeatingOn)
                 {
-                    string cmd = (bool)HomeCommands["Water"] ? CommandNames.TURN_ON_HOTWATERPUMP : CommandNames.TURN_OFF_HOTWATERPUMP;
+                    string cmd = water.GetBoolean() ? CommandNames.TURN_ON_HOTWATERPUMP : CommandNames.TURN_OFF_HOTWATERPUMP;
                     command.Add(cmd);
                 }
-                if (HomeCommands["Heating"] != null && ((bool)HomeCommands["Heating"] == !TelemetryDataClass.isHeatingOn))
+                if (HomeCommands.RootElement.TryGetProperty("Heating", out JsonElement heating) && heating.GetBoolean() == !TelemetryDataClass.isHeatingOn)
                 {
-                    string cmd = (bool)HomeCommands["Heating"] ? CommandNames.TURN_ON_HEATING : CommandNames.TURN_OFF_HEATING;
+                    string cmd = heating.GetBoolean() ? CommandNames.TURN_ON_HEATING : CommandNames.TURN_OFF_HEATING;
                     command.Add(cmd);
                 }
-                if (HomeCommands["NormalTemp"] != null && ((bool)HomeCommands["NormalTemp"] == !TelemetryDataClass.isNormalHeating))
+                if (HomeCommands.RootElement.TryGetProperty("NormalTemp", out JsonElement normalTemp) && normalTemp.GetBoolean() == !TelemetryDataClass.isNormalHeating)
                 {
-                    string cmd = (bool)HomeCommands["NormalTemp"] ? CommandNames.NORMAL_TEMP_COMMAND : CommandNames.REDUCE_TEMP_COMMAND;
+                    string cmd = normalTemp.GetBoolean() ? CommandNames.NORMAL_TEMP_COMMAND : CommandNames.REDUCE_TEMP_COMMAND;
                     command.Add(cmd);
                 }
-                if (HomeCommands["Vacation"] != null && ((bool)HomeCommands["Vacation"] == !TelemetryDataClass.isHomeInVacation))
+                if (HomeCommands.RootElement.TryGetProperty("Vacation", out JsonElement vacation) && vacation.GetBoolean() == !TelemetryDataClass.isHomeInVacation)
                 {
-                    string cmd = (bool)HomeCommands["Vacation"] ? CommandNames.TURN_ON_VACATION : CommandNames.TURN_OFF_VACATION;
+                    string cmd = vacation.GetBoolean() ? CommandNames.TURN_ON_VACATION : CommandNames.TURN_OFF_VACATION;
                     command.Add(cmd);
                 }
-                if (HomeCommands["Security"] != null && ((bool)HomeCommands["Security"] == !TelemetryDataClass.isHomeSecured))
+                if (HomeCommands.RootElement.TryGetProperty("Security", out JsonElement security) && security.GetBoolean() == !TelemetryDataClass.isHomeSecured)
                 {
-                    string cmd = (bool)HomeCommands["Security"] ? CommandNames.TURN_ON_SECURITY : CommandNames.TURN_OFF_SECURITY;
+                    string cmd = security.GetBoolean() ? CommandNames.TURN_ON_SECURITY : CommandNames.TURN_OFF_SECURITY;
                     command.Add(cmd);
                 }
-                if (HomeCommands["isOutsideLightsOn"] != null && ((bool)HomeCommands["isOutsideLightsOn"] == !TelemetryDataClass.isOutsideLightsOn))
+                if (HomeCommands.RootElement.TryGetProperty("isOutsideLightsOn", out JsonElement isoutsideLightsOn) && isoutsideLightsOn.GetBoolean() == !TelemetryDataClass.isOutsideLightsOn)
                 {
-                    bool setLightsOn = (bool)HomeCommands["isOutsideLightsOn"];
+                    bool setLightsOn = isoutsideLightsOn.GetBoolean();
                     SomeoneAtHome.SetOutsideLightsOn(setLightsOn, setLightsOn); //forcing to turn lights on or off
                 }
-                if (HomeCommands["isGarageLightsOn"] != null && ((bool)HomeCommands["isGarageLightsOn"] == !TelemetryDataClass.isGarageLightsOn))
+                if (HomeCommands.RootElement.TryGetProperty("isGarageLightsOn", out JsonElement isgarageLightsOn) && isgarageLightsOn.GetBoolean() == !TelemetryDataClass.isGarageLightsOn)
                 {
-                    bool isLightsOn = (bool)HomeCommands["isGarageLightsOn"];
+                    bool isLightsOn = isgarageLightsOn.GetBoolean();
                     SomeoneAtHome.SetGarageLightsOn(isLightsOn);
                 }
-                if (HomeCommands["Temperatures"] != null)
+                if (HomeCommands.RootElement.TryGetProperty("Temperatures", out JsonElement temperatures))
                 {
                     //this data is coming from PowerApps
                     SensorReadings SetRoomTemperatures = new SensorReadings
                     {
-                        Temperatures = JsonConvert.DeserializeObject<List<SensorReading>>(HomeCommands["Temperatures"].ToString())
+                        Temperatures = JsonSerializer.Deserialize<List<SensorReading>>(temperatures.GetRawText())
                     };
-                    var jsonString = JsonConvert.SerializeObject(SetRoomTemperatures);
+                    var jsonString = JsonSerializer.Serialize(SetRoomTemperatures);
                     var filename = Methods.GetFilePath(CONSTANT.FILENAME_ROOM_TEMPERATURES);
                     await Methods.SaveStringToLocalFile(filename, jsonString);
                     HomeTemperature.SetTemperatures(SetRoomTemperatures);
@@ -147,12 +146,15 @@ namespace HomeModule.Azure
         private async Task<MethodResponse> HomeEdgeWiFiDevices(MethodRequest methodRequest, object userContext)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
-            var ParsedWiFiDevices = JObject.Parse(methodRequest.DataAsJson);
-            if (ParsedWiFiDevices["AllWiFiDevices"] != null)
+            try
             {
-                //this data is coming from PowerApps
-                WiFiProbes.WiFiDevicesFromPowerApps = JsonConvert.DeserializeObject<List<WiFiDevice>>(ParsedWiFiDevices["AllWiFiDevices"].ToString());
-                Console.WriteLine($"WiFi Devices received.");
+                var ParsedWiFiDevices = JsonDocument.Parse(methodRequest.DataAsJson);
+                JsonElement jsonElement = ParsedWiFiDevices.RootElement.GetProperty("AllWiFiDevices");
+                WiFiProbes.AllWiFiDevices = JsonSerializer.Deserialize<List<Localdevice>>(jsonElement.GetRawText());
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("WiFI devices: " + e.ToString());
             }
             var response = Encoding.ASCII.GetBytes("Ok");
             return new MethodResponse(response, 200);
@@ -258,7 +260,8 @@ namespace HomeModule.Azure
                 ProcessCommand(CommandNames.CLOSE_VENT);
             }
             else if (command == CommandNames.TURN_OFF_VACATION)
-            {                TelemetryDataClass.isHomeInVacation = false;
+            {
+                TelemetryDataClass.isHomeInVacation = false;
             }
             else if (command == CommandNames.TURN_ON_SECURITY)
             {
@@ -351,8 +354,8 @@ namespace HomeModule.Azure
                 var result = response.Content.ReadAsStringAsync();
 
                 //deserialize all content
-                var nps = JsonConvert.DeserializeObject<JObject>(result.Result);
-                ison = (bool)nps["ison"];
+                var nps = JsonSerializer.Deserialize<JsonElement>(result.Result);
+                ison = nps.GetProperty("ison").GetBoolean();
             }
             catch (Exception e)
             {
@@ -370,8 +373,8 @@ namespace HomeModule.Azure
                 var result = response.Content.ReadAsStringAsync();
 
                 //deserialize all content
-                var nps = JsonConvert.DeserializeObject<JObject>(result.Result);
-                bool ison = (bool)nps["ison"];
+                var nps = JsonSerializer.Deserialize<JsonElement>(result.Result);
+                bool ison = nps.GetProperty("ison").GetBoolean();
                 TelemetryDataClass.isOutsideLightsOn = ison;
             }
             catch (Exception e)

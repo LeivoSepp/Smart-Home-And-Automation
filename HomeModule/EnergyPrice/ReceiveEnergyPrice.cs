@@ -1,6 +1,5 @@
 ﻿using HomeModule.Helpers;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using System.Text.Json;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -26,7 +25,7 @@ namespace HomeModule.EnergyPrice
             if (File.Exists(fileToday)) //is there already file with today energy prices
             {
                 var dataFromFile = await Methods.OpenExistingFile(fileToday);
-                energyPriceToday = JsonConvert.DeserializeObject<List<EnergyPriceClass>>(dataFromFile.ToString());
+                energyPriceToday = JsonSerializer.Deserialize<List<EnergyPriceClass>>(dataFromFile.ToString());
             }
             if (!File.Exists(fileToday)) //file with today energy price is missing
             {
@@ -34,7 +33,7 @@ namespace HomeModule.EnergyPrice
                 {
                     string MarketPriceToday = METHOD.DateTimeTZ().ToString("dd.MM.yyyy");
                     energyPriceToday = await GetMarketPrice(MarketPriceToday);
-                    var jsonString = JsonConvert.SerializeObject(energyPriceToday);
+                    var jsonString = JsonSerializer.Serialize(energyPriceToday);
                     await Methods.SaveStringToLocalFile(fileToday, jsonString);
                 }
                 catch (Exception e)
@@ -55,9 +54,9 @@ namespace HomeModule.EnergyPrice
             var result = response.Content.ReadAsStringAsync();
 
             //deserialize all content
-            var nps = JsonConvert.DeserializeObject<JObject>(result.Result);
-            string dataresult = nps["energyPrices"].ToString();
-            var npsOut = JsonConvert.DeserializeObject<List<EnergyPriceClass>>(dataresult);
+            var nps = JsonSerializer.Deserialize<JsonElement>(result.Result);
+            string dataresult = nps.GetProperty("energyPrices").GetRawText();
+            var npsOut = JsonSerializer.Deserialize<List<EnergyPriceClass>>(dataresult);
             return npsOut;
         }
     }

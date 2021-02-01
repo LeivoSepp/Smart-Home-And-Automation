@@ -1,7 +1,7 @@
 ﻿using GarageModule.Sensors;
 using Microsoft.Azure.Devices.Client;
 using Microsoft.Azure.Devices.Shared;
-using Newtonsoft.Json.Linq;
+using System.Text.Json;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -31,10 +31,10 @@ namespace GarageModule.Azure
 
             try
             {
-                var ReceivedCommand = JObject.Parse(methodRequest.DataAsJson);
-                if (ReceivedCommand["isGarageLightsOn"] != null && ((bool)ReceivedCommand["isGarageLightsOn"] == !ReceiveDataClass.IsGarageLightsOn))
+                var ReceivedCommand = JsonDocument.Parse(methodRequest.DataAsJson);
+                if (ReceivedCommand.RootElement.TryGetProperty("isGarageLightsOn", out JsonElement isGarageLightsOn) && isGarageLightsOn.GetBoolean() == !ReceiveDataClass.IsGarageLightsOn)
                 {
-                    string cmd = (bool)ReceivedCommand["isGarageLightsOn"] ? CommandNames.TURN_ON_GARAGE_LIGHTS : CommandNames.TURN_OFF_GARAGE_LIGHTS;
+                    string cmd = isGarageLightsOn.GetBoolean() ? CommandNames.TURN_ON_GARAGE_LIGHTS : CommandNames.TURN_OFF_GARAGE_LIGHTS;
                     command.Add(cmd);
                 }
             }

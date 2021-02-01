@@ -2,7 +2,7 @@
 using System;
 using System.Threading.Tasks;
 using System.Device.Gpio;
-using Newtonsoft.Json;
+using System.Text.Json;
 using Microsoft.Azure.Devices.Client;
 using System.Text;
 using RobootikaCOM.NetCore.Devices;
@@ -121,7 +121,7 @@ namespace GarageModule.Sensors
                 DateAndTime = DateTimeTZ().DateTime,
                 alertingSensors
             };
-            var messageJson = JsonConvert.SerializeObject(monitorData);
+            var messageJson = JsonSerializer.Serialize(monitorData);
             var IoTmessage = new Message(Encoding.ASCII.GetBytes(messageJson));
             await _sendListData.PipeMessage(IoTmessage, Program.IoTHubModuleClient, $"{Message} light: {(ReceiveDataClass.IsGarageLightsOn ? "On" : "Off")}");
         }

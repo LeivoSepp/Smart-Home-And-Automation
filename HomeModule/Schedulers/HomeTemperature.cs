@@ -6,7 +6,7 @@ using System.Linq;
 using HomeModule.Models;
 using HomeModule.Raspberry;
 using System.Device.Gpio;
-using Newtonsoft.Json;
+using System.Text.Json;
 using System.IO;
 using HomeModule.Helpers;
 
@@ -46,7 +46,7 @@ namespace HomeModule.Schedulers
                 if (File.Exists(filename))
                 {
                     var dataFromFile = await Methods.OpenExistingFile(filename);
-                    SensorReadings SetRoomTemps = JsonConvert.DeserializeObject<SensorReadings>(dataFromFile);
+                    SensorReadings SetRoomTemps = JsonSerializer.Deserialize<SensorReadings>(dataFromFile);
                     SetTemperatures(SetRoomTemps);
                 }
                 //get a new sensor readings and then update

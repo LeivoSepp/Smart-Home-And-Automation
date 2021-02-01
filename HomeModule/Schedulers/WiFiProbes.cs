@@ -82,6 +82,7 @@ namespace HomeModule.Schedulers
                     deviceMacs.Clear();
                     WiFiDevice.WifiDevices = WiFiDevicesFromPowerApps.ToList();
                     WiFiDevice.WifiDevices.ForEach(x => deviceMacs.Add(x.MacAddress));
+                    Console.WriteLine($"WiFi Devices are updated from PowerApps {CurrentDateTime:G}.");
                 }
 
                 //execute multimac query

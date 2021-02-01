@@ -32,7 +32,7 @@ namespace HomeIoTFunctions20.SendWiFiDevices
             var connectionString = config["IoTHubConnectionString"];
 
             var serviceClient = ServiceClient.CreateFromConnectionString(connectionString);
-            var cloudToDeviceMethod = new CloudToDeviceMethod("AllWiFiDevices")
+            var cloudToDeviceMethod = new CloudToDeviceMethod("SetWiFiMacAddress")
             {
                 ConnectionTimeout = TimeSpan.FromSeconds(5),
                 ResponseTimeout = TimeSpan.FromSeconds(5)

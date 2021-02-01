@@ -152,6 +152,7 @@ namespace HomeModule.Azure
             {
                 //this data is coming from PowerApps
                 WiFiProbes.WiFiDevicesFromPowerApps = JsonConvert.DeserializeObject<List<WiFiDevice>>(ParsedWiFiDevices["AllWiFiDevices"].ToString());
+                Console.WriteLine($"WiFi Devices received.");
             }
             var response = Encoding.ASCII.GetBytes("Ok");
             return new MethodResponse(response, 200);

@@ -20,8 +20,8 @@ namespace HomeModule.Schedulers
     {
         private SendDataAzure _sendListData;
         private readonly METHOD Methods = new METHOD();
-        public static List<Localdevice> LocalDevices = new List<Localdevice>();
-        private static List<WiFiDevice> PersonalDevices = new List<WiFiDevice>();
+        public static List<Localdevice> LocalUserDevices = new List<Localdevice>();
+        public static List<WiFiDevice> WiFiDevicesFromPowerApps = new List<WiFiDevice>();
         public static bool IsSomeMobileAtHome = false;
 
         public async void QueryWiFiProbes()
@@ -42,13 +42,12 @@ namespace HomeModule.Schedulers
             if (File.Exists(filename))
             {
                 var result = await Methods.OpenExistingFile(filename);
-                PersonalDevices = JsonSerializer.Deserialize<List<WiFiDevice>>(result);
+                WiFiDevice.WifiDevices = JsonSerializer.Deserialize<List<WiFiDevice>>(result).ToList();
             }
             else
             {
-                //create a list which has only known mobile-notebook-watches
-                PersonalDevices = WiFiDevice.WifiDevices.Where(x => x.DeviceType != WiFiDevice.DEVICE).ToList();
-                PersonalDevices.ForEach(x => x.StatusFrom = METHOD.DateTimeTZ().DateTime);
+                //following will happen only if there is no file on Raspberry and the list will be loaded from the environment variables
+                WiFiDevice.WifiDevices.ForEach(x => x.StatusFrom = METHOD.DateTimeTZ().DateTime);
             }
 
             string jsonFields = JsonSerializer.Serialize(KismetField.KismetFields); //serialize kismet fields
@@ -72,27 +71,32 @@ namespace HomeModule.Schedulers
             bool showHeaders = true;
             var closeDevices = new List<WiFiDevice>();
             var temporary = new List<WiFiDevice>();
-            //DateTime LastCheckTime = new DateTime();
+            DateTime LastCheckTime = new DateTime();
 
             while (true)
             {
                 DateTime CurrentDateTime = METHOD.DateTimeTZ().DateTime;
 
+                if(WiFiDevicesFromPowerApps.Any())
+                {
+                    WiFiDevice.WifiDevices = WiFiDevicesFromPowerApps.ToList();
+                }
+
                 //execute multimac query
                 HttpResponseMessage responseDevices = await http.PostAsync(urlDevices, httpContentDevices);
                 var resultDevices = responseDevices.Content.ReadAsStringAsync();
-                var WifiDevices = JsonSerializer.Deserialize<List<WiFiDevice>>(resultDevices.Result);
+                var WifiKnownDevices = JsonSerializer.Deserialize<List<WiFiDevice>>(resultDevices.Result);
 
                 //execute last active devices query
                 HttpResponseMessage responseLastActive = await http.PostAsync(urlLastActive, httpContentLastActive);
                 var resultLastActive = responseLastActive.Content.ReadAsStringAsync();
                 var WiFiActiveDevices = JsonSerializer.Deserialize<List<WiFiDevice>>(resultLastActive.Result);
 
-                LocalDevices.Clear(); //clear localdevices
+                LocalUserDevices.Clear(); //clear localdevices
                 //building list of the local devce which is last seen
-                foreach (var device in PersonalDevices)
+                foreach (var device in WiFiDevice.WifiDevices)
                 {
-                    foreach (var probe in WifiDevices)
+                    foreach (var probe in WifiKnownDevices)
                     {
                         if (device.MacAddress == probe.MacAddress)
                         {
@@ -116,31 +120,31 @@ namespace HomeModule.Schedulers
                         device.StatusChange = false;
                         showHeaders = true;
                     }
-                    //following list is used to send minimal data to IoTHub and to PowerApps
-                    LocalDevices.Add(new Localdevice()
+                    //following list is used to send minimal data to IoTHub and to PowerApps, send only userdevices
+                    if (device.DeviceType != WiFiDevice.DEVICE)
                     {
-                        DeviceOwner = device.DeviceOwner,
-                        DeviceName = device.DeviceName,
-                        DeviceType = device.DeviceType,
-                        IsPresent = device.IsPresent,
-                        StatusFrom = device.StatusFrom
-                    });
+                        LocalUserDevices.Add(new Localdevice()
+                        {
+                            DeviceOwner = device.DeviceOwner,
+                            DeviceName = device.DeviceName,
+                            DeviceType = device.DeviceType,
+                            IsPresent = device.IsPresent,
+                            StatusFrom = device.StatusFrom
+                        });
+                    }
                 }
                 //save the data locally into Raspberry
-                var jsonString = JsonSerializer.Serialize(PersonalDevices);
+                var jsonString = JsonSerializer.Serialize(WiFiDevice.WifiDevices);
                 await Methods.SaveStringToLocalFile(filename, jsonString);
 
-                //var durationMacToCosmos = (CurrentDateTime - LastCheckTime).TotalMinutes;
-                //bool isTimeToSendData = durationMacToCosmos > 60; //send data in every hour
-                if (showHeaders)
+                //send data to CosmosDB
+                var durationMacToCosmos = (CurrentDateTime - LastCheckTime).TotalMinutes;
+                bool isTimeToSendData = durationMacToCosmos > 120; //send data in every hour
+                if (isTimeToSendData && showHeaders)
                 {
                     List<Localdevice> AllWiFiDevices = new List<Localdevice>();
                     foreach (var device in WiFiDevice.WifiDevices)
                     {
-                        foreach (var localDevice in PersonalDevices)
-                        {
-                            if (device.MacAddress == localDevice.MacAddress) device.StatusFrom = localDevice.StatusFrom;
-                        }
                         AllWiFiDevices.Add(new Localdevice()
                         {
                             ActiveDuration = device.ActiveDuration,
@@ -164,19 +168,19 @@ namespace HomeModule.Schedulers
                     };
                     await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo, "output");
                     Console.WriteLine($"Mac Address has been sent to Cosmos at {CurrentDateTime}");
-                    //LastCheckTime = CurrentDateTime;
+                    LastCheckTime = CurrentDateTime;
                 }
 
                 //if any mobile phone is present then someone is at home
-                IsSomeMobileAtHome = PersonalDevices.Any(x => x.IsPresent && x.DeviceType == WiFiDevice.MOBILE);
+                IsSomeMobileAtHome = WiFiDevice.WifiDevices.Any(x => x.IsPresent && x.DeviceType == WiFiDevice.MOBILE);
 
                 if (showHeaders) //for local debugging
                 {
                     Console.WriteLine($"   From   | Status  | Device");
                     Console.WriteLine($" -------- | ------- | ----- ");
-                    foreach (var device in PersonalDevices)
+                    foreach (var device in WiFiDevice.WifiDevices)
                     {
-                        if (device.LastSeen != DateTime.MinValue) //dont show ever seen devices
+                        if (device.LastSeen != DateTime.MinValue && device.DeviceType != WiFiDevice.DEVICE) //show only ever seen LocalUserDevices devices
                         {
                             Console.WriteLine($" {device.StatusFrom:T} | {(device.IsPresent ? "Active " : "Not Act")} | {device.DeviceName} ");
                         }
@@ -224,7 +228,7 @@ namespace HomeModule.Schedulers
                         if (isNewItem) temporary.Add(probe);
                     }
                     closeDevices.AddRange(temporary);
-                    var sortedList = closeDevices.OrderByDescending(x => x.LastSeen).ToList();
+                    var sortedList = closeDevices.OrderBy(x => x.LastSeen).ToList();
 
                     if (temporary.Any())
                     {

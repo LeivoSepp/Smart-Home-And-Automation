@@ -21,9 +21,7 @@ namespace HomeModule.Azure
     {
         private SendTelemetryData _sendDataAzure;
         private readonly METHOD Methods = new METHOD();
-#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
         private async Task<MethodResponse> HomeEdgeDeviceManagement(MethodRequest methodRequest, object userContext)
-#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
             ReceiveData receiveData = new ReceiveData();
             List<string> command = new List<string>();
@@ -124,7 +122,7 @@ namespace HomeModule.Azure
             reportedProperties["isGarageLightsOn"] = TelemetryDataClass.isGarageLightsOn;
             reportedProperties["isHomeDoorOpen"] = TelemetryDataClass.isHomeDoorOpen;
             reportedProperties["Temperatures"] = HomeTemperature.ListOfAllSensors.Temperatures;
-            reportedProperties["Localdevices"] = WiFiProbes.LocalDevices;
+            reportedProperties["Localdevices"] = WiFiProbes.LocalUserDevices;
 
             var response = Encoding.ASCII.GetBytes(reportedProperties.ToJson());
             return new MethodResponse(response, 200);
@@ -142,7 +140,23 @@ namespace HomeModule.Azure
 
             //// Register callback to be called when a message is received by the module
             await ioTHubModuleClient.SetMethodHandlerAsync("ManagementCommands", HomeEdgeDeviceManagement, null);
+            await ioTHubModuleClient.SetMethodHandlerAsync("SetWiFiMacAddress", HomeEdgeWiFiDevices, null);
         }
+
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+        private async Task<MethodResponse> HomeEdgeWiFiDevices(MethodRequest methodRequest, object userContext)
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+        {
+            var ParsedWiFiDevices = JObject.Parse(methodRequest.DataAsJson);
+            if (ParsedWiFiDevices["AllWiFiDevices"] != null)
+            {
+                //this data is coming from PowerApps
+                WiFiProbes.WiFiDevicesFromPowerApps = JsonConvert.DeserializeObject<List<WiFiDevice>>(ParsedWiFiDevices["AllWiFiDevices"].ToString());
+            }
+            var response = Encoding.ASCII.GetBytes("Ok");
+            return new MethodResponse(response, 200);
+        }
+
         async Task OnDesiredPropertiesUpdate(TwinCollection desiredProperties, object userContext)
         {
             //desired property only for security mode and vacation mode

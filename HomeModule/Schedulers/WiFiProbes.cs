@@ -79,7 +79,9 @@ namespace HomeModule.Schedulers
 
                 if(WiFiDevicesFromPowerApps.Any())
                 {
+                    deviceMacs.Clear();
                     WiFiDevice.WifiDevices = WiFiDevicesFromPowerApps.ToList();
+                    WiFiDevice.WifiDevices.ForEach(x => deviceMacs.Add(x.MacAddress));
                 }
 
                 //execute multimac query

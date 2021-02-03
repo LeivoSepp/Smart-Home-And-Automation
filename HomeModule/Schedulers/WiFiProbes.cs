@@ -19,35 +19,6 @@ namespace HomeModule.Schedulers
 {
     class WiFiProbes
     {
-        async Task SendMacAddressToCosmos()
-        {
-            //create a list of the MAC Addresses for multimac query
-            deviceMacs.Clear();
-            WiFiDevice.WifiDevices.ForEach(x => deviceMacs.Add(x.MacAddress));
-            //send data back to CosmosDB
-            var AllWiFiDevices = new List<Localdevice>();
-            WiFiDevice.WifiDevices.ForEach(x => AllWiFiDevices.Add(new Localdevice()
-            {
-                ActiveDuration = x.ActiveDuration,
-                DeviceName = x.DeviceName,
-                DeviceOwner = x.DeviceOwner,
-                DeviceType = x.DeviceType,
-                MacAddress = x.MacAddress,
-                StatusFrom = METHOD.UnixTimeStampToDateTime(x.StatusUnixTime),
-                IsPresent = x.IsPresent
-            }));
-            _sendListData = new SendDataAzure();
-            TelemetryDataClass.SourceInfo = $"WiFi Devices";
-            var monitorData = new
-            {
-                DeviceID = "HomeController",
-                status = TelemetryDataClass.SourceInfo,
-                DateAndTime = METHOD.DateTimeTZ().DateTime,
-                AllWiFiDevices
-            };
-            await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo, "output");
-        }
-
         List<string> deviceMacs = new List<string>();
         private SendDataAzure _sendListData;
         private readonly METHOD Methods = new METHOD();
@@ -67,7 +38,7 @@ namespace HomeModule.Schedulers
 
             try
             {
-                //open file and -> list of deices from Raspberry if it exists
+                //open file and -> list of devices from Raspberry if the file exists
                 if (File.Exists(filename))
                 {
                     var result = await Methods.OpenExistingFile(filename);
@@ -91,7 +62,7 @@ namespace HomeModule.Schedulers
             string jsonDevices = JsonSerializer.Serialize(deviceMacs); //serialize mac addresses
 
             //prepare last active devices query
-            int lastActive = CONSTANT.LAST_ACTIVE_DEVICES;
+            int lastActive = CONSTANT.LAST_ACTIVE_DEVICES; //in minutes
             string urlLastActive = $"{urlKismet}/devices/last-time/{lastActive}/devices.json";
             string contentFields = "json={\"fields\":" + jsonFields + "}";
             HttpContent httpContentLastActive = new StringContent(contentFields);
@@ -113,26 +84,26 @@ namespace HomeModule.Schedulers
                 double unixTimestamp = DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
                 double timeOffset = METHOD.DateTimeTZ().Offset.TotalHours;
 
-                //get data from PowerApps
+                //if there are some items from PowerApps then proceed
                 if (WiFiDevicesFromPowerApps.Any())
                 {
                     var tempAddList = new List<WiFiDevice>();
                     var tempDeleteList = new List<WiFiDevice>();
                     bool isNewItem = true;
-                    //CRUD operations
+                    //CRUD operations, data is coming from PowerApps
                     foreach (var item in WiFiDevicesFromPowerApps)
                     {
                         foreach (var device in WiFiDevice.WifiDevices)
                         {
                             if (device.MacAddress == item.MacAddress)
                             {
-                                //if powerapps will send an item with type=100 then this item should be deleted
+                                //DELETE item (special type=100)
                                 if (item.DeviceType == 100)
                                 {
                                     tempDeleteList.Add(device);
                                     break;
                                 }
-                                //update item
+                                //UPDATE item
                                 device.DeviceName = item.DeviceName;
                                 device.DeviceOwner = item.DeviceOwner;
                                 device.DeviceType = item.DeviceType;
@@ -147,7 +118,7 @@ namespace HomeModule.Schedulers
                         }
                         if (isNewItem)
                         {
-                            //add time
+                            //ADD item
                             tempAddList.Add(new WiFiDevice
                             (
                                 item.MacAddress,
@@ -162,7 +133,7 @@ namespace HomeModule.Schedulers
                     WiFiDevice.WifiDevices.AddRange(tempAddList.ToArray());
                     WiFiDevice.WifiDevices.RemoveAll(i => tempDeleteList.Any(x => x.MacAddress == i.MacAddress));
 
-                    //send list to CosmosDB
+                    //send all devices to CosmosDB
                     await SendMacAddressToCosmos();
                 }
                 List<WiFiDevice> WifiKnownDevices = new List<WiFiDevice>();
@@ -184,9 +155,9 @@ namespace HomeModule.Schedulers
                     Console.WriteLine($"Post queries to Kismet {e}");
                 }
 
-                //clear devices list. This will be sent to PowerApps
+                //clear devices list.
                 WiFiDevicesToPowerApps.Clear(); 
-                //building list of the local devce which is last seen
+                //building list of the local devces which are last seen
                 foreach (var device in WiFiDevice.WifiDevices)
                 {
                     foreach (var probe in WifiKnownDevices)
@@ -198,7 +169,7 @@ namespace HomeModule.Schedulers
                             break;
                         }
                     }
-                    //checking active devices and setting statuses
+                    //checking active devices and setting Active/NonActive statuses. Each device can have individual timewindow
                     var durationUntilNotActive = (unixTimestamp - device.LastUnixTime) / 60; //timestamp in minutes
                     device.IsPresent = durationUntilNotActive < device.ActiveDuration;
                     if (device.IsPresent && !device.StatusChange)
@@ -213,8 +184,8 @@ namespace HomeModule.Schedulers
                         device.StatusChange = false;
                         showHeaders = true;
                     }
-                    //following list is used to send minimal data to PowerApps, send only userdevices
-                    //this list is sent as a response when PowerApps asks something
+                    //following list WiFiDevicesToPowerApps is used to send minimal data to PowerApps (sending only userdevices)
+                    //this list will be sent as a response after PowerApps asks something or refreshing it's data
                     if (device.DeviceType != WiFiDevice.DEVICE)
                     {
                         WiFiDevicesToPowerApps.Add(new Localdevice()
@@ -233,13 +204,13 @@ namespace HomeModule.Schedulers
                 var jsonString = JsonSerializer.Serialize(WiFiDevice.WifiDevices);
                 await Methods.SaveStringToLocalFile(filename, jsonString);
 
-                //if any mobile phone is present then someone is at home
+                //if any mobile phone or watch is present then someone is at home
                 IsAnyMobileAtHome = WiFiDevice.WifiDevices.Any(x => x.IsPresent && (x.DeviceType == WiFiDevice.MOBILE || x.DeviceType == WiFiDevice.WATCH));
 
-                if (showHeaders) //for local debugging
+                //for local debugging only show the active/non active devices in console window
+                if (showHeaders) 
                 {
                     var sortedList = WiFiDevice.WifiDevices.OrderByDescending(y => y.IsPresent).ThenByDescending(x => x.StatusUnixTime).ToList();
-
                     Console.WriteLine($"   From   | Status  | Device");
                     Console.WriteLine($" -------- | ------- | ----- ");
                     foreach (var device in sortedList)
@@ -254,6 +225,7 @@ namespace HomeModule.Schedulers
                 }
 
                 //removing all known devices from the last seen devices list
+                //known devices are all locally registered devices in the list WiFiDevice.WifiDevices
                 var tempDelList = new List<WiFiDevice>();
                 foreach (var activeDevice in WiFiActiveDevices)
                 {
@@ -293,23 +265,53 @@ namespace HomeModule.Schedulers
                     }
                     closeDevices.AddRange(tempAddList.ToArray());
 
-                    closeDevices.RemoveAll(x => (unixTimestamp - x.LastUnixTime) / 60 > 60); //remove older that 1 hour
-                    var sortedList = closeDevices.OrderBy(x => x.SignalType).ThenByDescending(y => y.LastUnixTime).ToList();
+                    closeDevices.RemoveAll(x => (unixTimestamp - x.LastUnixTime) / 60 > 60); //remove all entries older that 1 hour
 
+                    //local debugging: show the devices list in console only if some device has been added
                     if (tempAddList.Any())
                     {
+                        var sortedList = closeDevices.OrderBy(x => x.SignalType).ThenByDescending(y => y.LastUnixTime).ToList();
                         Console.WriteLine($"dB  | First | Last  |    Mac Address     |Count| SignalType  | Manufacturer | SSID");
                         Console.WriteLine($" -  | ----  | ----  |    -----------     | --- | ----------  | -----------  | ----");
 
                         foreach (var probe in sortedList)
                         {
-                            Console.WriteLine($"{probe.LastSignal:00} | {METHOD.UnixTimeStampToDateTime(probe.FirstUnixTime).AddHours(timeOffset):t} | {METHOD.UnixTimeStampToDateTime(probe.LastUnixTime).AddHours(timeOffset):t} | {probe.MacAddress} | {probe.Count}  | {probe.SignalType}  | {probe.Manufacture}  |{(string.IsNullOrEmpty(probe.ProbedSSID) || probe.ProbedSSID == "0" ? probe.SSID : probe.ProbedSSID)}");
+                            Console.WriteLine($" {probe.LastSignal:00} | {METHOD.UnixTimeStampToDateTime(probe.FirstUnixTime).AddHours(timeOffset):t} | {METHOD.UnixTimeStampToDateTime(probe.LastUnixTime).AddHours(timeOffset):t} | {probe.MacAddress} | {probe.Count:00}  | {probe.SignalType}  | {probe.Manufacture}  |{(string.IsNullOrEmpty(probe.ProbedSSID) || probe.ProbedSSID == "0" ? probe.SSID : probe.ProbedSSID)}");
                         }
                         Console.WriteLine();
                     }
                 }
                 await Task.Delay(TimeSpan.FromSeconds(60)); //check statuses every 10 millisecond
             }
+        }
+        async Task SendMacAddressToCosmos()
+        {
+            _sendListData = new SendDataAzure();
+            //create a list of the MAC Addresses for multimac query
+            deviceMacs.Clear();
+            WiFiDevice.WifiDevices.ForEach(x => deviceMacs.Add(x.MacAddress));
+            //prepare the list to send into CosmosDB
+            var AllWiFiDevices = new List<Localdevice>();
+            WiFiDevice.WifiDevices.ForEach(x => AllWiFiDevices.Add(new Localdevice()
+            {
+                ActiveDuration = x.ActiveDuration,
+                DeviceName = x.DeviceName,
+                DeviceOwner = x.DeviceOwner,
+                DeviceType = x.DeviceType,
+                MacAddress = x.MacAddress,
+                StatusFrom = METHOD.UnixTimeStampToDateTime(x.StatusUnixTime),
+                IsPresent = x.IsPresent
+            }));
+            TelemetryDataClass.SourceInfo = $"WiFi Devices";
+            //send data to CosmosDB
+            var monitorData = new
+            {
+                DeviceID = "HomeController",
+                status = TelemetryDataClass.SourceInfo,
+                DateAndTime = METHOD.DateTimeTZ().DateTime,
+                AllWiFiDevices
+            };
+            await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo, "output");
         }
     }
     class Localdevice
@@ -374,7 +376,9 @@ namespace HomeModule.Schedulers
         public const int WATCH = 3;
         public const int OTHER = 4;
         public const int DEVICE = 5;
+        //type with a number 100 is reserved for an item deleteting, used in PowerApps
 
+        //this list is used in very first time, later the data is taken from the file from Raspberry.
         public static List<WiFiDevice> WifiDevices = new List<WiFiDevice>
         {
             new WiFiDevice(Environment.GetEnvironmentVariable("leivotelo"), "Leivo telo", "Leivo", MOBILE, CONSTANT.MOBILE_DURATION),
@@ -410,34 +414,6 @@ namespace HomeModule.Schedulers
             new WiFiDevice(Environment.GetEnvironmentVariable("naaber5"), "Naabri Arris", "Naaber"),
             new WiFiDevice(Environment.GetEnvironmentVariable("naaber6"), "Naabri telekas", "Naaber")
          };
-    }
-    class DeviceOwner
-    {
-        public string Owner { get; set; }
-        public List<WiFiDevice> WiFiDevices { get; set; }
-
-        public DeviceOwner(string owner, List<WiFiDevice> wiFis)
-        {
-            Owner = owner;
-            WiFiDevices = wiFis;
-        }
-        public static List<DeviceOwner> DeviceOwners = new List<DeviceOwner>
-        {
-            new DeviceOwner("Leivo",
-                new List<WiFiDevice>{
-                    new WiFiDevice(Environment.GetEnvironmentVariable("leivotelo"), "Leivo telo", "Leivo", WiFiDevice.MOBILE, CONSTANT.MOBILE_DURATION),
-                    new WiFiDevice(Environment.GetEnvironmentVariable("leivolap"), "Leivo lap", "Leivo", WiFiDevice.NOTEBOOK, CONSTANT.NOTEBOOK_DURATION),
-                    new WiFiDevice(Environment.GetEnvironmentVariable("surfacelap"), "Surface lap", "Leivo", WiFiDevice.NOTEBOOK, CONSTANT.NOTEBOOK_DURATION),
-                    new WiFiDevice(Environment.GetEnvironmentVariable("fenix6"), "Fenix6", "Leivo", WiFiDevice.WATCH, CONSTANT.WATCH_DURATION)
-                }),
-            new DeviceOwner("Kaja",
-                new List<WiFiDevice>
-                {
-                    new WiFiDevice(Environment.GetEnvironmentVariable("kajatelo"), "Kaja telo", "Kaja", WiFiDevice.MOBILE, CONSTANT.MOBILE_DURATION),
-                    new WiFiDevice(Environment.GetEnvironmentVariable("kajalap"), "Kaja lap", "Kaja", WiFiDevice.NOTEBOOK, CONSTANT.NOTEBOOK_DURATION),
-                    new WiFiDevice(Environment.GetEnvironmentVariable("venu"), "Venu", "Kaja", WiFiDevice.WATCH, CONSTANT.WATCH_DURATION)
-                })
-        };
     }
     public class LongToStringJsonConverter : JsonConverter<string>
     {
@@ -478,10 +454,7 @@ namespace HomeModule.Schedulers
                 return value;
             }
             return new DateTime();
-            //throw new FormatException();
-            //return DateTime.Parse(reader.GetString(), null, System.Globalization.DateTimeStyles.RoundtripKind);
         }
-
         public override void Write(Utf8JsonWriter writer, DateTime value, JsonSerializerOptions options)
         {
             writer.WriteStringValue(value.ToString());
@@ -491,15 +464,15 @@ namespace HomeModule.Schedulers
     {
         public static List<string> KismetFields = new List<string>
         {
-            ("kismet.device.base.manuf"),
-            ("kismet.device.base.type"),
-            ("kismet.device.base.macaddr"),
-            ("dot11.device/dot11.device.last_bssid"),
-            ("kismet.device.base.last_time"),
-            ("kismet.device.base.first_time"),
-            ("kismet.device.base.signal/kismet.common.signal.last_signal"),
-            ("dot11.device/dot11.device.last_probed_ssid_record/dot11.probedssid.ssid"),
-            ("dot11.device/dot11.device.last_beaconed_ssid_record/dot11.advertisedssid.ssid")
+            "kismet.device.base.manuf",
+            "kismet.device.base.type",
+            "kismet.device.base.macaddr",
+            "dot11.device/dot11.device.last_bssid",
+            "kismet.device.base.last_time",
+            "kismet.device.base.first_time",
+            "kismet.device.base.signal/kismet.common.signal.last_signal",
+            "dot11.device/dot11.device.last_probed_ssid_record/dot11.probedssid.ssid",
+            "dot11.device/dot11.device.last_beaconed_ssid_record/dot11.advertisedssid.ssid"
         };
     }
 }

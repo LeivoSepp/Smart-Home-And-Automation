@@ -121,7 +121,7 @@ namespace HomeModule.Azure
             reportedProperties["isGarageLightsOn"] = TelemetryDataClass.isGarageLightsOn;
             reportedProperties["isHomeDoorOpen"] = TelemetryDataClass.isHomeDoorOpen;
             reportedProperties["Temperatures"] = HomeTemperature.ListOfAllSensors.Temperatures;
-            reportedProperties["Localdevices"] = WiFiProbes.LocalUserDevices;
+            reportedProperties["Localdevices"] = WiFiProbes.WiFiDevicesToPowerApps;
 
             var response = Encoding.ASCII.GetBytes(reportedProperties.ToJson());
             return new MethodResponse(response, 200);
@@ -149,8 +149,16 @@ namespace HomeModule.Azure
             try
             {
                 var ParsedWiFiDevices = JsonDocument.Parse(methodRequest.DataAsJson);
-                JsonElement jsonElement = ParsedWiFiDevices.RootElement.GetProperty("AllWiFiDevices");
-                WiFiProbes.AllWiFiDevices = JsonSerializer.Deserialize<List<Localdevice>>(jsonElement.GetRawText());
+                JsonElement jsonElement = ParsedWiFiDevices.RootElement;
+                var device = JsonSerializer.Deserialize<Localdevice>(jsonElement.GetRawText());
+                WiFiProbes.WiFiDevicesFromPowerApps.Add(new Localdevice()
+                {
+                    ActiveDuration = device.ActiveDuration,
+                    DeviceName = device.DeviceName,
+                    DeviceOwner = device.DeviceOwner,
+                    DeviceType = device.DeviceType,
+                    MacAddress = device.MacAddress
+                });
             }
             catch (Exception e)
             {

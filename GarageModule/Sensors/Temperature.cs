@@ -124,6 +124,7 @@ namespace GarageModule.Sensors
             var messageJson = JsonSerializer.Serialize(monitorData);
             var IoTmessage = new Message(Encoding.ASCII.GetBytes(messageJson));
             await _sendListData.PipeMessage(IoTmessage, Program.IoTHubModuleClient, $"{Message} light: {(ReceiveDataClass.IsGarageLightsOn ? "On" : "Off")}");
+            alertingSensors.Clear();
         }
         public async void LedMatrixAsync()
         {

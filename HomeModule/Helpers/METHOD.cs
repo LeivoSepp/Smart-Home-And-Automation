@@ -6,6 +6,10 @@ namespace HomeModule.Helpers
 {
     class METHOD
     {
+        public static double DateTimeToUnixTimestamp(DateTime dateTime)
+        {
+            return dateTime.Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
+        }
         public static DateTime UnixTimeStampToDateTime(double unixTimeStamp)
         {
             // Unix timestamp is seconds past epoch

@@ -157,7 +157,8 @@ namespace HomeModule.Azure
                     DeviceName = device.DeviceName,
                     DeviceOwner = device.DeviceOwner,
                     DeviceType = device.DeviceType,
-                    MacAddress = device.MacAddress
+                    MacAddress = device.MacAddress,
+                    StatusFrom = device.StatusFrom
                 });
             }
             catch (Exception e)

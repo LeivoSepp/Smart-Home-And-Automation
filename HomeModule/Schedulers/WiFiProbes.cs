@@ -81,7 +81,7 @@ namespace HomeModule.Schedulers
 
             while (true)
             {
-                double unixTimestamp = DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
+                double unixTimestamp = METHOD.DateTimeToUnixTimestamp(DateTime.UtcNow);
                 double timeOffset = METHOD.DateTimeTZ().Offset.TotalHours;
 
                 //if there are some items from PowerApps then proceed
@@ -108,6 +108,7 @@ namespace HomeModule.Schedulers
                                 device.DeviceOwner = item.DeviceOwner;
                                 device.DeviceType = item.DeviceType;
                                 device.ActiveDuration = item.ActiveDuration;
+                                device.StatusUnixTime = METHOD.DateTimeToUnixTimestamp(item.StatusFrom);
                                 isNewItem = false;
                                 break;
                             }
@@ -125,7 +126,8 @@ namespace HomeModule.Schedulers
                                 item.DeviceName,
                                 item.DeviceOwner,
                                 item.DeviceType,
-                                item.ActiveDuration
+                                item.ActiveDuration,
+                                METHOD.DateTimeToUnixTimestamp(item.StatusFrom)
                             ));
                         }
                     }
@@ -287,6 +289,8 @@ namespace HomeModule.Schedulers
         async Task SendMacAddressToCosmos()
         {
             _sendListData = new SendDataAzure();
+            double timeOffset = METHOD.DateTimeTZ().Offset.TotalHours;
+
             //create a list of the MAC Addresses for multimac query
             deviceMacs.Clear();
             WiFiDevice.WifiDevices.ForEach(x => deviceMacs.Add(x.MacAddress));
@@ -299,7 +303,7 @@ namespace HomeModule.Schedulers
                 DeviceOwner = x.DeviceOwner,
                 DeviceType = x.DeviceType,
                 MacAddress = x.MacAddress,
-                StatusFrom = METHOD.UnixTimeStampToDateTime(x.StatusUnixTime),
+                StatusFrom = METHOD.UnixTimeStampToDateTime(x.StatusUnixTime).AddHours(timeOffset),
                 IsPresent = x.IsPresent
             }));
             TelemetryDataClass.SourceInfo = $"WiFi Devices";
@@ -327,7 +331,7 @@ namespace HomeModule.Schedulers
     }
     class WiFiDevice
     {
-        public WiFiDevice(string macAddress, string deviceName, string deviceOwner, int deviceType = DEVICE, int activeDuration = 0, bool isPresent = false, bool statusChange = true)
+        public WiFiDevice(string macAddress, string deviceName, string deviceOwner, int deviceType = DEVICE, int activeDuration = 0, double statusUnixTime=0, bool isPresent = false, bool statusChange = true)
         {
             MacAddress = macAddress;
             ActiveDuration = activeDuration;
@@ -336,6 +340,7 @@ namespace HomeModule.Schedulers
             DeviceType = deviceType;
             IsPresent = isPresent;
             StatusChange = statusChange;
+            StatusUnixTime = statusUnixTime;
         }
 
         public int ActiveDuration { get; set; }

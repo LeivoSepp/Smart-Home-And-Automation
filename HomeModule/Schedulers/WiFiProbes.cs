@@ -273,12 +273,12 @@ namespace HomeModule.Schedulers
                     if (tempAddList.Any())
                     {
                         var sortedList = closeDevices.OrderBy(x => x.SignalType).ThenByDescending(y => y.LastUnixTime).ToList();
-                        Console.WriteLine($"dB  | First | Last  |    Mac Address     |Count| SignalType  | Manufacturer | SSID");
-                        Console.WriteLine($" -  | ----  | ----  |    -----------     | --- | ----------  | -----------  | ----");
+                        Console.WriteLine($"dB  | First | Last  |    Mac Address     |Count| SignalType  | Base Name    | Manufacturer | SSID");
+                        Console.WriteLine($" -  | ----  | ----  |    -----------     | --- | ----------  | -----------  |-----------  | ----");
 
                         foreach (var probe in sortedList)
                         {
-                            Console.WriteLine($" {probe.LastSignal:00} | {METHOD.UnixTimeStampToDateTime(probe.FirstUnixTime).AddHours(timeOffset):t} | {METHOD.UnixTimeStampToDateTime(probe.LastUnixTime).AddHours(timeOffset):t} | {probe.MacAddress} | {probe.Count:00}  | {probe.SignalType}  | {probe.Manufacture}  |{(string.IsNullOrEmpty(probe.ProbedSSID) || probe.ProbedSSID == "0" ? probe.SSID : probe.ProbedSSID)}");
+                            Console.WriteLine($" {probe.LastSignal:00} | {METHOD.UnixTimeStampToDateTime(probe.FirstUnixTime).AddHours(timeOffset):t} | {METHOD.UnixTimeStampToDateTime(probe.LastUnixTime).AddHours(timeOffset):t} | {probe.MacAddress} | {probe.Count:00}  | {probe.SignalType}  | {probe.BaseName}  | {probe.Manufacture}  |{(string.IsNullOrEmpty(probe.ProbedSSID) || probe.ProbedSSID == "0" ? probe.SSID : probe.ProbedSSID)}");
                         }
                         Console.WriteLine();
                     }
@@ -351,8 +351,11 @@ namespace HomeModule.Schedulers
         public bool StatusChange { get; set; }
         public double StatusUnixTime { get; set; }
         public int Count { get; set; }
-        //[JsonPropertyName("kismet.device.base.commonname")]
         public string DeviceName { get; set; }
+        [JsonPropertyName("kismet.device.base.name")]
+        public string BaseName { get; set; }
+        [JsonPropertyName("kismet.device.base.commonname")]
+        public string CommonName { get; set; }
         [JsonPropertyName("kismet.device.base.type")]
         public string SignalType { get; set; }
         [JsonPropertyName("kismet.device.base.macaddr")]
@@ -469,6 +472,8 @@ namespace HomeModule.Schedulers
     {
         public static List<string> KismetFields = new List<string>
         {
+            "kismet.device.base.commonname",
+            "kismet.device.base.name",
             "kismet.device.base.manuf",
             "kismet.device.base.type",
             "kismet.device.base.macaddr",

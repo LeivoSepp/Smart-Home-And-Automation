@@ -76,7 +76,7 @@ namespace HomeModule.Schedulers
             httpContentDevices.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
             httpContentDevices.Headers.ContentType.CharSet = "UTF-8";
 
-            bool showHeaders = true;
+            bool isAnyDeviceChanged = true;
             var closeDevices = new List<WiFiDevice>();
 
             while (true)
@@ -178,13 +178,13 @@ namespace HomeModule.Schedulers
                     {
                         device.StatusUnixTime = unixTimestamp;
                         device.StatusChange = true;
-                        showHeaders = true;
+                        isAnyDeviceChanged = true;
                     }
                     if (!device.IsPresent && device.StatusChange)
                     {
                         device.StatusUnixTime = device.LastUnixTime;
                         device.StatusChange = false;
-                        showHeaders = true;
+                        isAnyDeviceChanged = true;
                     }
                     //following list WiFiDevicesToPowerApps is used to send minimal data to PowerApps (sending only userdevices)
                     //this list will be sent as a response after PowerApps asks something or refreshing it's data
@@ -210,7 +210,7 @@ namespace HomeModule.Schedulers
                 IsAnyMobileAtHome = WiFiDevice.WifiDevices.Any(x => x.IsPresent && (x.DeviceType == WiFiDevice.MOBILE || x.DeviceType == WiFiDevice.WATCH));
 
                 //for local debugging only show the active/non active devices in console window
-                if (showHeaders) 
+                if (isAnyDeviceChanged) 
                 {
                     var sortedList = WiFiDevice.WifiDevices.OrderByDescending(y => y.IsPresent).ThenByDescending(x => x.StatusUnixTime).ToList();
                     Console.WriteLine($"   From   | Status  | Device");
@@ -223,7 +223,7 @@ namespace HomeModule.Schedulers
                         }
                     }
                     Console.WriteLine($"");
-                    showHeaders = false;
+                    isAnyDeviceChanged = false;
                 }
 
                 //removing all known devices from the last seen devices list

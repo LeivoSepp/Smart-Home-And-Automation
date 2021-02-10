@@ -56,18 +56,25 @@ namespace HomeModule.Schedulers
                 //summing all the room temperature changes together add new deltas until it bigger that 4 degrees
                 SumOfTemperatureDeltas += ListOfAllSensors.Temperatures.Where(x => x.isRoom).Sum(x => Math.Abs(x.Temperature - x.LastTemperature));
 
-                //turn on-off room heating actuators
+                //manage Livingroom heating actuator
                 if (ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == LIVING).isHeatingRequired)
                     Pins.PinWrite(Pins.livingRoomHeatControlOut, PinValue.High);
                 else
                     Pins.PinWrite(Pins.livingRoomHeatControlOut, PinValue.Low);
+
+                //manage Office heating actuator
                 if (ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == OFFICE).isHeatingRequired)
                     Pins.PinWrite(Pins.homeOfficeHeatControlOut, PinValue.High);
                 else
                     Pins.PinWrite(Pins.homeOfficeHeatControlOut, PinValue.Low);
 
-                bool isShellyOn = ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == PIANO).isHeatingRequired;
-                await Shelly.ShellySwitch(isShellyOn, Shelly.PianoHeating);
+                //manage Piano heating actuator
+                bool isPianoHeatingOn = ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == PIANO).isHeatingRequired;
+                await Shelly.ShellySwitch(isPianoHeatingOn, Shelly.PianoHeating);
+
+                //manage Bedroom heating actuator
+                bool isBedroomHeatingOn = ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == BEDROOM).isHeatingRequired;
+                await Shelly.ShellySwitch(isBedroomHeatingOn, Shelly.BedroomHeating);
 
                 //manage sauna temperature
                 if (ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == SAUNA).isHeatingRequired && TelemetryDataClass.isSaunaOn)

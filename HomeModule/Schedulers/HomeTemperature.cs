@@ -9,6 +9,7 @@ using System.Device.Gpio;
 using System.Text.Json;
 using System.IO;
 using HomeModule.Helpers;
+using System.Collections.Generic;
 
 namespace HomeModule.Schedulers
 {
@@ -40,15 +41,16 @@ namespace HomeModule.Schedulers
             ListOfAllSensors = await _sensorsClient.ReadSensors();
             //fill out LastTemperatures and initial Temperature trend which is initially always TRUE
             ListOfAllSensors = UpdateSensorsTrendAndLastTemp(ListOfAllSensors, ListOfAllSensors);
+
+            var filename = Methods.GetFilePath(CONSTANT.FILENAME_ROOM_TEMPERATURES);
+            if (File.Exists(filename))
+            {
+                var dataFromFile = await Methods.OpenExistingFile(filename);
+                List<SensorReading> SetRoomTemps = JsonSerializer.Deserialize<List<SensorReading>>(dataFromFile);
+                SetTemperatures(SetRoomTemps);
+            }
             while (true)
             {
-                var filename = Methods.GetFilePath(CONSTANT.FILENAME_ROOM_TEMPERATURES);
-                if (File.Exists(filename))
-                {
-                    var dataFromFile = await Methods.OpenExistingFile(filename);
-                    SensorReadings SetRoomTemps = JsonSerializer.Deserialize<SensorReadings>(dataFromFile);
-                    SetTemperatures(SetRoomTemps);
-                }
                 //get a new sensor readings and then update
                 SensorReadings sensorReadings = await _sensorsClient.ReadSensors();
                 ListOfAllSensors = UpdateSensorsTrendAndLastTemp(ListOfAllSensors, sensorReadings);
@@ -125,12 +127,12 @@ namespace HomeModule.Schedulers
             }
             return listOfRooms;
         }
-        public static void SetTemperatures(SensorReadings sensorReadings)
+        public static void SetTemperatures(List<SensorReading> temperatures)
         {
             foreach (var s in ListOfAllSensors.Temperatures)
             {
                 //update room temperatureSET 
-                foreach (var n in sensorReadings.Temperatures)
+                foreach (var n in temperatures)
                 {
                     if (s.RoomName == n.RoomName)
                     {

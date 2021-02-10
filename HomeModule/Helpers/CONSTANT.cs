@@ -40,7 +40,7 @@ namespace HomeModule.Helpers
         public const int EVU_STOP = 3; //heating off at all
 
         public const int SIGNAL_TRESHOLD = -50; //dB
-        public const int LAST_ACTIVE_DEVICES = -600; //seconds
+        public const int ACTIVE_DEVICES_IN_LAST = -600; //seconds
 
         public const int MOBILE_DURATION = 30; //20
         public const int NOTEBOOK_DURATION = 45; //45

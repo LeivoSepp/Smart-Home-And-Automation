@@ -13,6 +13,7 @@ using System.Net.Http;
 using HomeModule.Models;
 using System.IO;
 using HomeModule.Helpers;
+using System.Linq;
 
 namespace HomeModule.Azure
 {
@@ -75,14 +76,11 @@ namespace HomeModule.Azure
                 if (HomeCommands.RootElement.TryGetProperty("Temperatures", out JsonElement temperatures))
                 {
                     //this data is coming from PowerApps
-                    SensorReadings SetRoomTemperatures = new SensorReadings
-                    {
-                        Temperatures = JsonSerializer.Deserialize<List<SensorReading>>(temperatures.GetRawText())
-                    };
-                    var jsonString = JsonSerializer.Serialize(SetRoomTemperatures);
+                    var Temperatures = JsonSerializer.Deserialize<List<SensorReading>>(temperatures.GetRawText());
+                    string jsonString = JsonSerializer.Serialize(Temperatures);
                     var filename = Methods.GetFilePath(CONSTANT.FILENAME_ROOM_TEMPERATURES);
                     await Methods.SaveStringToLocalFile(filename, jsonString);
-                    HomeTemperature.SetTemperatures(SetRoomTemperatures);
+                    HomeTemperature.SetTemperatures(Temperatures);
                 }
             }
             catch (Exception e)

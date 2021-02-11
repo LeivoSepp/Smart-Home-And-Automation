@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Azure.Devices;
 
 namespace HomeIoTFunctions20.ShellyDoorSensor
 {
@@ -16,12 +17,6 @@ namespace HomeIoTFunctions20.ShellyDoorSensor
         [FunctionName("CloseGate")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
-            [CosmosDB(
-                databaseName: "FreeCosmosDB",
-                collectionName: "TelemetryData",
-                ConnectionStringSetting = "CosmosDBConnection"
-                )]
-                IAsyncCollector<dynamic> output,
             ExecutionContext context,
             ILogger log)
         {
@@ -30,6 +25,7 @@ namespace HomeIoTFunctions20.ShellyDoorSensor
                 .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
                 .AddEnvironmentVariables()
                 .Build();
+            var connectionString = config["IoTHubConnectionString"];
 
             var sendData = new
             {
@@ -37,9 +33,20 @@ namespace HomeIoTFunctions20.ShellyDoorSensor
                 DateAndTime = GetEnergyMarketPrice.GetEnergyMarketPrice.DateTimeTZ(),
                 isGateOpen = false
             };
-            await output.AddAsync(sendData);
+            string requestBody = JsonConvert.SerializeObject(sendData);
 
-            return new OkObjectResult("OK");
+            var serviceClient = ServiceClient.CreateFromConnectionString(connectionString);
+            var cloudToDeviceMethod = new CloudToDeviceMethod("GateCommand")
+            {
+                ConnectionTimeout = TimeSpan.FromSeconds(5),
+                ResponseTimeout = TimeSpan.FromSeconds(5)
+            };
+
+            cloudToDeviceMethod.SetPayloadJson(requestBody);
+            var response = await serviceClient.InvokeDeviceMethodAsync("HomeEdgeDevice", "HomeModule", cloudToDeviceMethod).ConfigureAwait(false);
+            var json = response.GetPayloadAsJson();
+
+            return new OkObjectResult($"Ok");
         }
     }
 }

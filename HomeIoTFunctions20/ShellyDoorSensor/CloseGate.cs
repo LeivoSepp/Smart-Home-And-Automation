@@ -11,9 +11,9 @@ using Microsoft.Extensions.Configuration;
 
 namespace HomeIoTFunctions20.ShellyDoorSensor
 {
-    public static class GateClosed
+    public static class CloseGate
     {
-        [FunctionName("GateClosed")]
+        [FunctionName("CloseGate")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
             [CosmosDB(

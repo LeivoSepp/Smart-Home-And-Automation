@@ -125,7 +125,7 @@ namespace HomeModule.Schedulers
                 //create a list of the MAC Addresses for multimac query
                 List<string> deviceMacs = new List<string>();
                 WiFiDevice.WifiDevices.ForEach(x => deviceMacs.Add(x.MacAddress));
-                string jsonMacAddresses = JsonSerializer.Serialize(deviceMacs); 
+                string jsonMacAddresses = JsonSerializer.Serialize(deviceMacs);
                 string urlMultiMac = $"{urlKismet}/devices/multimac/devices.json";
                 string jsonContentFieldsMac = "json={\"fields\":" + jsonFields + ",\"devices\":" + jsonMacAddresses + "}";
                 List<WiFiDevice> KismetKnownDevices = await GetDevices(urlMultiMac, jsonContentFieldsMac);
@@ -147,7 +147,16 @@ namespace HomeModule.Schedulers
                             device.LastUnixTime = kismet.LastUnixTime;
                             device.LastSignal = kismet.LastSignal;
                             device.SignalType = kismet.SignalType;
-                            device.AccessPoint = WiFiDevice.WifiDevices.Where(x => x.MacAddress == kismet.LastBSSID).Select(x => x.DeviceName).DefaultIfEmpty("No AP").First();
+                            device.SSID = kismet.SSID;
+                            device.WiFiName = kismet.ProbedSSID;
+                            if (kismet.SignalType.Contains("Wi-Fi"))
+                            {
+                                device.AccessPoint = WiFiDevice.WifiDevices.Where(x => x.MacAddress == kismet.LastBSSID).Select(x => x.DeviceName).DefaultIfEmpty("No AP").First();
+                                if (string.IsNullOrEmpty(device.WiFiName) || device.WiFiName == "0")
+                                {
+                                    device.WiFiName = WiFiDevice.WifiDevices.Where(x => x.MacAddress == kismet.LastBSSID).Select(x => x.SSID).DefaultIfEmpty("No AP").First();
+                                }
+                            }
                             break;
                         }
                     }
@@ -194,16 +203,17 @@ namespace HomeModule.Schedulers
                 if (isAnyDeviceChanged)
                 {
                     var sortedList = WiFiDevice.WifiDevices.OrderByDescending(y => y.IsPresent).ThenBy(w => w.DeviceOwner).ThenByDescending(z => z.AccessPoint).ThenBy(w => w.SignalType).ThenByDescending(x => x.StatusUnixTime).ToList();
-                    Console.WriteLine($"   From   | Status  |          Device           |        AccessPoint       |  SignalType");
-                    Console.WriteLine($" -------- | ------- |         --------          |           -----          |  --------  ");
+                    Console.WriteLine($"   From   | Status  |          Device           |        WiFi network      |        AccessPoint       |  SignalType");
+                    Console.WriteLine($" -------- | ------- |         --------          |           -----          |           -----          |  --------  ");
                     foreach (var device in sortedList)
                     {
                         if (device.LastUnixTime > 0 && device.DeviceOwner != "Neighbor") //show only my own ever seen LocalUserDevices devices
                         {
                             Console.WriteLine($" {METHOD.UnixTimeStampToDateTime(device.StatusUnixTime).AddHours(timeOffset):T} " +
                                 $"| {(device.IsPresent ? "Active " : "Not Act")} " +
-                                $"| {device.DeviceName}{"".PadRight(26 - device.DeviceName.Length)}" +
-                                $"| {device.AccessPoint}{"".PadRight(26 - (!string.IsNullOrEmpty(device.AccessPoint) ? device.AccessPoint.Length : 0))}" +
+                                $"| {device.DeviceName}{"".PadRight(26 - (device.DeviceName.Length > 26 ? 26 : device.DeviceName.Length))}" +
+                                $"| {device.WiFiName}{"".PadRight(26 - (!string.IsNullOrEmpty(device.WiFiName) ? (device.WiFiName.Length > 26 ? 26 : device.WiFiName.Length) : 0))}" +
+                                $"| {device.AccessPoint}{"".PadRight(26 - (!string.IsNullOrEmpty(device.AccessPoint) ? (device.AccessPoint.Length > 26 ? 26 : device.AccessPoint.Length) : 0))}" +
                                 $"| {device.SignalType} ");
                         }
                     }
@@ -241,13 +251,17 @@ namespace HomeModule.Schedulers
                             {
                                 device.Count++;
                                 device.LastUnixTime = kismet.LastUnixTime;
-
-                                //get device AccessPoint name from Kismet (if reported by device)
-                                List<WiFiDevice> KismetOneMac = new List<WiFiDevice>();
-                                string urlOneMac = $"{urlKismet}/devices/by-mac/{kismet.MacAddress}/devices.json";
-                                KismetOneMac = await GetDevices(urlOneMac, jsonContentFields);
-
-                                device.AccessPoint = KismetOneMac.Where(x => x.MacAddress == kismet.LastBSSID).Select(x => x.BaseName).DefaultIfEmpty("No AP").First();
+                                device.WiFiName = kismet.ProbedSSID;
+                                if (kismet.SignalType.Contains("Wi-Fi"))
+                                {
+                                    //get device AccessPoint and WIFI network names from Kismet (if reported by device)
+                                    List<WiFiDevice> KismetOneMac = new List<WiFiDevice>();
+                                    string urlOneMac = $"{urlKismet}/devices/by-mac/{kismet.MacAddress}/devices.json";
+                                    KismetOneMac = await GetDevices(urlOneMac, jsonContentFields);
+                                    device.AccessPoint = KismetOneMac.Where(x => x.MacAddress == kismet.LastBSSID).Select(x => x.BaseName).DefaultIfEmpty("No AP").First();
+                                    if (string.IsNullOrEmpty(kismet.ProbedSSID) || device.WiFiName == "0")
+                                        device.WiFiName = KismetOneMac.Where(x => x.MacAddress == kismet.LastBSSID).Select(x => x.SSID).DefaultIfEmpty("No AP").First();
+                                }
                                 isNewItem = false;
                                 break;
                             }
@@ -266,8 +280,8 @@ namespace HomeModule.Schedulers
                     if (tempAddList.Any())
                     {
                         var sortedList = closeDevices.OrderBy(x => x.SignalType).ThenByDescending(y => y.LastUnixTime).ToList();
-                        Console.WriteLine($"dB  | First | Last  |    Mac Address    |Count|  SignalType   |         AccessPoint       |    Base Name     | Manufacturer ");
-                        Console.WriteLine($" -  | ----  | ----  |    -----------    | --- |  ----------   |          ---------        |    ----------    |  -----------  ");
+                        Console.WriteLine($"dB  | First | Last  |    Mac Address    |Count|  SignalType   |         WiFi network      |         AccessPoint       |    Base Name     | Manufacturer ");
+                        Console.WriteLine($" -  | ----  | ----  |    -----------    | --- |  ----------   |          ---------        |          ---------        |    ----------    |  -----------  ");
 
                         foreach (var device in sortedList)
                         {
@@ -276,8 +290,9 @@ namespace HomeModule.Schedulers
                                 $"| {METHOD.UnixTimeStampToDateTime(device.LastUnixTime).AddHours(timeOffset):t} " +
                                 $"| {device.MacAddress} " +
                                 $"| {device.Count:00}  " +
-                                $"| {device.SignalType}{"".PadRight(14 - (!string.IsNullOrEmpty(device.SignalType) ? device.SignalType.Length : 0))}" +
-                                $"| {device.AccessPoint}{"".PadRight(26 - (!string.IsNullOrEmpty(device.AccessPoint) ? device.AccessPoint.Length : 0))}" +
+                                $"| {device.SignalType}{"".PadRight(14 - (!string.IsNullOrEmpty(device.SignalType) ? (device.SignalType.Length > 14 ? 14 : device.SignalType.Length) : 0))}" +
+                                $"| {device.WiFiName}{"".PadRight(26 - (!string.IsNullOrEmpty(device.WiFiName) ? (device.WiFiName.Length > 26 ? 26 : device.WiFiName.Length) : 0))}" +
+                                $"| {device.AccessPoint}{"".PadRight(26 - (!string.IsNullOrEmpty(device.AccessPoint) ? (device.AccessPoint.Length > 26 ? 26 : device.AccessPoint.Length) : 0))}" +
                                 $"| {device.BaseName}{"".PadRight(string.IsNullOrEmpty(device.BaseName) ? 19 : 0)}" +
                                 $"| {device.Manufacture}");
                         }
@@ -299,7 +314,7 @@ namespace HomeModule.Schedulers
                 var result = responseMsg.Content.ReadAsStringAsync();
                 devices = JsonSerializer.Deserialize<List<WiFiDevice>>(result.Result);
             }
-            catch (JsonException e) 
+            catch (JsonException e)
             {
                 Console.WriteLine($"Json exception: {e.Message}");
             }
@@ -367,29 +382,27 @@ namespace HomeModule.Schedulers
         }
 
         public int ActiveDuration { get; set; }
-        public string LastConnectedDevice { get; set; }
         public string DeviceOwner { get; set; }
         public int DeviceType { get; set; }
         public bool IsPresent { get; set; }
         public bool StatusChange { get; set; }
         public double StatusUnixTime { get; set; }
         public int Count { get; set; }
-        public string AccessPoint { get; set; }
-        public string DeviceName { get; set; }
+        public string AccessPoint { get; set; } //Connected device name, calculated by LastBSSID
+        public string WiFiName { get; set; } //Connected WiFi network name, SSID or ProbedSSID (depending of the device type)
+        public string DeviceName { get; set; } //manually set device name
         [JsonPropertyName("kismet.device.base.name")]
         public string BaseName { get; set; }
-        [JsonPropertyName("kismet.device.base.commonname")]
-        public string CommonName { get; set; }
         [JsonPropertyName("kismet.device.base.type")]
         public string SignalType { get; set; }
         [JsonPropertyName("kismet.device.base.macaddr")]
         public string MacAddress { get; set; }
         [JsonPropertyName("dot11.probedssid.ssid")]
         [JsonConverter(typeof(LongToStringJsonConverter))]
-        public string ProbedSSID { get; set; }
+        public string ProbedSSID { get; set; } //WiFi device: WiFi network name
         [JsonPropertyName("dot11.device.last_bssid")]
         [JsonConverter(typeof(LongToStringJsonConverter))]
-        public string LastBSSID { get; set; }
+        public string LastBSSID { get; set; } //Any device: connected into this MAC address
         [JsonPropertyName("kismet.common.signal.last_signal")]
         public int LastSignal { get; set; }
         [JsonPropertyName("kismet.device.base.last_time")]
@@ -401,7 +414,7 @@ namespace HomeModule.Schedulers
         public string Manufacture { get; set; }
         [JsonPropertyName("dot11.advertisedssid.ssid")]
         [JsonConverter(typeof(LongToStringJsonConverter))]
-        public string SSID { get; set; }
+        public string SSID { get; set; } //WiFi AccessPoint: WiFi network name
 
         public const int MOBILE = 1;
         public const int NOTEBOOK = 2;
@@ -498,7 +511,6 @@ namespace HomeModule.Schedulers
     {
         public static List<string> KismetFields = new List<string>
         {
-            "kismet.device.base.commonname",
             "kismet.device.base.name",
             "kismet.device.base.manuf",
             "kismet.device.base.type",

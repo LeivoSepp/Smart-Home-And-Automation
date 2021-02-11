@@ -46,7 +46,7 @@ namespace HomeIoTFunctions20.ShellyDoorSensor
             var response = await serviceClient.InvokeDeviceMethodAsync("HomeEdgeDevice", "HomeModule", cloudToDeviceMethod).ConfigureAwait(false);
             var json = response.GetPayloadAsJson();
 
-            return new OkObjectResult($"Ok");
+            return new OkObjectResult($"{json}");
         }
     }
 }

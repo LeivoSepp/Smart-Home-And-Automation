@@ -138,6 +138,7 @@ namespace HomeModule.Azure
             //// Register callback to be called when a message is received by the module
             await ioTHubModuleClient.SetMethodHandlerAsync("ManagementCommands", HomeEdgeDeviceManagement, null);
             await ioTHubModuleClient.SetMethodHandlerAsync("SetWiFiMacAddress", HomeEdgeWiFiDevices, null);
+            await ioTHubModuleClient.SetMethodHandlerAsync("GateCommand", HomeEdgeGateCommand, null);
         }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
@@ -158,6 +159,29 @@ namespace HomeModule.Azure
                     MacAddress = device.MacAddress,
                     StatusFrom = device.StatusFrom
                 });
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine("WiFI devices: " + e.ToString());
+            }
+            var response = Encoding.ASCII.GetBytes("Ok");
+            return new MethodResponse(response, 200);
+        }
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+        private async Task<MethodResponse> HomeEdgeGateCommand(MethodRequest methodRequest, object userContext)
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+        {
+            try
+            {
+                var ParsedWiFiDevices = JsonDocument.Parse(methodRequest.DataAsJson);
+                JsonElement jsonElement = ParsedWiFiDevices.RootElement;
+                var device = JsonSerializer.Deserialize<Localdevice>(jsonElement.GetRawText());
+
+                if (HomeCommands.RootElement.TryGetProperty("Ventilation", out JsonElement ventilation) && ventilation.GetBoolean() == !TelemetryDataClass.isVentilationOn)
+                {
+                    string cmd = ventilation.GetBoolean() ? CommandNames.OPEN_VENT : CommandNames.CLOSE_VENT;
+                    command.Add(cmd);
+                }
             }
             catch (Exception e)
             {

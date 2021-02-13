@@ -63,11 +63,6 @@ namespace HomeModule.Azure
                     string cmd = security.GetBoolean() ? CommandNames.TURN_ON_SECURITY : CommandNames.TURN_OFF_SECURITY;
                     command.Add(cmd);
                 }
-                if (HomeCommands.RootElement.TryGetProperty("isOutsideLightsOn", out JsonElement isoutsideLightsOn) && isoutsideLightsOn.GetBoolean() == !TelemetryDataClass.isOutsideLightsOn)
-                {
-                    bool setLightsOn = isoutsideLightsOn.GetBoolean();
-                    SomeoneAtHome.SetOutsideLightsOn(setLightsOn, setLightsOn); //forcing to turn lights on or off
-                }
                 if (HomeCommands.RootElement.TryGetProperty("Temperatures", out JsonElement temperatures))
                 {
                     //this data is coming from PowerApps
@@ -133,7 +128,7 @@ namespace HomeModule.Azure
             //// Register callback to be called when a message is received by the module
             await ioTHubModuleClient.SetMethodHandlerAsync("ManagementCommands", HomeEdgeDeviceManagement, null);
             await ioTHubModuleClient.SetMethodHandlerAsync("SetWiFiMacAddress", HomeEdgeWiFiDevices, null);
-            await ioTHubModuleClient.SetMethodHandlerAsync("SetGarageLight", SetGarageLight, null);
+            await ioTHubModuleClient.SetMethodHandlerAsync("SetLights", SetLights, null);
         }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
@@ -168,7 +163,7 @@ namespace HomeModule.Azure
         //this method is called out by Azure Function. 
         //1. Shelly Door/Gate sensor activates Azure Function
         //2. Shelly Garage Spotlight activates Azure Function (this doesnt work !??)
-        private async Task<MethodResponse> SetGarageLight(MethodRequest methodRequest, object userContext)
+        private async Task<MethodResponse> SetLights(MethodRequest methodRequest, object userContext)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
             try
@@ -177,11 +172,17 @@ namespace HomeModule.Azure
                 JsonElement jsonElement = json.RootElement;
                 var device = JsonSerializer.Deserialize<Localdevice>(jsonElement.GetRawText());
 
-                if (jsonElement.TryGetProperty("TurnOnLights", out JsonElement TurnOnLights))
-                {
+                jsonElement.TryGetProperty("LightName", out JsonElement lightName);
+                jsonElement.TryGetProperty("TurnOnLights", out JsonElement TurnOnLights);
+
+                if (lightName.GetString() == "garage")
                     TelemetryDataClass.isGarageLightsOn = await Shelly.SetShellySwitch(TurnOnLights.GetBoolean(), Shelly.GarageLight);
-                    Console.WriteLine($"Garage lights are {(TelemetryDataClass.isGarageLightsOn ? "on" : "off")} {METHOD.DateTimeTZ().DateTime:dd.MM HH:mm}");
+                if (lightName.GetString() == "outside")
+                {
+                    TelemetryDataClass.isOutsideLightsOn = await Shelly.SetShellySwitch(TurnOnLights.GetBoolean(), Shelly.OutsideLight);
+                    SomeoneAtHome.LightsManuallyOnOff = true; //force lights on/off for 30 minutes
                 }
+                Console.WriteLine($"{lightName.GetString()} lights are {(TurnOnLights.GetBoolean() ? "on" : "off")} {METHOD.DateTimeTZ().DateTime:dd.MM HH:mm}");
             }
             catch (Exception e)
             {

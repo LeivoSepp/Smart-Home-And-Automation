@@ -3,7 +3,6 @@ using HomeModule.Azure;
 using HomeModule.Helpers;
 using HomeModule.Raspberry;
 using System;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -30,8 +29,7 @@ namespace HomeModule.Schedulers
         }
         private static bool _isSomeoneAtHome;
 
-        private static bool IsManuallyTurnedOn = false;
-        private static bool IsManuallyTurnedOff = false;
+        public static bool LightsManuallyOnOff = false;
         private static SendDataAzure _sendListData = new SendDataAzure();
 
         private static async void SomeoneAtHomeChanged()
@@ -41,8 +39,6 @@ namespace HomeModule.Schedulers
             //send this message only if home is not secured and either started moving or stopped moving
             if (!TelemetryDataClass.isHomeSecured)
             {
-                SetOutsideLightsOn(IsSomeoneAtHome);
-
                 TelemetryDataClass.isSomeoneAtHome = IsSomeoneAtHome;
                 TelemetryDataClass.SourceInfo = $"Someone is at home: {IsSomeoneAtHome}";
                 var monitorData = new
@@ -70,8 +66,9 @@ namespace HomeModule.Schedulers
             //run the alert only if home is secured and there are some alerting zone
             if (TelemetryDataClass.isHomeSecured && isLastZoneSecured)
             {
-                bool forceOutsideLightsOn = true;
-                SetOutsideLightsOn(true, forceOutsideLightsOn); //forcing outside lights ON
+                //forcing outside lights ON
+                LightsManuallyOnOff = true;
+                TelemetryDataClass.isOutsideLightsOn = await Shelly.SetShellySwitch(true, Shelly.OutsideLight);
 
                 TelemetryDataClass.SourceInfo = $"Home secured {lastZoneName}";
                 string sensorsOpen = "Look where someone is moving:\n\n";
@@ -96,48 +93,23 @@ namespace HomeModule.Schedulers
                 //Paradox1738.alertingSensors.RemoveAll(x => x.IsHomeSecured); //remove all reported zones
             }
         }
-        public static async void SetOutsideLightsOn(bool setLightsOn = true, bool isForcedToTurnOn = false, bool isForcedToTurnOff = false)
-        {
-            IsManuallyTurnedOn = isForcedToTurnOn;
-            IsManuallyTurnedOff = isForcedToTurnOff;
-            bool isSleepTime = IsSleepTime();
-            bool isDarkTime = IsDarkTime();
-            bool isLightsTime = isDarkTime && !isSleepTime;
-            bool LightsOnOff = ((setLightsOn && isLightsTime) || IsManuallyTurnedOn) && !IsManuallyTurnedOff;
-            TelemetryDataClass.isOutsideLightsOn = await Shelly.SetShellySwitch(LightsOnOff, Shelly.OutsideLight);
-            Console.WriteLine($"Outside lights are {(TelemetryDataClass.isOutsideLightsOn ? "on" : "off")} {METHOD.DateTimeTZ().DateTime:dd.MM HH:mm:ss}");
-        }
 
-        //turn lights off is it's already DayTime but people are moving constantly around
-        //turn lights on, if it's DarkTime and people are moving constantly, so SomeoneAtHome event is not fired
         public static async void CheckLightStatuses()
         {
             while (true)
             {
-                bool isSleepTime = IsSleepTime();
-                bool isDarkTime = IsDarkTime();
-                bool isLightsTime = isDarkTime && !isSleepTime;
-                bool isNotLightsTime = !isLightsTime;
-                bool isLightsAreOn = TelemetryDataClass.isOutsideLightsOn;
-
+                bool isLightsTime = IsDarkTime() && !IsSleepTime();
                 //the following manual modes are comes if one pushes the button from the app
-                if (IsManuallyTurnedOn || IsManuallyTurnedOff)
+                if (LightsManuallyOnOff)
                 {
-                    await Task.Delay(TimeSpan.FromMinutes(CONSTANT.OUTSIDE_LIGHTS_MANUAL_DURATION)); //wait here for 30 minutes, lights are on or off
-                    IsManuallyTurnedOn = IsManuallyTurnedOff = false;
+                    //wait here for 30 minutes, lights are on or off
+                    await Task.Delay(TimeSpan.FromMinutes(CONSTANT.OUTSIDE_LIGHTS_MANUAL_DURATION));
+                    LightsManuallyOnOff = false;
                 }
                 else
                 {
-                    //during day time and night time turn off the lights if they are suddenly on
-                    if (isNotLightsTime && isLightsAreOn)
-                    {
-                        SetOutsideLightsOn(false);
-                    }
-                    //during dark time if someone is at home but lights are off, turn them on
-                    if (isLightsTime && IsSomeoneAtHome && !TelemetryDataClass.isOutsideLightsOn)
-                    {
-                        SetOutsideLightsOn();
-                    }
+                    //during day time and night time turn lights off and during dark time turn lights on
+                    TelemetryDataClass.isOutsideLightsOn = await Shelly.SetShellySwitch(isLightsTime, Shelly.OutsideLight);
                 }
                 await Task.Delay(TimeSpan.FromMinutes(1)); //check statuses every 1 minutes
             }

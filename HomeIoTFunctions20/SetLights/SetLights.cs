@@ -10,15 +10,16 @@ using Newtonsoft.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Azure.Devices;
 
-namespace HomeIoTFunctions20.SetGarageLight
+namespace HomeIoTFunctions20.SetLights
 {
-    public static class SetGarageLight
+    public static class SetLights
     {
-        [FunctionName("SetGarageLight")]
+        [FunctionName("SetLights")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = "SetGarageLight/{state}")] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = "SetLights/{lightname}/{state}")] HttpRequest req,
             ExecutionContext context,
             bool state,
+            string lightname,
             ILogger log)
         {
             var config = new ConfigurationBuilder()
@@ -27,17 +28,18 @@ namespace HomeIoTFunctions20.SetGarageLight
                 .AddEnvironmentVariables()
                 .Build();
             var connectionString = config["IoTHubConnectionString"];
-
+            //lightname = "garage" / "outside"
             var sendData = new
             {
                 DeviceID = "Shelly",
                 DateAndTime = GetEnergyMarketPrice.GetEnergyMarketPrice.DateTimeTZ(),
+                LightName = lightname,
                 TurnOnLights = state
             };
             string requestBody = JsonConvert.SerializeObject(sendData);
 
             var serviceClient = ServiceClient.CreateFromConnectionString(connectionString);
-            var cloudToDeviceMethod = new CloudToDeviceMethod("SetGarageLight")
+            var cloudToDeviceMethod = new CloudToDeviceMethod("SetLights")
             {
                 ConnectionTimeout = TimeSpan.FromSeconds(5),
                 ResponseTimeout = TimeSpan.FromSeconds(5)

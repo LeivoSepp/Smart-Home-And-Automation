@@ -10,14 +10,15 @@ using Newtonsoft.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Azure.Devices;
 
-namespace HomeIoTFunctions20.ShellyDoorSensor
+namespace HomeIoTFunctions20.SetGarageLight
 {
-    public static class OpenGate
+    public static class SetGarageLight
     {
-        [FunctionName("OpenGate")]
+        [FunctionName("CloseGate")]
         public static async Task<IActionResult> Run(
-            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = null)] HttpRequest req,
+            [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = "SetGarageLight/{state}")] HttpRequest req,
             ExecutionContext context,
+            string state,
             ILogger log)
         {
             var config = new ConfigurationBuilder()
@@ -27,16 +28,17 @@ namespace HomeIoTFunctions20.ShellyDoorSensor
                 .Build();
             var connectionString = config["IoTHubConnectionString"];
 
+            bool isTurnOnLights = state == "on" ? true : false;
             var sendData = new
             {
                 DeviceID = "Shelly",
                 DateAndTime = GetEnergyMarketPrice.GetEnergyMarketPrice.DateTimeTZ(),
-                isGateOpen = true
+                TurnOnLights = isTurnOnLights
             };
             string requestBody = JsonConvert.SerializeObject(sendData);
 
             var serviceClient = ServiceClient.CreateFromConnectionString(connectionString);
-            var cloudToDeviceMethod = new CloudToDeviceMethod("GateCommand")
+            var cloudToDeviceMethod = new CloudToDeviceMethod("SetGarageLight")
             {
                 ConnectionTimeout = TimeSpan.FromSeconds(5),
                 ResponseTimeout = TimeSpan.FromSeconds(5)

@@ -100,7 +100,7 @@ namespace HomeModule
             _wiFiProbes.QueryWiFiProbes();
 
             //shelly's
-            Shelly.CheckOutsideLightsOnStartup(Shelly.OutsideLight);
+            TelemetryDataClass.isOutsideLightsOn = await Shelly.GetShellyState(Shelly.OutsideLight);
             SomeoneAtHome.CheckLightStatuses();
             SomeoneAtHome.CheckSomeoneMoving();
 

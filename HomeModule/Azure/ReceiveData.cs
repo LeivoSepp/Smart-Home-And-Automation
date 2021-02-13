@@ -68,11 +68,6 @@ namespace HomeModule.Azure
                     bool setLightsOn = isoutsideLightsOn.GetBoolean();
                     SomeoneAtHome.SetOutsideLightsOn(setLightsOn, setLightsOn); //forcing to turn lights on or off
                 }
-                if (HomeCommands.RootElement.TryGetProperty("isGarageLightsOn", out JsonElement isgarageLightsOn) && isgarageLightsOn.GetBoolean() == !TelemetryDataClass.isGarageLightsOn)
-                {
-                    bool isLightsOn = isgarageLightsOn.GetBoolean();
-                    SomeoneAtHome.SetGarageLightsOn(isLightsOn);
-                }
                 if (HomeCommands.RootElement.TryGetProperty("Temperatures", out JsonElement temperatures))
                 {
                     //this data is coming from PowerApps
@@ -138,10 +133,11 @@ namespace HomeModule.Azure
             //// Register callback to be called when a message is received by the module
             await ioTHubModuleClient.SetMethodHandlerAsync("ManagementCommands", HomeEdgeDeviceManagement, null);
             await ioTHubModuleClient.SetMethodHandlerAsync("SetWiFiMacAddress", HomeEdgeWiFiDevices, null);
-            await ioTHubModuleClient.SetMethodHandlerAsync("GateCommand", HomeEdgeGateCommand, null);
+            await ioTHubModuleClient.SetMethodHandlerAsync("SetGarageLight", SetGarageLight, null);
         }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+        //PowerApps is sending data to Azure Function and this Function is calling out this method
         private async Task<MethodResponse> HomeEdgeWiFiDevices(MethodRequest methodRequest, object userContext)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
@@ -157,7 +153,8 @@ namespace HomeModule.Azure
                     DeviceOwner = device.DeviceOwner,
                     DeviceType = device.DeviceType,
                     MacAddress = device.MacAddress,
-                    StatusFrom = device.StatusFrom
+                    StatusFrom = device.StatusFrom,
+                    SignalType = device.SignalType
                 });
             }
             catch (Exception e)
@@ -168,24 +165,28 @@ namespace HomeModule.Azure
             return new MethodResponse(response, 200);
         }
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
-        private async Task<MethodResponse> HomeEdgeGateCommand(MethodRequest methodRequest, object userContext)
+        //this method is called out by Azure Function. 
+        //1. Shelly Door/Gate sensor activates Azure Function
+        //2. Shelly Garage Spotlight activates Azure Function
+        private async Task<MethodResponse> SetGarageLight(MethodRequest methodRequest, object userContext)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
+            ReceiveData receiveData = new ReceiveData();
             try
             {
-                var ParsedWiFiDevices = JsonDocument.Parse(methodRequest.DataAsJson);
-                JsonElement jsonElement = ParsedWiFiDevices.RootElement;
+                var GateCommand = JsonDocument.Parse(methodRequest.DataAsJson);
+                JsonElement jsonElement = GateCommand.RootElement;
                 var device = JsonSerializer.Deserialize<Localdevice>(jsonElement.GetRawText());
 
-                if (HomeCommands.RootElement.TryGetProperty("Ventilation", out JsonElement ventilation) && ventilation.GetBoolean() == !TelemetryDataClass.isVentilationOn)
+                if (jsonElement.TryGetProperty("TurnOnLights", out JsonElement TurnOnLights))
                 {
-                    string cmd = ventilation.GetBoolean() ? CommandNames.OPEN_VENT : CommandNames.CLOSE_VENT;
-                    command.Add(cmd);
+                    string cmd = TurnOnLights.GetBoolean() ? CommandNames.TURN_ON_GARAGE_LIGHT : CommandNames.TURN_OFF_GARAGE_LIGHT;
+                    receiveData.ProcessCommand(cmd);
                 }
             }
             catch (Exception e)
             {
-                Console.WriteLine("WiFI devices: " + e.ToString());
+                Console.WriteLine("Garage Light: " + e.ToString());
             }
             var response = Encoding.ASCII.GetBytes("Ok");
             return new MethodResponse(response, 200);
@@ -247,10 +248,12 @@ namespace HomeModule.Azure
             }
             else if (command == CommandNames.TURN_ON_GARAGE_LIGHT)
             {
+                await Shelly.ShellySwitch(true, Shelly.GarageLight);
                 TelemetryDataClass.isGarageLightsOn = true;
             }
             else if (command == CommandNames.TURN_OFF_GARAGE_LIGHT)
             {
+                await Shelly.ShellySwitch(false, Shelly.GarageLight);
                 TelemetryDataClass.isGarageLightsOn = false;
             }
             else if (command == CommandNames.TURN_ON_OUTSIDE_LIGHT)
@@ -375,6 +378,8 @@ namespace HomeModule.Azure
         public static string PianoHeating = Environment.GetEnvironmentVariable("PianoHeatingShellyIP");
         public static string EntryLight = Environment.GetEnvironmentVariable("EntryLightsShellyIP");
         public static string BedroomHeating = Environment.GetEnvironmentVariable("BedroomHeatingShellyIP");
+        public static string GarageLight = Environment.GetEnvironmentVariable("GarageLightShellyIP");
+
 
         public static async Task<bool> ShellySwitch(bool turnOn, string ipAddress)
         {
@@ -397,25 +402,24 @@ namespace HomeModule.Azure
             }
             return ison;
         }
-        public static async void CheckOutsideLightsOnStartup(string ipAddress)
+        public static async Task<bool> GetShellyState(string ipAddress)
         {
+            bool isOn = false;
             try
             {
                 var http = new HttpClient();
                 string url = $"http://{ipAddress}/relay/0";
                 HttpResponseMessage response = await http.GetAsync(url);
                 var result = response.Content.ReadAsStringAsync();
-
                 //deserialize all content
                 var nps = JsonSerializer.Deserialize<JsonElement>(result.Result);
-                bool ison = nps.GetProperty("ison").GetBoolean();
-                TelemetryDataClass.isOutsideLightsOn = ison;
+                isOn = nps.GetProperty("ison").GetBoolean();
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Check Shelly on startup exception {ipAddress}: {e.Message}");
+                Console.WriteLine($"Shelly check exception {ipAddress}: {e.Message}");
             }
+            return isOn;
         }
-
     }
 }

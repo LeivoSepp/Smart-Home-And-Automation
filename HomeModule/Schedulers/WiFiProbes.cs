@@ -92,6 +92,7 @@ namespace HomeModule.Schedulers
                                 device.DeviceType = item.DeviceType;
                                 device.ActiveDuration = item.ActiveDuration;
                                 device.StatusUnixTime = METHOD.DateTimeToUnixTimestamp(item.StatusFrom);
+                                device.SignalType = item.SignalType;
                                 isNewItem = false;
                                 break;
                             }
@@ -299,6 +300,9 @@ namespace HomeModule.Schedulers
                         Console.WriteLine();
                     }
                 }
+                //it's a good place to check also garage light statuses in every minute
+                if (TelemetryDataClass.isGarageLightsOn)
+                    TelemetryDataClass.isGarageLightsOn = await Shelly.GetShellyState(Shelly.GarageLight);
                 await Task.Delay(TimeSpan.FromSeconds(60)); //check statuses every 10 millisecond
             }
         }
@@ -324,6 +328,22 @@ namespace HomeModule.Schedulers
             }
             return devices;
         }
+        private async Task<List<WiFiDevice>> GetMacAddressFromCosmos()
+        {
+            string funcUrl = Environment.GetEnvironmentVariable("GetWifiDevicesFuncURL");
+            string funcCode = Environment.GetEnvironmentVariable("WiFiDevicesFuncCode");
+            var http = new HttpClient();
+            string url = funcUrl + "?code=" + funcCode;
+            HttpResponseMessage response = await http.GetAsync(url);
+            var result = response.Content.ReadAsStringAsync();
+
+            //deserialize all content
+            var nps = JsonSerializer.Deserialize<JsonElement>(result.Result);
+            string dataresult = nps.GetProperty("AllWiFiDevices").GetRawText();
+            var npsOut = JsonSerializer.Deserialize<List<WiFiDevice>>(dataresult);
+            return npsOut;
+        }
+
         async Task SendMacAddressToCosmos(List<WiFiDevice> wiFiDevices)
         {
             _sendListData = new SendDataAzure();

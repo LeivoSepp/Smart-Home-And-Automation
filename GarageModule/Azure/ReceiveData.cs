@@ -11,7 +11,7 @@ namespace GarageModule.Azure
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
         //This method is called out from Azure Function
         //Azure Function is called out from PowerApps
-        private async Task<MethodResponse> ControlGarageEdgeDevice(MethodRequest methodRequest, object userContext)
+        private async Task<MethodResponse> GetGarageStatus(MethodRequest methodRequest, object userContext)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
             var reportedProperties = new TwinCollection();
@@ -26,7 +26,7 @@ namespace GarageModule.Azure
         {
             ModuleClient ioTHubModuleClient = Program.IoTHubModuleClient;
             // Register callback to be called when a message is received by the module
-            await ioTHubModuleClient.SetMethodHandlerAsync("ManagementCommands", ControlGarageEdgeDevice, null);
+            await ioTHubModuleClient.SetMethodHandlerAsync("GetGarageStatus", GetGarageStatus, null);
         }
     }
 }

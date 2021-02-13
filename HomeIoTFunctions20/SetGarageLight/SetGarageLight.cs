@@ -18,7 +18,7 @@ namespace HomeIoTFunctions20.SetGarageLight
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = "SetGarageLight/{state}")] HttpRequest req,
             ExecutionContext context,
-            string state,
+            bool state,
             ILogger log)
         {
             var config = new ConfigurationBuilder()
@@ -28,12 +28,11 @@ namespace HomeIoTFunctions20.SetGarageLight
                 .Build();
             var connectionString = config["IoTHubConnectionString"];
 
-            bool isTurnOnLights = state == "on" ? true : false;
             var sendData = new
             {
                 DeviceID = "Shelly",
                 DateAndTime = GetEnergyMarketPrice.GetEnergyMarketPrice.DateTimeTZ(),
-                TurnOnLights = isTurnOnLights
+                TurnOnLights = state
             };
             string requestBody = JsonConvert.SerializeObject(sendData);
 

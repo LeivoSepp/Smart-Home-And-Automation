@@ -179,7 +179,7 @@ namespace HomeModule.Raspberry
                     TelemetryDataClass.isHomeDoorOpen = isDoorOpen;
 
                     //if door opens or someone in entry then turn on Entry light. Shelly is configured to turn off after 2 minutes
-                    if(isDoorOpen || isIrOpen) await Shelly.ShellySwitch(true, Shelly.EntryLight);
+                    if(isDoorOpen || isIrOpen) await Shelly.SetShellySwitch(true, Shelly.EntryLight);
 
                     //if door or IR is closed more that 2 minutes then clear the queue
                     var LastActive = doorZone.ZoneEventTime > IrZone.ZoneEventTime ? doorZone.ZoneEventTime : IrZone.ZoneEventTime;

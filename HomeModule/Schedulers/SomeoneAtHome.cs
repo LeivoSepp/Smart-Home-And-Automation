@@ -168,12 +168,9 @@ namespace HomeModule.Schedulers
             _receiveData.ProcessCommand(cmd);
             Console.WriteLine($"Outside lights are {(TelemetryDataClass.isOutsideLightsOn ? "on" : "off")} {METHOD.DateTimeTZ().DateTime:dd.MM HH:mm:ss}");
         }
-        public static void SetGarageLightsOn(bool isLightsOn = true)
+        public static async void SetGarageLightsOn(bool isLightsOn = true)
         {
-            bool isDarkTime = IsDarkTime();
-            var _receiveData = new ReceiveData();
-            string cmd = isLightsOn && isDarkTime ? CommandNames.TURN_ON_GARAGE_LIGHT : CommandNames.TURN_OFF_GARAGE_LIGHT;
-            _receiveData.ProcessCommand(cmd);
+            TelemetryDataClass.isGarageLightsOn = await Shelly.SetShellySwitch(isLightsOn, Shelly.GarageLight);
             Console.WriteLine($"Garage lights are {(TelemetryDataClass.isGarageLightsOn ? "on" : "off")} {METHOD.DateTimeTZ().DateTime:dd.MM HH:mm}");
         }
 

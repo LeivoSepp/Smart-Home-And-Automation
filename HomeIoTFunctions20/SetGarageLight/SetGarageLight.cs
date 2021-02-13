@@ -14,7 +14,7 @@ namespace HomeIoTFunctions20.SetGarageLight
 {
     public static class SetGarageLight
     {
-        [FunctionName("CloseGate")]
+        [FunctionName("SetGarageLight")]
         public static async Task<IActionResult> Run(
             [HttpTrigger(AuthorizationLevel.Function, "get", "post", Route = "SetGarageLight/{state}")] HttpRequest req,
             ExecutionContext context,

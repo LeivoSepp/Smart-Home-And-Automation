@@ -180,8 +180,7 @@ namespace HomeModule.Azure
 
                 if (jsonElement.TryGetProperty("TurnOnLights", out JsonElement TurnOnLights))
                 {
-                    string cmd = TurnOnLights.GetBoolean() ? CommandNames.TURN_ON_GARAGE_LIGHT : CommandNames.TURN_OFF_GARAGE_LIGHT;
-                    receiveData.ProcessCommand(cmd);
+                    TelemetryDataClass.isGarageLightsOn = await Shelly.SetShellySwitch(TurnOnLights.GetBoolean(), Shelly.GarageLight);
                 }
             }
             catch (Exception e)
@@ -246,25 +245,15 @@ namespace HomeModule.Azure
             {
                 //_startStopLogic.testing(Pins.redLedPin);
             }
-            else if (command == CommandNames.TURN_ON_GARAGE_LIGHT)
-            {
-                await Shelly.ShellySwitch(true, Shelly.GarageLight);
-                TelemetryDataClass.isGarageLightsOn = true;
-            }
-            else if (command == CommandNames.TURN_OFF_GARAGE_LIGHT)
-            {
-                await Shelly.ShellySwitch(false, Shelly.GarageLight);
-                TelemetryDataClass.isGarageLightsOn = false;
-            }
             else if (command == CommandNames.TURN_ON_OUTSIDE_LIGHT)
             {
                 TelemetryDataClass.isOutsideLightsOn = true;
-                await Shelly.ShellySwitch(true, Shelly.OutsideLight);
+                await Shelly.SetShellySwitch(true, Shelly.OutsideLight);
             }
             else if (command == CommandNames.TURN_OFF_OUTSIDE_LIGHT)
             {
                 TelemetryDataClass.isOutsideLightsOn = false;
-                await Shelly.ShellySwitch(false, Shelly.OutsideLight);
+                await Shelly.SetShellySwitch(false, Shelly.OutsideLight);
             }
             else if (command == CommandNames.TURN_ON_SAUNA && !Pins.IsSaunaDoorOpen)
             {
@@ -381,7 +370,7 @@ namespace HomeModule.Azure
         public static string GarageLight = Environment.GetEnvironmentVariable("GarageLightShellyIP");
 
 
-        public static async Task<bool> ShellySwitch(bool turnOn, string ipAddress)
+        public static async Task<bool> SetShellySwitch(bool turnOn, string ipAddress)
         {
             string TurnOnCommand = turnOn ? "on" : "off";
             bool ison = false;

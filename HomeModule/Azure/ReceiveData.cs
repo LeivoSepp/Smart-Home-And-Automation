@@ -167,20 +167,20 @@ namespace HomeModule.Azure
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
         //this method is called out by Azure Function. 
         //1. Shelly Door/Gate sensor activates Azure Function
-        //2. Shelly Garage Spotlight activates Azure Function
+        //2. Shelly Garage Spotlight activates Azure Function (this doesnt work !??)
         private async Task<MethodResponse> SetGarageLight(MethodRequest methodRequest, object userContext)
 #pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
-            ReceiveData receiveData = new ReceiveData();
             try
             {
-                var GateCommand = JsonDocument.Parse(methodRequest.DataAsJson);
-                JsonElement jsonElement = GateCommand.RootElement;
+                var json = JsonDocument.Parse(methodRequest.DataAsJson);
+                JsonElement jsonElement = json.RootElement;
                 var device = JsonSerializer.Deserialize<Localdevice>(jsonElement.GetRawText());
 
                 if (jsonElement.TryGetProperty("TurnOnLights", out JsonElement TurnOnLights))
                 {
                     TelemetryDataClass.isGarageLightsOn = await Shelly.SetShellySwitch(TurnOnLights.GetBoolean(), Shelly.GarageLight);
+                    Console.WriteLine($"Garage lights are {(TelemetryDataClass.isGarageLightsOn ? "on" : "off")} {METHOD.DateTimeTZ().DateTime:dd.MM HH:mm}");
                 }
             }
             catch (Exception e)
@@ -244,16 +244,6 @@ namespace HomeModule.Azure
             if (command == CommandNames.NO_COMMAND)
             {
                 //_startStopLogic.testing(Pins.redLedPin);
-            }
-            else if (command == CommandNames.TURN_ON_OUTSIDE_LIGHT)
-            {
-                TelemetryDataClass.isOutsideLightsOn = true;
-                await Shelly.SetShellySwitch(true, Shelly.OutsideLight);
-            }
-            else if (command == CommandNames.TURN_OFF_OUTSIDE_LIGHT)
-            {
-                TelemetryDataClass.isOutsideLightsOn = false;
-                await Shelly.SetShellySwitch(false, Shelly.OutsideLight);
             }
             else if (command == CommandNames.TURN_ON_SAUNA && !Pins.IsSaunaDoorOpen)
             {

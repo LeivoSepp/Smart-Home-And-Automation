@@ -18,9 +18,5 @@
         internal const string NO_COMMAND = "test";
         internal const string TURN_ON_SAUNA = "Turn on sauna";
         internal const string TURN_OFF_SAUNA = "Turn off sauna";
-        internal const string TURN_ON_GARAGE_LIGHT = "Turn on garage light";
-        internal const string TURN_OFF_GARAGE_LIGHT = "Turn off garage light";
-        internal const string TURN_ON_OUTSIDE_LIGHT = "Turn on outside light";
-        internal const string TURN_OFF_OUTSIDE_LIGHT = "Turn off outside light";
     }
 }

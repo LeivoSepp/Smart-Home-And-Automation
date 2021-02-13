@@ -30,70 +30,10 @@ namespace HomeModule.Schedulers
         }
         private static bool _isSomeoneAtHome;
 
-        //this will be fired every time when the gates will open/close
-        public static bool IsGateOpening
-        {
-            get { return _isGateOpening; }
-            set
-            {
-                if (_isGateOpening != value)
-                {
-                    _isGateOpening = value;
-                    //fire only if gate start opening
-                    if (_isGateOpening)
-                    {
-                        SetGateTimerInterval();
-                    }
-                }
-            }
-        }
-        private static bool _isGateOpening = false; //REMOVE THIS FALSE IF YOU PUT GARAGE TO WORK
-
-        //this will be fired at the beginning of each gate opening for 10 minutes
-        private static bool IsGateOpen
-        {
-            get { return _isGateOpen; }
-            set
-            {
-                if (_isGateOpen != value)
-                {
-                    _isGateOpen = value;
-                    OnGateOpened();
-                }
-            }
-        }
-        private static bool _isGateOpen;
-
         private static bool IsManuallyTurnedOn = false;
         private static bool IsManuallyTurnedOff = false;
-        private static double timerIntervalGate;
         private static SendDataAzure _sendListData = new SendDataAzure();
-        private static Stopwatch stopwatchGate = new Stopwatch();
 
-        private static void OnGateOpened()
-        {
-            //with Gate the Garage lights are going on for 5 minutes
-            SetGarageLightsOn(IsGateOpen);
-            //outside lights forced for 30 min
-            SetOutsideLightsOn(IsGateOpen, true);
-        }
-        //this will be fired every time when someone opens the gate
-        private static void SetGateTimerInterval()
-        {
-            var timerInMinutes = 5; //5 minutes window
-            timerIntervalGate = TimeSpan.FromMinutes(timerInMinutes).TotalSeconds;
-            stopwatchGate.Restart();
-        }
-        public static async void CheckSomeoneMoving()
-        {
-            stopwatchGate.Start();
-            while (true)
-            {
-                var elapsedSecGate = stopwatchGate.Elapsed.TotalSeconds;
-                IsGateOpen = elapsedSecGate <= timerIntervalGate;
-                await Task.Delay(TimeSpan.FromSeconds(1));
-            }
-        }
         private static async void SomeoneAtHomeChanged()
         {
             DateTimeOffset CurrentDateTime = METHOD.DateTimeTZ();
@@ -156,22 +96,16 @@ namespace HomeModule.Schedulers
                 //Paradox1738.alertingSensors.RemoveAll(x => x.IsHomeSecured); //remove all reported zones
             }
         }
-        public static void SetOutsideLightsOn(bool setLightsOn = true, bool isForcedToTurnOn = false, bool isForcedToTurnOff = false)
+        public static async void SetOutsideLightsOn(bool setLightsOn = true, bool isForcedToTurnOn = false, bool isForcedToTurnOff = false)
         {
             IsManuallyTurnedOn = isForcedToTurnOn;
             IsManuallyTurnedOff = isForcedToTurnOff;
             bool isSleepTime = IsSleepTime();
             bool isDarkTime = IsDarkTime();
             bool isLightsTime = isDarkTime && !isSleepTime;
-            var _receiveData = new ReceiveData();
-            string cmd = ((setLightsOn && isLightsTime) || IsManuallyTurnedOn) && !IsManuallyTurnedOff ? CommandNames.TURN_ON_OUTSIDE_LIGHT : CommandNames.TURN_OFF_OUTSIDE_LIGHT;
-            _receiveData.ProcessCommand(cmd);
+            bool LightsOnOff = ((setLightsOn && isLightsTime) || IsManuallyTurnedOn) && !IsManuallyTurnedOff;
+            TelemetryDataClass.isOutsideLightsOn = await Shelly.SetShellySwitch(LightsOnOff, Shelly.OutsideLight);
             Console.WriteLine($"Outside lights are {(TelemetryDataClass.isOutsideLightsOn ? "on" : "off")} {METHOD.DateTimeTZ().DateTime:dd.MM HH:mm:ss}");
-        }
-        public static async void SetGarageLightsOn(bool isLightsOn = true)
-        {
-            TelemetryDataClass.isGarageLightsOn = await Shelly.SetShellySwitch(isLightsOn, Shelly.GarageLight);
-            Console.WriteLine($"Garage lights are {(TelemetryDataClass.isGarageLightsOn ? "on" : "off")} {METHOD.DateTimeTZ().DateTime:dd.MM HH:mm}");
         }
 
         //turn lights off is it's already DayTime but people are moving constantly around
@@ -184,7 +118,7 @@ namespace HomeModule.Schedulers
                 bool isDarkTime = IsDarkTime();
                 bool isLightsTime = isDarkTime && !isSleepTime;
                 bool isNotLightsTime = !isLightsTime;
-                bool isLightsAreOn = TelemetryDataClass.isGarageLightsOn || TelemetryDataClass.isOutsideLightsOn;
+                bool isLightsAreOn = TelemetryDataClass.isOutsideLightsOn;
 
                 //the following manual modes are comes if one pushes the button from the app
                 if (IsManuallyTurnedOn || IsManuallyTurnedOff)
@@ -198,7 +132,6 @@ namespace HomeModule.Schedulers
                     if (isNotLightsTime && isLightsAreOn)
                     {
                         SetOutsideLightsOn(false);
-                        SetGarageLightsOn(false);
                     }
                     //during dark time if someone is at home but lights are off, turn them on
                     if (isLightsTime && IsSomeoneAtHome && !TelemetryDataClass.isOutsideLightsOn)

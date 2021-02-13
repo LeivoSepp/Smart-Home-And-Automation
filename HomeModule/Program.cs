@@ -102,7 +102,6 @@ namespace HomeModule
             //shelly's
             TelemetryDataClass.isOutsideLightsOn = await Shelly.GetShellyState(Shelly.OutsideLight);
             SomeoneAtHome.CheckLightStatuses();
-            SomeoneAtHome.CheckSomeoneMoving();
 
             //Send data to IoTHub
             _sendData = new SendTelemetryData();

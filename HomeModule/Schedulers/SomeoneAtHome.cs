@@ -49,7 +49,7 @@ namespace HomeModule.Schedulers
                     DateAndTime = CurrentDateTime.DateTime,
                 };
                 //await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo);
-                Console.WriteLine("someone at home");
+                Console.WriteLine($"{(IsSomeoneAtHome ? "Someone at home" : "Nobody is home" )} {CurrentDateTime.DateTime:G}");
             }
 
             //check if the last zone was added into list during the home was secured

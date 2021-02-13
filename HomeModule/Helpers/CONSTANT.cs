@@ -25,7 +25,7 @@ namespace HomeModule.Helpers
         public const string FILENAME_HOME_DEVICES = "homeDevices";
 
 
-        public const int OUTSIDE_LIGHTS_MANUAL_DURATION = 30; //minutes
+        public const int OUTSIDE_LIGHTS_MANUAL_DURATION = 10; //minutes
 
         public const string SLEEP_TIME = "00:00";
         public const string WAKEUP_TIME = "07:00";

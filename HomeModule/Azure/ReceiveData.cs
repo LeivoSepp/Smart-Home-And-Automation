@@ -275,10 +275,12 @@ namespace HomeModule.Azure
             else if (command == CommandNames.TURN_ON_SECURITY)
             {
                 TelemetryDataClass.isHomeSecured = true;
+                Console.WriteLine($"Home is secured at: {METHOD.DateTimeTZ().DateTime:G}");
             }
             else if (command == CommandNames.TURN_OFF_SECURITY)
             {
                 TelemetryDataClass.isHomeSecured = false;
+                Console.WriteLine($"Home is at normal state at: {METHOD.DateTimeTZ().DateTime:G}");
             }
             else if (command == CommandNames.OPEN_VENT)
             {

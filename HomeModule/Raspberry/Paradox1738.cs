@@ -97,6 +97,7 @@ namespace HomeModule.Raspberry
 
         public async void IRSensorsReading()
         {
+            ReceiveData _receiveData = new ReceiveData();
             _sendListData = new SendDataAzure();
             State NONE = new State { DoorValue = false, IRValue = false }; //door closed, IR passive
             State DOOR = new State { DoorValue = true, IRValue = false }; //door open, IR passive
@@ -129,6 +130,8 @@ namespace HomeModule.Raspberry
                     var timerInMinutes = TelemetryDataClass.isHomeSecured ? CONSTANT.TIMER_MINUTES_WHEN_SECURED_HOME_EMPTY : CONSTANT.TIMER_MINUTES_WHEN_HOME_EMPTY;
                     var DurationUntilHouseIsEmpty = !LastActiveZone.IsZoneOpen ? (CurrentDateTime - LastActiveZone.ZoneEventTime).TotalMinutes : 0;
                     SomeoneAtHome.IsSomeoneAtHome = DurationUntilHouseIsEmpty < timerInMinutes || WiFiProbes.IsAnyMobileAtHome;
+                    string cmd = SomeoneAtHome.IsSomeoneAtHome ? CommandNames.TURN_OFF_SECURITY : CommandNames.TURN_ON_SECURITY;
+                    _receiveData.ProcessCommand(cmd);
 
                     //check each zone in 2 minutes window to report the zone active time
                     foreach (var zone in Zones)

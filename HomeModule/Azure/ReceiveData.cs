@@ -178,7 +178,6 @@ namespace HomeModule.Azure
                     TelemetryDataClass.isOutsideLightsOn = await Shelly.SetShellySwitch(TurnOnLights.GetBoolean(), Shelly.OutsideLight, nameof(Shelly.OutsideLight));
                     SomeoneAtHome.LightsManuallyOnOff = true; //force lights on/off for 30 minutes
                 }
-                Console.WriteLine($"{lightName.GetString()} lights are {(TurnOnLights.GetBoolean() ? "on" : "off")} {METHOD.DateTimeTZ().DateTime:dd.MM HH:mm}");
             }
             catch (Exception e)
             {

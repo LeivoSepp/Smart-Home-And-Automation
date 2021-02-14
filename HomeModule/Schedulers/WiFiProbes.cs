@@ -162,6 +162,7 @@ namespace HomeModule.Schedulers
                         }
                     }
                     //checking active devices and setting Active/NonActive statuses. Each device can have individual timewindow
+                    device.IsChanged = false; //this is just for debugging, no other reason
                     var durationUntilNotActive = (unixTimestamp - device.LastUnixTime) / 60; //timestamp in minutes
                     device.IsPresent = durationUntilNotActive < device.ActiveDuration;
                     if (device.IsPresent && !device.StatusChange)
@@ -169,12 +170,14 @@ namespace HomeModule.Schedulers
                         device.StatusUnixTime = unixTimestamp;
                         device.StatusChange = true;
                         isAnyDeviceChanged = true;
+                        device.IsChanged = true;
                     }
                     if (!device.IsPresent && device.StatusChange)
                     {
                         device.StatusUnixTime = device.LastUnixTime;
                         device.StatusChange = false;
                         isAnyDeviceChanged = true;
+                        device.IsChanged = true; 
                     }
                     //following list WiFiDevicesToPowerApps is used to send minimal data to PowerApps (sending only userdevices)
                     //this list will be sent as a response after PowerApps asks something or refreshing it's data
@@ -204,13 +207,14 @@ namespace HomeModule.Schedulers
                 if (isAnyDeviceChanged)
                 {
                     var sortedList = WiFiDevice.WifiDevices.OrderByDescending(y => y.IsPresent).ThenBy(w => w.DeviceOwner).ThenByDescending(z => z.AccessPoint).ThenBy(w => w.SignalType).ThenByDescending(x => x.StatusUnixTime).ToList();
-                    Console.WriteLine($"   From   | Status  |          Device           |        WiFi network      |        AccessPoint       |  SignalType");
-                    Console.WriteLine($" -------- | ------- |         --------          |           -----          |           -----          |  --------  ");
+                    Console.WriteLine($"   |   From   | Status  |          Device           |        WiFi network      |        AccessPoint       |  SignalType");
+                    Console.WriteLine($"   |  ------  | ------- |         --------          |           -----          |           -----          |  --------  ");
                     foreach (var device in sortedList)
                     {
                         if (device.LastUnixTime > 0 && device.DeviceOwner != "Neighbor") //show only my own ever seen LocalUserDevices devices
                         {
-                            Console.WriteLine($" {METHOD.UnixTimeStampToDateTime(device.StatusUnixTime).AddHours(timeOffset):T} " +
+                            Console.WriteLine($" {(device.IsChanged ? "1" : " ")} " +
+                                $"| {METHOD.UnixTimeStampToDateTime(device.StatusUnixTime).AddHours(timeOffset):T} " +
                                 $"| {(device.IsPresent ? "Active " : "Not Act")} " +
                                 $"| {device.DeviceName}{"".PadRight(26 - (device.DeviceName.Length > 26 ? 26 : device.DeviceName.Length))}" +
                                 $"| {device.WiFiName}{"".PadRight(26 - (!string.IsNullOrEmpty(device.WiFiName) ? (device.WiFiName.Length > 26 ? 26 : device.WiFiName.Length) : 0))}" +
@@ -411,6 +415,7 @@ namespace HomeModule.Schedulers
         public string AccessPoint { get; set; } //Connected device name, calculated by LastBSSID
         public string WiFiName { get; set; } //Connected WiFi network name, SSID or ProbedSSID (depending of the device type)
         public string DeviceName { get; set; } //manually set device name
+        public bool IsChanged { get; set; } //just for debugging, this will be true if device status changed
         [JsonPropertyName("kismet.device.base.name")]
         public string BaseName { get; set; }
         [JsonPropertyName("kismet.device.base.type")]

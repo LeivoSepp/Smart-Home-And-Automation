@@ -108,7 +108,9 @@ namespace HomeModule.Schedulers
                 {
                     LightsManuallyOnOff = false;
                     dateTime = CurrentDateTime;
-                    TelemetryDataClass.isOutsideLightsOn = await Shelly.SetShellySwitch(isLightsTime, Shelly.OutsideLight, nameof(Shelly.OutsideLight));
+                    //execute shelly lights only if needed, not in every minute :-)
+                    if((isLightsTime && !TelemetryDataClass.isOutsideLightsOn) || (!isLightsTime && TelemetryDataClass.isOutsideLightsOn))
+                        TelemetryDataClass.isOutsideLightsOn = await Shelly.SetShellySwitch(isLightsTime, Shelly.OutsideLight, nameof(Shelly.OutsideLight));
                 }
                 await Task.Delay(TimeSpan.FromMinutes(1)); //check statuses every 1 minutes
             }

@@ -63,7 +63,7 @@ namespace HomeIoTFunctions20.IoTHubMessages
                         JObject json = JsonConvert.DeserializeObject<JObject>(jsonStr);
                         log.LogInformation($"JObject: {json}");
 
-                        if (json.Value<bool>("isHomeSecured") && json.Value<string>("DeviceID") == "SecurityController")
+                        if (json.Value<bool>("isHomeSecured"))
                             SendEmail(json, messageCollector);
                         //if (json.Value<string>("SourceInfo") == "Someone is at home: True" || json.Value<string>("SourceInfo") == "Someone is at home: False")
                         //    SendEmail(json, messageCollector);

@@ -97,7 +97,6 @@ namespace HomeModule.Raspberry
 
         public async void IRSensorsReading()
         {
-            ReceiveData _receiveData = new ReceiveData();
             _sendListData = new SendDataAzure();
             State NONE = new State { DoorValue = false, IRValue = false }; //door closed, IR passive
             State DOOR = new State { DoorValue = true, IRValue = false }; //door open, IR passive
@@ -130,8 +129,6 @@ namespace HomeModule.Raspberry
                     var timerInMinutes = TelemetryDataClass.isHomeSecured ? CONSTANT.TIMER_MINUTES_WHEN_SECURED_HOME_EMPTY : CONSTANT.TIMER_MINUTES_WHEN_HOME_EMPTY;
                     var DurationUntilHouseIsEmpty = !LastActiveZone.IsZoneOpen ? (CurrentDateTime - LastActiveZone.ZoneEventTime).TotalMinutes : 0;
                     SomeoneAtHome.IsSomeoneAtHome = DurationUntilHouseIsEmpty < timerInMinutes || WiFiProbes.IsAnyMobileAtHome;
-                    string cmd = SomeoneAtHome.IsSomeoneAtHome ? CommandNames.TURN_OFF_SECURITY : CommandNames.TURN_ON_SECURITY;
-                    _receiveData.ProcessCommand(cmd);
 
                     //check each zone in 2 minutes window to report the zone active time
                     foreach (var zone in Zones)
@@ -157,12 +154,40 @@ namespace HomeModule.Raspberry
                     {
                         alertingSensors.Reverse();
                         TelemetryDataClass.SourceInfo = $"Zones activity {alertingSensors.Count}";
+
+                        //check if the last zone was added into list during the home was secured
+                        bool isLastZoneSecured = false;
+                        string lastZoneName = null;
+                        AlertingZone LastZone = alertingSensors.First();
+                        lastZoneName = LastZone.ZoneName;
+                        isLastZoneSecured = LastZone.IsHomeSecured;
+                        string sensorsOpen = "";
+                        //run the alert only if home is secured and there are some alerting zone
+                        if (TelemetryDataClass.isHomeSecured && isLastZoneSecured)
+                        {
+                            //forcing outside lights ON
+                            SomeoneAtHome.LightsManuallyOnOff = true;
+                            TelemetryDataClass.isOutsideLightsOn = await Shelly.SetShellySwitch(true, Shelly.OutsideLight, nameof(Shelly.OutsideLight));
+
+                            TelemetryDataClass.SourceInfo = $"Home secured {lastZoneName}";
+                            sensorsOpen = "Look where someone is moving:\n\n";
+                            foreach (var zone in alertingSensors)
+                            {
+                                //create a string with all zones for an e-mail
+                                if (zone.IsHomeSecured) sensorsOpen += $" {zone.ZoneName} {zone.TimeStart} - {zone.TimeEnd}\n";
+                            }
+                            alertingSensors.ForEach(x => Console.WriteLine($"{x.ZoneName} {x.TimeStart} - {x.TimeEnd} {(x.IsHomeSecured ? "SECURED" : null)}"));
+                        }
                         var monitorData = new
                         {
                             DeviceID = "HomeController",
-                            status = TelemetryDataClass.SourceInfo,
+                            TelemetryDataClass.SourceInfo,
+                            TelemetryDataClass.isHomeSecured,
                             DateAndTime = CurrentDateTime,
-                            alertingSensors
+                            alertingSensors,
+                            date = CurrentDateTime.ToString("dd.MM"),
+                            time = CurrentDateTime.ToString("HH:mm"),
+                            status = sensorsOpen
                         };
                         await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo, "output");
 
@@ -182,7 +207,7 @@ namespace HomeModule.Raspberry
                     TelemetryDataClass.isHomeDoorOpen = isDoorOpen;
 
                     //if door opens or someone in entry then turn on Entry light. Shelly is configured to turn off after 2 minutes
-                    if(isDoorOpen || isIrOpen) await Shelly.SetShellySwitch(true, Shelly.EntryLight, nameof(Shelly.EntryLight));
+                    if (isDoorOpen || isIrOpen) await Shelly.SetShellySwitch(true, Shelly.EntryLight, nameof(Shelly.EntryLight));
 
                     //if door or IR is closed more that 2 minutes then clear the queue
                     var LastActive = doorZone.ZoneEventTime > IrZone.ZoneEventTime ? doorZone.ZoneEventTime : IrZone.ZoneEventTime;

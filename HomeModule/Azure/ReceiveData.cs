@@ -61,6 +61,7 @@ namespace HomeModule.Azure
                 if (HomeCommands.TryGetProperty("Security", out JsonElement security) && security.GetBoolean() == !TelemetryDataClass.isHomeSecured)
                 {
                     string cmd = security.GetBoolean() ? CommandNames.TURN_ON_SECURITY : CommandNames.TURN_OFF_SECURITY;
+                    SomeoneAtHome.IsSecurityManuallyOn = security.GetBoolean(); //override automatic security until next someone at home event
                     command.Add(cmd);
                 }
                 if (HomeCommands.TryGetProperty("Temperatures", out JsonElement temperatures))
@@ -267,10 +268,12 @@ namespace HomeModule.Azure
                 ProcessCommand(CommandNames.TURN_OFF_HEATING);
                 ProcessCommand(CommandNames.TURN_OFF_SAUNA);
                 ProcessCommand(CommandNames.CLOSE_VENT);
+                Console.WriteLine($"Vacation mode on at {METHOD.DateTimeTZ().DateTime:G}");
             }
             else if (command == CommandNames.TURN_OFF_VACATION)
             {
                 TelemetryDataClass.isHomeInVacation = false;
+                Console.WriteLine($"Vacation mode on at {METHOD.DateTimeTZ().DateTime:G}");
             }
             else if (command == CommandNames.TURN_ON_SECURITY)
             {

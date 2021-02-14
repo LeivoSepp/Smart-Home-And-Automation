@@ -207,11 +207,14 @@ namespace HomeModule.Schedulers
                 if (isAnyDeviceChanged)
                 {
                     var sortedList = WiFiDevice.WifiDevices.OrderByDescending(y => y.IsPresent).ThenBy(w => w.DeviceOwner).ThenByDescending(z => z.AccessPoint).ThenBy(w => w.SignalType).ThenByDescending(x => x.StatusUnixTime).ToList();
+                    Console.WriteLine();
+                    Console.WriteLine($"All known devices at: {METHOD.DateTimeTZ().DateTime:G}");
+                    Console.WriteLine();
                     Console.WriteLine($"   |   From   | Status  |          Device           |        WiFi network      |        AccessPoint       |  SignalType");
                     Console.WriteLine($"   |  ------  | ------- |         --------          |           -----          |           -----          |  --------  ");
                     foreach (var device in sortedList)
                     {
-                        if (device.LastUnixTime > 0 && device.DeviceOwner != "Neighbor") //show only my own ever seen LocalUserDevices devices
+                        if (device.LastUnixTime > 0) //show only my own ever seen LocalUserDevices devices
                         {
                             Console.WriteLine($" {(device.IsChanged ? "1" : " ")} " +
                                 $"| {METHOD.UnixTimeStampToDateTime(device.StatusUnixTime).AddHours(timeOffset):T} " +
@@ -222,7 +225,7 @@ namespace HomeModule.Schedulers
                                 $"| {device.SignalType} ");
                         }
                     }
-                    Console.WriteLine($"");
+                    Console.WriteLine();
                     isAnyDeviceChanged = false;
                 }
 
@@ -285,6 +288,9 @@ namespace HomeModule.Schedulers
                     if (tempAddList.Any())
                     {
                         var sortedList = closeDevices.OrderBy(x => x.SignalType).ThenByDescending(y => y.LastUnixTime).ToList();
+                        Console.WriteLine();
+                        Console.WriteLine($"All known devices at: {METHOD.DateTimeTZ().DateTime:G}");
+                        Console.WriteLine();
                         Console.WriteLine($"dB  | First | Last  |    Mac Address    |Count|  SignalType   |         WiFi network      |         AccessPoint       |    Base Name     | Manufacturer ");
                         Console.WriteLine($" -  | ----  | ----  |    -----------    | --- |  ----------   |          ---------        |          ---------        |    ----------    |  -----------  ");
 

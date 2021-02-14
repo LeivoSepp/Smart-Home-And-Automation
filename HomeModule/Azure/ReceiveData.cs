@@ -56,12 +56,13 @@ namespace HomeModule.Azure
                 if (HomeCommands.TryGetProperty("Vacation", out JsonElement vacation) && vacation.GetBoolean() == !TelemetryDataClass.isHomeInVacation)
                 {
                     string cmd = vacation.GetBoolean() ? CommandNames.TURN_ON_VACATION : CommandNames.TURN_OFF_VACATION;
+                    SomeoneAtHome.IsSecurityManuallyOn = false; //if "vacation" is turned on or off then security is back in automatic mode 
                     command.Add(cmd);
                 }
                 if (HomeCommands.TryGetProperty("Security", out JsonElement security) && security.GetBoolean() == !TelemetryDataClass.isHomeSecured)
                 {
                     string cmd = security.GetBoolean() ? CommandNames.TURN_ON_SECURITY : CommandNames.TURN_OFF_SECURITY;
-                    SomeoneAtHome.IsSecurityManuallyOn = security.GetBoolean(); //override automatic security until next someone at home event
+                    SomeoneAtHome.IsSecurityManuallyOn = true; //override automatic security, this can be turned off with "vacation" mode 
                     command.Add(cmd);
                 }
                 if (HomeCommands.TryGetProperty("Temperatures", out JsonElement temperatures))
@@ -268,22 +269,22 @@ namespace HomeModule.Azure
                 ProcessCommand(CommandNames.TURN_OFF_HEATING);
                 ProcessCommand(CommandNames.TURN_OFF_SAUNA);
                 ProcessCommand(CommandNames.CLOSE_VENT);
-                Console.WriteLine($"Vacation mode on at {METHOD.DateTimeTZ().DateTime:G}");
+                Console.WriteLine($"{(SomeoneAtHome.IsSecurityManuallyOn ? "Manual security mode." : "Automatic security mode.")} Vacation mode on at {METHOD.DateTimeTZ().DateTime:G}");
             }
             else if (command == CommandNames.TURN_OFF_VACATION)
             {
                 TelemetryDataClass.isHomeInVacation = false;
-                Console.WriteLine($"Vacation mode on at {METHOD.DateTimeTZ().DateTime:G}");
+                Console.WriteLine($"{(SomeoneAtHome.IsSecurityManuallyOn ? "Manual security mode." : "Automatic security mode.")} Vacation mode on at {METHOD.DateTimeTZ().DateTime:G}");
             }
             else if (command == CommandNames.TURN_ON_SECURITY)
             {
                 TelemetryDataClass.isHomeSecured = true;
-                Console.WriteLine($"Home is secured at: {METHOD.DateTimeTZ().DateTime:G}");
+                Console.WriteLine($"{(SomeoneAtHome.IsSecurityManuallyOn ? "Manual security mode." : "Automatic security mode.")} Home is secured at: {METHOD.DateTimeTZ().DateTime:G}");
             }
             else if (command == CommandNames.TURN_OFF_SECURITY)
             {
                 TelemetryDataClass.isHomeSecured = false;
-                Console.WriteLine($"Home is at normal state at: {METHOD.DateTimeTZ().DateTime:G}");
+                Console.WriteLine($"{(SomeoneAtHome.IsSecurityManuallyOn ? "Manual security mode." : "Automatic security mode.")} Home is at normal state at: {METHOD.DateTimeTZ().DateTime:G}");
             }
             else if (command == CommandNames.OPEN_VENT)
             {

@@ -148,6 +148,13 @@ namespace HomeModule.Raspberry
                         }
                     }
 
+                    //if home secured forcing outside lights ON
+                    if (TelemetryDataClass.isHomeSecured && SomeoneAtHome.IsSomeoneAtHome && !TelemetryDataClass.isOutsideLightsOn)
+                    {
+                        SomeoneAtHome.LightsManuallyOnOff = true;
+                        TelemetryDataClass.isOutsideLightsOn = await Shelly.SetShellySwitch(true, Shelly.OutsideLight, nameof(Shelly.OutsideLight));
+                    }
+
                     var DurationUntilToSendData = alertingSensors.Any() ? (CurrentDateTime - lastSentTime).TotalMinutes : 0;
                     var isTimeToSendData = DurationUntilToSendData > CONSTANT.TIMER_MINUTES_TO_SEND_ZONE_COSMOS;
                     if (isTimeToSendData)
@@ -165,10 +172,6 @@ namespace HomeModule.Raspberry
                         //run the alert only if home is secured and there are some alerting zone
                         if (TelemetryDataClass.isHomeSecured && isLastZoneSecured)
                         {
-                            //forcing outside lights ON
-                            SomeoneAtHome.LightsManuallyOnOff = true;
-                            TelemetryDataClass.isOutsideLightsOn = await Shelly.SetShellySwitch(true, Shelly.OutsideLight, nameof(Shelly.OutsideLight));
-
                             TelemetryDataClass.SourceInfo = $"Home secured {lastZoneName}";
                             sensorsOpen = "Look where someone is moving:\n\n";
                             foreach (var zone in alertingSensors)

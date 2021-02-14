@@ -35,7 +35,8 @@ namespace HomeModule.Schedulers
             ReceiveData _receiveData = new ReceiveData();
             DateTimeOffset CurrentDateTime = METHOD.DateTimeTZ();
 
-            //if security is overrided by PowerApps then no automatic security change
+            //if security button is pushed from PowerApps then no automatic security change
+            //if vacation mode is pushed from PowerApps, then security is back in automatic mode
             //if automatic mode, then secure home if nobody is at home and unsecure if some known mobile is at home
             if (!IsSecurityManuallyOn)
             {
@@ -43,7 +44,7 @@ namespace HomeModule.Schedulers
                 _receiveData.ProcessCommand(cmd);
             }
             TelemetryDataClass.isSomeoneAtHome = IsSomeoneAtHome;
-            Console.WriteLine($"{(IsSomeoneAtHome ? "Someone at home" : "Nobody is home")} {CurrentDateTime.DateTime:G}");
+            Console.WriteLine($"{(IsSecurityManuallyOn ? "Manual security mode." : "Automatic security mode.")} {(IsSomeoneAtHome ? "Someone at home" : "Nobody is home")} {CurrentDateTime.DateTime:G}");
         }
 
         public static async void CheckLightStatuses()

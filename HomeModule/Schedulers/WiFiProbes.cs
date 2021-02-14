@@ -289,7 +289,7 @@ namespace HomeModule.Schedulers
                     {
                         var sortedList = closeDevices.OrderBy(x => x.SignalType).ThenByDescending(y => y.LastUnixTime).ToList();
                         Console.WriteLine();
-                        Console.WriteLine($"All known devices at: {METHOD.DateTimeTZ().DateTime:G}");
+                        Console.WriteLine($"All unknown devices at: {METHOD.DateTimeTZ().DateTime:G}");
                         Console.WriteLine();
                         Console.WriteLine($"dB  | First | Last  |    Mac Address    |Count|  SignalType   |         WiFi network      |         AccessPoint       |    Base Name     | Manufacturer ");
                         Console.WriteLine($" -  | ----  | ----  |    -----------    | --- |  ----------   |          ---------        |          ---------        |    ----------    |  -----------  ");

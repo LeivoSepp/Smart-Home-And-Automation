@@ -27,43 +27,43 @@ namespace HomeModule.Azure
             List<string> command = new List<string>();
             try
             {
-                var HomeCommands = JsonDocument.Parse(methodRequest.DataAsJson);
-                if (HomeCommands.RootElement.TryGetProperty("Ventilation", out JsonElement ventilation) && ventilation.GetBoolean() == !TelemetryDataClass.isVentilationOn)
+                var HomeCommands = JsonDocument.Parse(methodRequest.DataAsJson).RootElement;
+                if (HomeCommands.TryGetProperty("Ventilation", out JsonElement ventilation) && ventilation.GetBoolean() == !TelemetryDataClass.isVentilationOn)
                 {
                     string cmd = ventilation.GetBoolean() ? CommandNames.OPEN_VENT : CommandNames.CLOSE_VENT;
                     command.Add(cmd);
                 }
-                if (HomeCommands.RootElement.TryGetProperty("Sauna", out JsonElement sauna) && (sauna.GetBoolean() == !TelemetryDataClass.isSaunaOn))
+                if (HomeCommands.TryGetProperty("Sauna", out JsonElement sauna) && (sauna.GetBoolean() == !TelemetryDataClass.isSaunaOn))
                 {
                     string cmd = sauna.GetBoolean() ? CommandNames.TURN_ON_SAUNA : CommandNames.TURN_OFF_SAUNA;
                     command.Add(cmd);
                 }
-                if (HomeCommands.RootElement.TryGetProperty("Water", out JsonElement water) && water.GetBoolean() == !TelemetryDataClass.isWaterHeatingOn)
+                if (HomeCommands.TryGetProperty("Water", out JsonElement water) && water.GetBoolean() == !TelemetryDataClass.isWaterHeatingOn)
                 {
                     string cmd = water.GetBoolean() ? CommandNames.TURN_ON_HOTWATERPUMP : CommandNames.TURN_OFF_HOTWATERPUMP;
                     command.Add(cmd);
                 }
-                if (HomeCommands.RootElement.TryGetProperty("Heating", out JsonElement heating) && heating.GetBoolean() == !TelemetryDataClass.isHeatingOn)
+                if (HomeCommands.TryGetProperty("Heating", out JsonElement heating) && heating.GetBoolean() == !TelemetryDataClass.isHeatingOn)
                 {
                     string cmd = heating.GetBoolean() ? CommandNames.TURN_ON_HEATING : CommandNames.TURN_OFF_HEATING;
                     command.Add(cmd);
                 }
-                if (HomeCommands.RootElement.TryGetProperty("NormalTemp", out JsonElement normalTemp) && normalTemp.GetBoolean() == !TelemetryDataClass.isNormalHeating)
+                if (HomeCommands.TryGetProperty("NormalTemp", out JsonElement normalTemp) && normalTemp.GetBoolean() == !TelemetryDataClass.isNormalHeating)
                 {
                     string cmd = normalTemp.GetBoolean() ? CommandNames.NORMAL_TEMP_COMMAND : CommandNames.REDUCE_TEMP_COMMAND;
                     command.Add(cmd);
                 }
-                if (HomeCommands.RootElement.TryGetProperty("Vacation", out JsonElement vacation) && vacation.GetBoolean() == !TelemetryDataClass.isHomeInVacation)
+                if (HomeCommands.TryGetProperty("Vacation", out JsonElement vacation) && vacation.GetBoolean() == !TelemetryDataClass.isHomeInVacation)
                 {
                     string cmd = vacation.GetBoolean() ? CommandNames.TURN_ON_VACATION : CommandNames.TURN_OFF_VACATION;
                     command.Add(cmd);
                 }
-                if (HomeCommands.RootElement.TryGetProperty("Security", out JsonElement security) && security.GetBoolean() == !TelemetryDataClass.isHomeSecured)
+                if (HomeCommands.TryGetProperty("Security", out JsonElement security) && security.GetBoolean() == !TelemetryDataClass.isHomeSecured)
                 {
                     string cmd = security.GetBoolean() ? CommandNames.TURN_ON_SECURITY : CommandNames.TURN_OFF_SECURITY;
                     command.Add(cmd);
                 }
-                if (HomeCommands.RootElement.TryGetProperty("Temperatures", out JsonElement temperatures))
+                if (HomeCommands.TryGetProperty("Temperatures", out JsonElement temperatures))
                 {
                     //this data is coming from PowerApps
                     var Temperatures = JsonSerializer.Deserialize<List<SensorReading>>(temperatures.GetRawText());
@@ -85,7 +85,7 @@ namespace HomeModule.Azure
             }
 
             string SaunaStartedTime = TelemetryDataClass.SaunaStartedTime == DateTime.MinValue ? "--:--" : TelemetryDataClass.SaunaStartedTime.ToString("HH:mm");
-            //This data goes back directly to PowerApps
+            //This data goes back directly to PowerApps through Azure Functions
             var reportedProperties = new TwinCollection();
             reportedProperties["Ventilation"] = TelemetryDataClass.isVentilationOn;
             reportedProperties["Water"] = TelemetryDataClass.isWaterHeatingOn;
@@ -138,8 +138,7 @@ namespace HomeModule.Azure
         {
             try
             {
-                var ParsedWiFiDevices = JsonDocument.Parse(methodRequest.DataAsJson);
-                JsonElement jsonElement = ParsedWiFiDevices.RootElement;
+                JsonElement jsonElement = JsonDocument.Parse(methodRequest.DataAsJson).RootElement;
                 var device = JsonSerializer.Deserialize<Localdevice>(jsonElement.GetRawText());
                 WiFiProbes.WiFiDevicesFromPowerApps.Add(new Localdevice()
                 {
@@ -168,18 +167,15 @@ namespace HomeModule.Azure
         {
             try
             {
-                var json = JsonDocument.Parse(methodRequest.DataAsJson);
-                JsonElement jsonElement = json.RootElement;
-                var device = JsonSerializer.Deserialize<Localdevice>(jsonElement.GetRawText());
-
+                JsonElement jsonElement = JsonDocument.Parse(methodRequest.DataAsJson).RootElement;
                 jsonElement.TryGetProperty("LightName", out JsonElement lightName);
                 jsonElement.TryGetProperty("TurnOnLights", out JsonElement TurnOnLights);
 
                 if (lightName.GetString() == "garage")
-                    TelemetryDataClass.isGarageLightsOn = await Shelly.SetShellySwitch(TurnOnLights.GetBoolean(), Shelly.GarageLight);
+                    TelemetryDataClass.isGarageLightsOn = await Shelly.SetShellySwitch(TurnOnLights.GetBoolean(), Shelly.GarageLight, nameof(Shelly.GarageLight));
                 if (lightName.GetString() == "outside")
                 {
-                    TelemetryDataClass.isOutsideLightsOn = await Shelly.SetShellySwitch(TurnOnLights.GetBoolean(), Shelly.OutsideLight);
+                    TelemetryDataClass.isOutsideLightsOn = await Shelly.SetShellySwitch(TurnOnLights.GetBoolean(), Shelly.OutsideLight, nameof(Shelly.OutsideLight));
                     SomeoneAtHome.LightsManuallyOnOff = true; //force lights on/off for 30 minutes
                 }
                 Console.WriteLine($"{lightName.GetString()} lights are {(TurnOnLights.GetBoolean() ? "on" : "off")} {METHOD.DateTimeTZ().DateTime:dd.MM HH:mm}");
@@ -360,8 +356,7 @@ namespace HomeModule.Azure
         public static string BedroomHeating = Environment.GetEnvironmentVariable("BedroomHeatingShellyIP");
         public static string GarageLight = Environment.GetEnvironmentVariable("GarageLightShellyIP");
 
-
-        public static async Task<bool> SetShellySwitch(bool turnOn, string ipAddress)
+        public static async Task<bool> SetShellySwitch(bool turnOn, string ipAddress, string shellyName)
         {
             string TurnOnCommand = turnOn ? "on" : "off";
             bool ison = false;
@@ -375,10 +370,13 @@ namespace HomeModule.Azure
                 //deserialize all content
                 var nps = JsonSerializer.Deserialize<JsonElement>(result.Result);
                 ison = nps.GetProperty("ison").GetBoolean();
+
+                if(shellyName == "OutsideLight" || shellyName == "GarageLight")
+                    Console.WriteLine($"Shelly {shellyName} {(turnOn ? "turned on" : "turned off")} {METHOD.DateTimeTZ().DateTime:T}");
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Send command to Shelly exception {turnOn} {ipAddress}: {e.Message}");
+                Console.WriteLine($"Send command to Shelly exception {shellyName} {turnOn}: {e.Message}");
             }
             return ison;
         }

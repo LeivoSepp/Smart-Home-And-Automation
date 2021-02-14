@@ -68,7 +68,7 @@ namespace HomeModule.Schedulers
             {
                 //forcing outside lights ON
                 LightsManuallyOnOff = true;
-                TelemetryDataClass.isOutsideLightsOn = await Shelly.SetShellySwitch(true, Shelly.OutsideLight);
+                TelemetryDataClass.isOutsideLightsOn = await Shelly.SetShellySwitch(true, Shelly.OutsideLight, nameof(Shelly.OutsideLight));
 
                 TelemetryDataClass.SourceInfo = $"Home secured {lastZoneName}";
                 string sensorsOpen = "Look where someone is moving:\n\n";
@@ -96,20 +96,19 @@ namespace HomeModule.Schedulers
 
         public static async void CheckLightStatuses()
         {
+            DateTime dateTime = METHOD.DateTimeTZ().DateTime;
             while (true)
             {
+                DateTime CurrentDateTime = METHOD.DateTimeTZ().DateTime;
                 bool isLightsTime = IsDarkTime() && !IsSleepTime();
-                //the following manual modes are comes if one pushes the button from the app
-                if (LightsManuallyOnOff)
+                //following is checking if one has pushed the button from the PowerApp, then lights are on for 10 minutes
+                var durationToForceLights = LightsManuallyOnOff ? (CurrentDateTime - dateTime).TotalMinutes : CONSTANT.OUTSIDE_LIGHTS_MANUAL_DURATION;
+                var isLightNotForced = durationToForceLights >= CONSTANT.OUTSIDE_LIGHTS_MANUAL_DURATION;
+                if(isLightNotForced)
                 {
-                    //wait here for 30 minutes, lights are on or off
-                    await Task.Delay(TimeSpan.FromMinutes(CONSTANT.OUTSIDE_LIGHTS_MANUAL_DURATION));
                     LightsManuallyOnOff = false;
-                }
-                else
-                {
-                    //during day time and night time turn lights off and during dark time turn lights on
-                    TelemetryDataClass.isOutsideLightsOn = await Shelly.SetShellySwitch(isLightsTime, Shelly.OutsideLight);
+                    dateTime = CurrentDateTime;
+                    TelemetryDataClass.isOutsideLightsOn = await Shelly.SetShellySwitch(isLightsTime, Shelly.OutsideLight, nameof(Shelly.OutsideLight));
                 }
                 await Task.Delay(TimeSpan.FromMinutes(1)); //check statuses every 1 minutes
             }

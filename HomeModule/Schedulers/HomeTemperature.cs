@@ -72,11 +72,11 @@ namespace HomeModule.Schedulers
 
                 //manage Piano heating actuator
                 bool isPianoHeatingOn = ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == PIANO).isHeatingRequired;
-                await Shelly.SetShellySwitch(isPianoHeatingOn, Shelly.PianoHeating);
+                await Shelly.SetShellySwitch(isPianoHeatingOn, Shelly.PianoHeating, nameof(Shelly.PianoHeating));
 
                 //manage Bedroom heating actuator
                 bool isBedroomHeatingOn = ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == BEDROOM).isHeatingRequired;
-                await Shelly.SetShellySwitch(isBedroomHeatingOn, Shelly.BedroomHeating);
+                await Shelly.SetShellySwitch(isBedroomHeatingOn, Shelly.BedroomHeating, nameof(Shelly.BedroomHeating));
 
                 //manage sauna temperature
                 if (ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == SAUNA).isHeatingRequired && TelemetryDataClass.isSaunaOn)

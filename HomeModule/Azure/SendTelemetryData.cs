@@ -11,7 +11,9 @@ namespace HomeModule.Azure
         public static int WaterHeatingInMinutes { get; set; }
         public static int VentilationInMinutes { get; set; } = 0;
         public static bool isHomeSecured { get; set; } = false;
+        public static DateTime HomeSecuredTime { get; set; } = new DateTime();
         public static bool isHomeInVacation { get; set; } = false;
+        public static DateTime VacationTime { get; set; } = new DateTime();
         public static bool isVentilationOn { get; set; } = false;
         public static bool isWaterHeatingOn { get; set; } = false;
         public static bool isHeatingOn { get; set; } = false;

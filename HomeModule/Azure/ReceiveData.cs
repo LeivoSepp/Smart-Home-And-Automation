@@ -86,7 +86,6 @@ namespace HomeModule.Azure
                     receiveData.ProcessCommand(cmd);
             }
 
-            string SaunaStartedTime = TelemetryDataClass.SaunaStartedTime == DateTime.MinValue ? "--:--" : TelemetryDataClass.SaunaStartedTime.ToString("HH:mm");
             //This data goes back directly to PowerApps through Azure Functions
             var reportedProperties = new TwinCollection();
             reportedProperties["Ventilation"] = TelemetryDataClass.isVentilationOn;
@@ -94,7 +93,10 @@ namespace HomeModule.Azure
             reportedProperties["Heating"] = TelemetryDataClass.isHeatingOn;
             reportedProperties["NormalTemp"] = TelemetryDataClass.isNormalHeating;
             reportedProperties["Vacation"] = TelemetryDataClass.isHomeInVacation;
+            reportedProperties["VacationTime"] = TelemetryDataClass.VacationTime.ToString("HH:mm dd.MM.yyyy");
             reportedProperties["Security"] = TelemetryDataClass.isHomeSecured;
+            reportedProperties["HomeSecuredTime"] = TelemetryDataClass.HomeSecuredTime.ToString("HH:mm dd.MM.yyyy");
+            reportedProperties["IsSecurityManuallyOn"] = SomeoneAtHome.IsSecurityManuallyOn;
             reportedProperties["Co2"] = NetatmoDataClass.Co2;
             reportedProperties["Temperature"] = NetatmoDataClass.Temperature;
             reportedProperties["Humidity"] = NetatmoDataClass.Humidity;
@@ -104,7 +106,7 @@ namespace HomeModule.Azure
             reportedProperties["isWaterHeatingNow"] = Pins.IsWaterHeatingOn;
             reportedProperties["Sauna"] = TelemetryDataClass.isSaunaOn;
             reportedProperties["isSaunaDoorOpen"] = Pins.IsSaunaDoorOpen;
-            reportedProperties["SaunaStartedTime"] = SaunaStartedTime;
+            reportedProperties["SaunaStartedTime"] = TelemetryDataClass.SaunaStartedTime.ToString("HH:mm");
             reportedProperties["isSaunaHeatingNow"] = !(bool)Pins.PinRead(Pins.saunaHeatOutPin);
             reportedProperties["isSomeoneAtHome"] = TelemetryDataClass.isSomeoneAtHome;
             reportedProperties["isOutsideLightsOn"] = TelemetryDataClass.isOutsideLightsOn;
@@ -266,24 +268,28 @@ namespace HomeModule.Azure
             else if (command == CommandNames.TURN_ON_VACATION)
             {
                 TelemetryDataClass.isHomeInVacation = true;
+                TelemetryDataClass.VacationTime = METHOD.DateTimeTZ().DateTime;
                 ProcessCommand(CommandNames.TURN_OFF_HEATING);
                 ProcessCommand(CommandNames.TURN_OFF_SAUNA);
                 ProcessCommand(CommandNames.CLOSE_VENT);
-                Console.WriteLine($"{(SomeoneAtHome.IsSecurityManuallyOn ? "Manual security mode." : "Automatic security mode.")} Vacation mode on at {METHOD.DateTimeTZ().DateTime:G}");
+                Console.WriteLine($"{(SomeoneAtHome.IsSecurityManuallyOn ? "Manual security mode." : "Automatic security mode.")} Vacation mode on at {TelemetryDataClass.VacationTime:G}");
             }
             else if (command == CommandNames.TURN_OFF_VACATION)
             {
                 TelemetryDataClass.isHomeInVacation = false;
-                Console.WriteLine($"{(SomeoneAtHome.IsSecurityManuallyOn ? "Manual security mode." : "Automatic security mode.")} Vacation mode on at {METHOD.DateTimeTZ().DateTime:G}");
+                TelemetryDataClass.VacationTime = new DateTime();
+                Console.WriteLine($"{(SomeoneAtHome.IsSecurityManuallyOn ? "Manual security mode." : "Automatic security mode.")} Vacation mode off at {METHOD.DateTimeTZ().DateTime:G}");
             }
             else if (command == CommandNames.TURN_ON_SECURITY)
             {
                 TelemetryDataClass.isHomeSecured = true;
-                Console.WriteLine($"{(SomeoneAtHome.IsSecurityManuallyOn ? "Manual security mode." : "Automatic security mode.")} Home is secured at: {METHOD.DateTimeTZ().DateTime:G}");
+                TelemetryDataClass.HomeSecuredTime = METHOD.DateTimeTZ().DateTime;
+                Console.WriteLine($"{(SomeoneAtHome.IsSecurityManuallyOn ? "Manual security mode." : "Automatic security mode.")} Home is secured at: {TelemetryDataClass.HomeSecuredTime:G}");
             }
             else if (command == CommandNames.TURN_OFF_SECURITY)
             {
                 TelemetryDataClass.isHomeSecured = false;
+                TelemetryDataClass.HomeSecuredTime = new DateTime();
                 Console.WriteLine($"{(SomeoneAtHome.IsSecurityManuallyOn ? "Manual security mode." : "Automatic security mode.")} Home is at normal state at: {METHOD.DateTimeTZ().DateTime:G}");
             }
             else if (command == CommandNames.OPEN_VENT)

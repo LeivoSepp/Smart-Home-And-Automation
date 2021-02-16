@@ -1,5 +1,5 @@
-# Home-Automation
-Home Automation based in Raspberry PI 
+# Smart Home and Automation
+Smart Home and Automation based in Raspberry PI 
 
 ![Home Automation Screen1](Readme/HomeAutomation_screen1.jpg)
 

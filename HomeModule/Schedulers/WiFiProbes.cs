@@ -321,6 +321,7 @@ namespace HomeModule.Schedulers
         async Task<List<WiFiDevice>> GetDevices(string url, string jsonContent)
         {
             List<WiFiDevice> devices = new List<WiFiDevice>();
+            string debug = "";
             try
             {
                 HttpContent httpContent = new StringContent(jsonContent);
@@ -328,15 +329,16 @@ namespace HomeModule.Schedulers
                 httpContent.Headers.ContentType.CharSet = "UTF-8";
                 HttpResponseMessage responseMsg = await http.PostAsync(url, httpContent);
                 var result = responseMsg.Content.ReadAsStringAsync();
+                debug = result.Result;
                 devices = JsonSerializer.Deserialize<List<WiFiDevice>>(result.Result);
             }
             catch (JsonException e)
             {
-                Console.WriteLine($"Json exception: {e.Message}");
+                Console.WriteLine($"Json exception: {e.Message}. All devices {debug}");
             }
             catch (Exception e)
             {
-                Console.WriteLine($"Kismet query error: {e.Message}");
+                Console.WriteLine($"Kismet query error: {e.Message}.");
             }
             return devices;
         }

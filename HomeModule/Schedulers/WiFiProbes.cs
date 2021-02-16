@@ -202,11 +202,13 @@ namespace HomeModule.Schedulers
 
                 //if any mobile phone or watch is present then someone is at home
                 IsAnyMobileAtHome = WiFiDevice.WifiDevices.Any(x => x.IsPresent && (x.DeviceType == WiFiDevice.MOBILE || x.DeviceType == WiFiDevice.WATCH || x.DeviceType == WiFiDevice.CAR));
+                //if security mode automatic and home secured then unsecure home if any known mobile device is seen
+                if (IsAnyMobileAtHome && TelemetryDataClass.isHomeSecured && !SomeoneAtHome.IsSecurityManuallyOn) SomeoneAtHome.SomeoneAtHomeChanged();
 
                 //for local debugging only show the active/non active devices in console window
                 if (isAnyDeviceChanged)
                 {
-                    var sortedList = WiFiDevice.WifiDevices.OrderByDescending(y => y.IsPresent).ThenBy(w => w.DeviceOwner).ThenByDescending(z => z.AccessPoint).ThenBy(w => w.SignalType).ThenByDescending(x => x.StatusUnixTime).ToList();
+                    var sortedList = WiFiDevice.WifiDevices.OrderByDescending(y => y.IsPresent).ThenBy(w => w.DeviceOwner).ThenByDescending(z => z.AccessPoint).ThenBy(w => w.SignalType).ThenBy(x => x.DeviceName).ToList();
                     Console.WriteLine();
                     Console.WriteLine($"All known devices at: {METHOD.DateTimeTZ().DateTime:G}");
                     Console.WriteLine();

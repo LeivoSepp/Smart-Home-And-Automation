@@ -30,7 +30,7 @@ namespace HomeModule.Schedulers
         public static bool LightsManuallyOnOff = false;
         public static bool IsSecurityManuallyOn = false;
 
-        private static void SomeoneAtHomeChanged()
+        public static void SomeoneAtHomeChanged()
         {
             ReceiveData _receiveData = new ReceiveData();
             DateTimeOffset CurrentDateTime = METHOD.DateTimeTZ();

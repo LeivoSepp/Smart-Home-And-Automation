@@ -65,6 +65,10 @@ namespace HomeModule.Schedulers
                     if ((isLightsTime && !TelemetryDataClass.isOutsideLightsOn) || (!isLightsTime && TelemetryDataClass.isOutsideLightsOn))
                         TelemetryDataClass.isOutsideLightsOn = await Shelly.SetShellySwitch(isLightsTime, Shelly.OutsideLight, nameof(Shelly.OutsideLight));
                 }
+                //it's a good place to check also garage light statuses in every minute
+                if (TelemetryDataClass.isGarageLightsOn)
+                    TelemetryDataClass.isGarageLightsOn = await Shelly.GetShellyState(Shelly.GarageLight);
+
                 await Task.Delay(TimeSpan.FromMinutes(1)); //check statuses every 1 minutes
             }
         }

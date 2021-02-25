@@ -34,9 +34,9 @@ namespace HomeModule.Schedulers
 
         public async void QueryWiFiProbes()
         {
-            var filename = Methods.GetFilePath(CONSTANT.FILENAME_HOME_DEVICES);
             http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", Convert.ToBase64String(Encoding.ASCII.GetBytes($"{username}:{password}")));
 
+            var filename = Methods.GetFilePath(CONSTANT.FILENAME_HOME_DEVICES);
             try
             {
                 //open file and -> list of devices from Raspberry if the file exists
@@ -72,6 +72,7 @@ namespace HomeModule.Schedulers
                 {
                     //Add, Remove or Change WiFiDevices list according to WiFiDevices From PowerApps
                     WiFiDevice.WellKnownDevices = AddRemoveChangeDevices(WiFiDevicesFromPowerApps, WiFiDevice.WellKnownDevices);
+                    WiFiDevicesFromPowerApps.Clear();
                     //send all devices to CosmosDB
                     await SendMacAddressToCosmos(WiFiDevice.WellKnownDevices);
                 }
@@ -180,7 +181,7 @@ namespace HomeModule.Schedulers
                                 item.SignalType = device.SignalType;
                                 item.IsPresent = device.IsPresent;
                             }
-                            if(device.IsPresent && !device.IsChanged)
+                            if (device.IsPresent && !device.IsChanged)
                             {
                                 item.IsChanged = false;
                                 break;
@@ -196,8 +197,8 @@ namespace HomeModule.Schedulers
                 //print out (and send to azure and e-mail) the list only if someone has arrived at home or left the home
                 if (WiFiDevicesWhoIsChanged.Any(x => x.IsChanged))
                 {
-                    string status = "Look who is at home:\n\n"; ;
-                    
+                    string status = "Look who is at home:\n\n";
+
                     WiFiDevicesWhoIsChanged.ForEach(x => status += $"{(x.IsPresent ? x.DeviceOwner + " " + x.DeviceName + " at home from" : x.DeviceOwner + " not seen since")} {x.StatusFrom:HH:mm dd.MM.yyyy} \n ");
                     var x = WiFiDevicesWhoIsChanged.First(x => x.IsChanged);
                     string whoChanged = $"{(x.IsPresent ? x.DeviceOwner + " " + x.DeviceName + " at home from" : x.DeviceOwner + " not seen since")} {x.StatusFrom:HH:mm dd.MM.yyyy}";
@@ -224,6 +225,7 @@ namespace HomeModule.Schedulers
                 //for local debugging only show the active/non active devices in console window
                 if (isAnyDeviceChanged)
                 {
+                    isAnyDeviceChanged = false;
                     var sortedList = WiFiDevice.WellKnownDevices.OrderByDescending(y => y.IsPresent).ThenBy(w => w.DeviceOwner).ThenByDescending(z => z.AccessPoint).ThenBy(w => w.SignalType).ThenBy(x => x.DeviceName).ToList();
                     Console.WriteLine();
                     Console.WriteLine($"All known devices at: {METHOD.DateTimeTZ().DateTime:G}");
@@ -244,10 +246,10 @@ namespace HomeModule.Schedulers
                         }
                     }
                     Console.WriteLine();
-                    isAnyDeviceChanged = false;
                 }
 
                 #region Unknown Devices Debugging
+
                 //prepare last active devices query
                 string urlLastActive = $"{urlKismet}/devices/last-time/{CONSTANT.ACTIVE_DEVICES_IN_LAST}/devices.json";
                 string jsonContentFields = "json={\"fields\":" + jsonFields + "}";
@@ -255,11 +257,12 @@ namespace HomeModule.Schedulers
                 //removing all known devices from the last seen devices list
                 //known devices are all locally registered devices in the list WiFiDevice.WifiDevices
                 var tempDelList = new List<WiFiDevice>();
+                var AllActiveDevices = new List<WiFiDevice>(KismetActiveDevices);
                 foreach (var kismet in KismetActiveDevices)
                 {
                     foreach (var knownDevice in WiFiDevice.WellKnownDevices)
                     {
-                        if (kismet.MacAddress == knownDevice.MacAddress || kismet.LastSignal < CONSTANT.SIGNAL_TRESHOLD || (kismet.CommonName == kismet.MacAddress && kismet.Manufacture == "Unknown" ))
+                        if (kismet.MacAddress == knownDevice.MacAddress || kismet.LastSignal < CONSTANT.SIGNAL_TRESHOLD || (kismet.CommonName == kismet.MacAddress && kismet.Manufacture == "Unknown"))
                         {
                             tempDelList.Add(kismet);
                             break;
@@ -289,9 +292,9 @@ namespace HomeModule.Schedulers
                                     List<WiFiDevice> KismetOneMac = new List<WiFiDevice>();
                                     string urlOneMac = $"{urlKismet}/devices/by-mac/{kismet.MacAddress}/devices.json";
                                     KismetOneMac = await GetDevices(urlOneMac, jsonContentFields);
-                                    unknownDevice.AccessPoint = KismetOneMac.Where(x => x.MacAddress == kismet.LastBSSID).Select(x => x.BaseName).DefaultIfEmpty("No AP").First();
+                                    unknownDevice.AccessPoint = AllActiveDevices.Where(x => x.MacAddress == KismetOneMac.First().LastBSSID).Select(x => x.BaseName).DefaultIfEmpty("No AP").First();
                                     if (string.IsNullOrEmpty(kismet.ProbedSSID) || unknownDevice.WiFiName == "0")
-                                        unknownDevice.WiFiName = KismetOneMac.Where(x => x.MacAddress == kismet.LastBSSID).Select(x => x.SSID).DefaultIfEmpty("No AP").First();
+                                        unknownDevice.WiFiName = AllActiveDevices.Where(x => x.MacAddress == KismetOneMac.First().LastBSSID).Select(x => x.SSID).DefaultIfEmpty("No AP").First();
                                 }
                                 isNewItem = false;
                                 break;
@@ -314,8 +317,8 @@ namespace HomeModule.Schedulers
                         Console.WriteLine();
                         Console.WriteLine($"All unknown devices at: {METHOD.DateTimeTZ().DateTime:G}");
                         Console.WriteLine();
-                        Console.WriteLine($"dB  | First | Last  |    Mac Address    |Count|  SignalType   |         WiFi network      |         AccessPoint       |    CommonName    | Manufacturer ");
-                        Console.WriteLine($" -  | ----  | ----  |    -----------    | --- |  ----------   |          ---------        |          ---------        |    ----------    |  -----------  ");
+                        Console.WriteLine($"dB  | First | Last  |    Mac Address    |Count |  SignalType   |         WiFi network      |         AccessPoint       |    Common Name     | Manufacturer ");
+                        Console.WriteLine($" -  | ----  | ----  |    -----------    | ---  |  ----------   |          ---------        |          ---------        |    -----------     |  -----------  ");
 
                         foreach (var device in sortedList)
                         {
@@ -323,7 +326,7 @@ namespace HomeModule.Schedulers
                                 $"| {METHOD.UnixTimeStampToDateTime(device.FirstUnixTime).AddHours(timeOffset):t} " +
                                 $"| {METHOD.UnixTimeStampToDateTime(device.LastUnixTime).AddHours(timeOffset):t} " +
                                 $"| {device.MacAddress} " +
-                                $"| {device.Count:00}  " +
+                                $"| {device.Count}{"".PadRight(device.Count < 10 ? 3 : device.Count < 100 ? 2 : 1)} " +
                                 $"| {device.SignalType}{"".PadRight(14 - (!string.IsNullOrEmpty(device.SignalType) ? (device.SignalType.Length > 14 ? 14 : device.SignalType.Length) : 0))}" +
                                 $"| {device.WiFiName}{"".PadRight(26 - (!string.IsNullOrEmpty(device.WiFiName) ? (device.WiFiName.Length > 26 ? 26 : device.WiFiName.Length) : 0))}" +
                                 $"| {device.AccessPoint}{"".PadRight(26 - (!string.IsNullOrEmpty(device.AccessPoint) ? (device.AccessPoint.Length > 26 ? 26 : device.AccessPoint.Length) : 0))}" +
@@ -386,7 +389,6 @@ namespace HomeModule.Schedulers
                     ));
                 }
             }
-            devicesFromPowerApps.Clear();
             localWiFiDevices.AddRange(tempAddList.ToArray());
             localWiFiDevices.RemoveAll(i => tempDeleteList.Any(x => x.MacAddress == i.MacAddress));
             return localWiFiDevices;
@@ -448,7 +450,9 @@ namespace HomeModule.Schedulers
                 MacAddress = x.MacAddress,
                 StatusFrom = METHOD.UnixTimeStampToDateTime(x.StatusUnixTime).AddHours(timeOffset),
                 IsPresent = x.IsPresent,
-                SignalType = x.SignalType
+                SignalType = x.SignalType,
+                AccessPoint = x.AccessPoint,
+                IsChanged = x.IsChanged
             }));
             TelemetryDataClass.SourceInfo = $"WiFi Devices";
             //send data to CosmosDB

@@ -226,7 +226,7 @@ namespace HomeModule.Schedulers
                 if (isAnyDeviceChanged)
                 {
                     isAnyDeviceChanged = false;
-                    var sortedList = WiFiDevice.WellKnownDevices.OrderByDescending(y => y.IsPresent).ThenBy(w => w.DeviceOwner).ThenByDescending(z => z.AccessPoint).ThenBy(w => w.SignalType).ThenBy(x => x.DeviceName).ToList();
+                    var sortedList = WiFiDevice.WellKnownDevices.OrderByDescending(y => y.IsPresent).ThenBy(w => w.AccessPoint).ThenBy(z => z.SignalType).ThenBy(x => x.DeviceName).ToList();
                     Console.WriteLine();
                     Console.WriteLine($"All known devices at: {METHOD.DateTimeTZ().DateTime:G}");
                     Console.WriteLine();
@@ -292,9 +292,13 @@ namespace HomeModule.Schedulers
                                     List<WiFiDevice> KismetOneMac = new List<WiFiDevice>();
                                     string urlOneMac = $"{urlKismet}/devices/by-mac/{kismet.MacAddress}/devices.json";
                                     KismetOneMac = await GetDevices(urlOneMac, jsonContentFields);
-                                    unknownDevice.AccessPoint = AllActiveDevices.Where(x => x.MacAddress == KismetOneMac.First().LastBSSID).Select(x => x.BaseName).DefaultIfEmpty("No AP").First();
-                                    if (string.IsNullOrEmpty(kismet.ProbedSSID) || unknownDevice.WiFiName == "0")
-                                        unknownDevice.WiFiName = AllActiveDevices.Where(x => x.MacAddress == KismetOneMac.First().LastBSSID).Select(x => x.SSID).DefaultIfEmpty("No AP").First();
+                                    //have to check KismetOneMac list because sometimes it is empty
+                                    if (KismetOneMac.Any())
+                                    {
+                                        unknownDevice.AccessPoint = AllActiveDevices.Where(x => x.MacAddress == KismetOneMac.First().LastBSSID).Select(x => x.BaseName).DefaultIfEmpty("No AP").First();
+                                        if (string.IsNullOrEmpty(kismet.ProbedSSID) || unknownDevice.WiFiName == "0")
+                                            unknownDevice.WiFiName = AllActiveDevices.Where(x => x.MacAddress == KismetOneMac.First().LastBSSID).Select(x => x.SSID).DefaultIfEmpty("No AP").First();
+                                    }
                                 }
                                 isNewItem = false;
                                 break;

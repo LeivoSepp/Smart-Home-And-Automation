@@ -181,7 +181,10 @@ namespace HomeModule.Schedulers
                                 item.SignalType = device.SignalType;
                                 item.IsPresent = device.IsPresent;
                             }
-                            if (device.IsPresent && !device.IsChanged)
+                            //if device is exist and has'nt been changed, then mark it as unchanged and move to next item
+                            //if device is not exist (not seen) but has been changed then mark it as unchanged and move to next item = do not notify leaving devices
+                            //this is XOR
+                            if (device.IsPresent ^ device.IsChanged)
                             {
                                 item.IsChanged = false;
                                 break;
@@ -194,7 +197,7 @@ namespace HomeModule.Schedulers
                 var jsonString = JsonSerializer.Serialize(WiFiDevice.WellKnownDevices);
                 await Methods.SaveStringToLocalFile(filename, jsonString);
 
-                //print out (and send to azure and e-mail) the list only if someone has arrived at home or left the home
+                //send an e-mail only if someone has arrived at home or left the home
                 if (WiFiDevicesWhoIsChanged.Any(x => x.IsChanged))
                 {
                     string status = "Look who is at home:\n\n";
@@ -222,6 +225,8 @@ namespace HomeModule.Schedulers
                 //if security mode automatic and home secured then unsecure home if any known mobile device is seen
                 if (IsAnyMobileAtHome && TelemetryDataClass.isHomeSecured && !SomeoneAtHome.IsSecurityManuallyOn) SomeoneAtHome.SomeoneAtHomeChanged();
 
+                #region Known Device Listing, only for debugging
+
                 //for local debugging only show the active/non active devices in console window
                 if (isAnyDeviceChanged)
                 {
@@ -247,6 +252,8 @@ namespace HomeModule.Schedulers
                     }
                     Console.WriteLine();
                 }
+
+                #endregion
 
                 #region Unknown Devices Debugging
 

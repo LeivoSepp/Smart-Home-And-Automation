@@ -204,9 +204,9 @@ namespace HomeModule.Schedulers
 
                     WiFiDevicesWhoIsChanged.ForEach(x => status += $"{(x.IsPresent ? x.DeviceOwner + " " + x.DeviceName + " at home from" : x.DeviceOwner + " not seen since")} {x.StatusFrom:HH:mm dd.MM.yyyy} \n ");
                     var x = WiFiDevicesWhoIsChanged.First(x => x.IsChanged);
-                    string whoChanged = $"{(x.IsPresent ? x.DeviceOwner + " " + x.DeviceName + " at home from" : x.DeviceOwner + " not seen since")} {x.StatusFrom:HH:mm dd.MM.yyyy}";
+                    string whoChanged = $"{(x.IsPresent ? x.DeviceOwner + " at home " : x.DeviceOwner + " not seen since")} {x.StatusFrom:HH:mm dd.MM.yyyy}";
                     _sendListData = new SendDataAzure();
-                    TelemetryDataClass.SourceInfo = $"Who is at home: {whoChanged}";
+                    TelemetryDataClass.SourceInfo = $"{whoChanged}";
                     //send data to CosmosDB
                     var monitorData = new
                     {

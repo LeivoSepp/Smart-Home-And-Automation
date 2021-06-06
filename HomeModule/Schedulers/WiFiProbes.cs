@@ -322,7 +322,7 @@ namespace HomeModule.Schedulers
                     UnknownDevices.RemoveAll(x => (unixTimestamp - x.LastUnixTime) / 60 > 120); //remove all entries older that 2 hour
 
                     //local debugging: show the devices list in console only if some device has been added
-                    if (tempAddList.Any())
+                    if (tempAddList.Any() && UnknownDevices.Any())
                     {
                         var sortedList = UnknownDevices.OrderBy(x => x.SignalType).ThenByDescending(y => y.LastUnixTime).ToList();
                         Console.WriteLine();

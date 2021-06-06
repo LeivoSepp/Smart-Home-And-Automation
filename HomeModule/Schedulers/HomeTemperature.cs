@@ -87,7 +87,7 @@ namespace HomeModule.Schedulers
                 if (ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == SAUNA).Temperature > CONSTANT.EXTREME_SAUNA_TEMP) _receiveData.ProcessCommand(CommandNames.TURN_OFF_SAUNA);
 
                 //if all rooms has achieved their target temperature then turn system off
-                if (ListOfAllSensors.Temperatures.Where(x => x.isRoom).All(x => !x.isHeatingRequired)) _receiveData.ProcessCommand(CommandNames.TURN_OFF_HEATING);
+                if (ListOfAllSensors.Temperatures.Where(x => x.isRoom).All(x => !x.isHeatingRequired)) _receiveData.ProcessCommand(CommandNames.REDUCE_TEMP_COMMAND);
 
                 //if all room temperatures together has changed more that 3 degrees then send it out to database
                 if (Math.Abs(SumOfTemperatureDeltas) > 4)

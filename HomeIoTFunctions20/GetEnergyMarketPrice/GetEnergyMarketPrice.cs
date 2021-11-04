@@ -92,12 +92,15 @@ namespace HomeIoTFunctions20.GetEnergyMarketPrice
                         //date from column and time from row
                         string datetime = $"{column.Name} {time:HH:mm}";
                         if (column.Index < 3) //filter out last three days: Index = 0, 1, 2
-                            energyData.Add(new EnergyPrice
-                            {
-                                date = DateTimeOffset.ParseExact(datetime, "dd-MM-yyyy HH:mm", null).AddHours(1),
-                                price = double.Parse(column.Value, CultureInfo.GetCultureInfo("et-EE")),
-                                time = time.AddHours(1).ToString("HH:mm")
-                            });
+                        {
+                            if (column.Value != "-") //stupid hack as the source data is corrupted after daylight !!
+                                energyData.Add(new EnergyPrice
+                                {
+                                    date = DateTimeOffset.ParseExact(datetime, "dd-MM-yyyy HH:mm", null).AddHours(1),
+                                    price = double.Parse(column.Value, CultureInfo.GetCultureInfo("et-EE")),
+                                    time = time.AddHours(1).ToString("HH:mm")
+                                });
+                        }
                     }
                 }
             }

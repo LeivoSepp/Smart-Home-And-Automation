@@ -39,25 +39,26 @@ namespace HomeModule.Schedulers
             var filename = Methods.GetFilePath(CONSTANT.FILENAME_HOME_DEVICES);
             try
             {
-                //open file and -> list of devices from Raspberry if the file exists
-                if (File.Exists(filename))
-                {
-                    var result = await Methods.OpenExistingFile(filename);
-                    WiFiDevice.WellKnownDevices = JsonSerializer.Deserialize<List<WiFiDevice>>(result).ToList();
-                }
-                else
-                {
-                    double unixTimestamp = DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
-                    //following will happen only if there is no file on Raspberry and the list will be loaded from the environment variables
-                    WiFiDevice.WellKnownDevices.ForEach(x => x.StatusUnixTime = unixTimestamp);
-                }
+                ////open file and -> list of devices from Raspberry if the file exists
+                //if (File.Exists(filename))
+                //{
+                //    var result = await Methods.OpenExistingFile(filename);
+                //    WiFiDevice.WellKnownDevices = JsonSerializer.Deserialize<List<WiFiDevice>>(result).ToList();
+                //}
+                //else
+                //{
+                //    double unixTimestamp = DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
+                //    //following will happen only if there is no file on Raspberry and the list will be loaded from the environment variables
+                //    WiFiDevice.WellKnownDevices.ForEach(x => x.StatusUnixTime = unixTimestamp);
+                //}
+                WiFiDevice.WellKnownDevices = await GetMacAddressFromCosmos();
             }
             catch (Exception e)
             {
                 Console.WriteLine($"open file {e}");
             }
 
-            await SendMacAddressToCosmos(WiFiDevice.WellKnownDevices);
+            //await SendMacAddressToCosmos(WiFiDevice.WellKnownDevices);
 
             bool isAnyDeviceChanged = true;
             var UnknownDevices = new List<WiFiDevice>();

@@ -47,9 +47,9 @@ namespace HomeModule.Schedulers
                 //}
                 //else
                 //{
-                //    double unixTimestamp = DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
-                //    //following will happen only if there is no file on Raspberry and the list will be loaded from the environment variables
-                //    WiFiDevice.WellKnownDevices.ForEach(x => x.StatusUnixTime = unixTimestamp);
+                //double unixTimestamp = DateTime.UtcNow.Subtract(new DateTime(1970, 1, 1)).TotalSeconds;
+                ////following will happen only if there is no file on Raspberry and the list will be loaded from the environment variables
+                //WiFiDevice.WellKnownDevices.ForEach(x => x.StatusUnixTime = unixTimestamp);
                 //}
                 WiFiDevice.WellKnownDevices = await GetMacAddressFromCosmos();
             }
@@ -440,10 +440,24 @@ namespace HomeModule.Schedulers
             var result = response.Content.ReadAsStringAsync();
 
             //deserialize all content
-            var nps = JsonSerializer.Deserialize<JsonElement>(result.Result);
-            string dataresult = nps.GetProperty("AllWiFiDevices").GetRawText();
-            var npsOut = JsonSerializer.Deserialize<List<WiFiDevice>>(dataresult);
-            return npsOut;
+            var npsOut = JsonSerializer.Deserialize<List<Localdevice>>(result.Result);
+
+            //convert from Localdevice (CosmosDB) to WiFiDevice 
+            var AllWiFiDevices = new List<WiFiDevice>();
+            npsOut.ForEach(x => AllWiFiDevices.Add(new WiFiDevice(
+                x.MacAddress,
+                x.DeviceName,
+                x.DeviceOwner,
+                x.DeviceType,
+                x.ActiveDuration,
+                METHOD.DateTimeToUnixTimestamp(x.StatusFrom),
+                METHOD.DateTimeToUnixTimestamp(x.StatusFrom),
+                x.SignalType,
+                x.AccessPoint
+                )
+            ));
+
+            return AllWiFiDevices;
         }
 
         async Task SendMacAddressToCosmos(List<WiFiDevice> wiFiDevices)
@@ -495,7 +509,7 @@ namespace HomeModule.Schedulers
     }
     class WiFiDevice
     {
-        public WiFiDevice(string macAddress, string deviceName, string deviceOwner, int deviceType = DEVICE, int activeDuration = 0, double statusUnixTime = 0, bool isPresent = false, bool statusChange = true)
+        public WiFiDevice(string macAddress, string deviceName, string deviceOwner, int deviceType = DEVICE, int activeDuration = 0, double statusUnixTime = 0, double lastUnixTime = 0, string signalType = "", string accessPoint = "", bool isPresent = false, bool statusChange = true)
         {
             MacAddress = macAddress;
             ActiveDuration = activeDuration;
@@ -505,6 +519,9 @@ namespace HomeModule.Schedulers
             IsPresent = isPresent;
             StatusChange = statusChange;
             StatusUnixTime = statusUnixTime;
+            LastUnixTime = lastUnixTime;
+            SignalType = signalType;
+            AccessPoint = accessPoint;
         }
 
         public int ActiveDuration { get; set; }

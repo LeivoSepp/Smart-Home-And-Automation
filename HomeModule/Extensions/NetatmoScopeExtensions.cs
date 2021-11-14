@@ -1,5 +1,5 @@
-﻿using System.Linq;
-using Netatmo.Net.Model;
+﻿using Netatmo.Net.Model;
+using System.Linq;
 
 namespace Netatmo.Net.Extensions
 {
@@ -7,7 +7,7 @@ namespace Netatmo.Net.Extensions
     {
         public static string ToScopeString(this NetatmoScope[] scopes)
         {
-            var scopeString = scopes.Aggregate("", (current, netatmoScope) => string.IsNullOrEmpty(current) ? current +  $"{netatmoScope}" : current + $" {netatmoScope}");
+            var scopeString = scopes.Aggregate("", (current, netatmoScope) => string.IsNullOrEmpty(current) ? current + $"{netatmoScope}" : current + $" {netatmoScope}");
             return scopeString;
         }
     }

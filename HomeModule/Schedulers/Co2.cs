@@ -1,6 +1,6 @@
 ﻿using HomeModule.Azure;
-using HomeModule.Netatmo;
 using HomeModule.Helpers;
+using HomeModule.Netatmo;
 using System;
 using System.Threading.Tasks;
 
@@ -26,7 +26,7 @@ namespace HomeModule.Schedulers
                 }
                 else
                 {
-                    if(TelemetryDataClass.isVentilationOn) _receiveData.ProcessCommand(CommandNames.CLOSE_VENT);
+                    if (TelemetryDataClass.isVentilationOn) _receiveData.ProcessCommand(CommandNames.CLOSE_VENT);
                     await Task.Delay(TimeSpan.FromMinutes(CONSTANT.TIMER_MINUTES_CHECK_CO2)); //check co2 turn on condition every 5 minute
                 }
             }

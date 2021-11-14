@@ -1,6 +1,4 @@
-﻿using System.Collections.Generic;
-
-namespace HomeModule.Helpers
+﻿namespace HomeModule.Helpers
 {
     class CONSTANT
     {

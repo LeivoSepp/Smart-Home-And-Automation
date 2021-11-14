@@ -8,7 +8,7 @@ namespace Netatmo.Net.Model
         public StationsBody Data { get; set; }
 
         [JsonProperty(PropertyName = "status")]
-        public string Status{ get; set; }
+        public string Status { get; set; }
 
         [JsonProperty(PropertyName = "time_exec")]
         public float TimeExec { get; set; }

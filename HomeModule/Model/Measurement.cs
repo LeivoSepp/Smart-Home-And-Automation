@@ -1,6 +1,6 @@
-﻿using System;
+﻿using Netatmo.Net.Extensions;
+using System;
 using System.Collections.Generic;
-using Netatmo.Net.Extensions;
 
 namespace Netatmo.Net.Model
 {

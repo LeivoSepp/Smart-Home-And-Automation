@@ -1,10 +1,10 @@
-﻿using System;
-using Rinsen.IoT.OneWire;
+﻿using HomeModule.Helpers;
 using HomeModule.Models;
-using System.Threading.Tasks;
 using HomeModule.Schedulers;
+using Rinsen.IoT.OneWire;
+using System;
 using System.Linq;
-using HomeModule.Helpers;
+using System.Threading.Tasks;
 
 namespace HomeModule.Measuring
 {

@@ -1,5 +1,5 @@
-﻿using System;
-using Newtonsoft.Json;
+﻿using Newtonsoft.Json;
+using System;
 
 namespace Netatmo.Net.Model
 {
@@ -7,7 +7,7 @@ namespace Netatmo.Net.Model
     {
         //To be safe extract some seconds from the original expire seconds
         private int _minusExpiresSeconds = 1;
-        private string _accessToken;        
+        private string _accessToken;
         private DateTime _creationTime;
 
         [JsonProperty(PropertyName = "access_token")]

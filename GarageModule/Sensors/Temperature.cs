@@ -1,12 +1,12 @@
 ﻿using GarageModule.Azure;
-using System;
-using System.Threading.Tasks;
-using System.Device.Gpio;
-using System.Text.Json;
 using Microsoft.Azure.Devices.Client;
-using System.Text;
 using RobootikaCOM.NetCore.Devices;
+using System;
 using System.Collections.Generic;
+using System.Device.Gpio;
+using System.Text;
+using System.Text.Json;
+using System.Threading.Tasks;
 
 namespace GarageModule.Sensors
 {
@@ -43,7 +43,7 @@ namespace GarageModule.Sensors
         {
 
             TSL2561Sensor.SetTiming(true, TSL2561.INTEGRATIONTIME_402MS);
-            
+
             //int lastTemperature = 100; //some big number to enable initial message when program is starting
             gpio.OpenPin(GarageDoorInPin, PinMode.InputPullUp);
 

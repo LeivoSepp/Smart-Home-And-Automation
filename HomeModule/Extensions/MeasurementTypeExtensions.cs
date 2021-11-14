@@ -1,5 +1,5 @@
-﻿using System.Linq;
-using Netatmo.Net.Model;
+﻿using Netatmo.Net.Model;
+using System.Linq;
 
 namespace Netatmo.Net.Extensions
 {

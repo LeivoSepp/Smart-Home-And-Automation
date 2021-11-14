@@ -1,13 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO.Ports;
-using System.IO;
-using System.Linq;
-using HomeModule.Azure;
-using System.Threading.Tasks;
-using HomeModule.Schedulers;
+﻿using HomeModule.Azure;
 using HomeModule.Helpers;
-using System.Security.Cryptography.X509Certificates;
+using HomeModule.Schedulers;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.IO.Ports;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace HomeModule.Raspberry
 {

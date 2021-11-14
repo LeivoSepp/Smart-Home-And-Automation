@@ -1,9 +1,7 @@
 ﻿using Microsoft.Azure.Devices.Client;
 using System;
-using System.Text;
-using System.Threading.Tasks;
 using System.Threading;
-using GarageModule.Sensors;
+using System.Threading.Tasks;
 
 namespace GarageModule.Azure
 {

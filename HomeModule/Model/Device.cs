@@ -5,7 +5,7 @@ namespace Netatmo.Net.Model
     public class Device
     {
         [JsonProperty(PropertyName = "_id")]
-        public string Id{ get; set; }
+        public string Id { get; set; }
 
         [JsonProperty(PropertyName = "alarm_config")]
         public AlarmConfig AlarmConfig { get; set; }

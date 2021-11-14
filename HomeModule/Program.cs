@@ -1,15 +1,15 @@
 namespace HomeModule
 {
-    using System;
-    using System.Runtime.Loader;
-    using System.Threading;
-    using System.Threading.Tasks;
-    using Microsoft.Azure.Devices.Client;
-    using Microsoft.Azure.Devices.Client.Transport.Mqtt;
     using HomeModule.Azure;
     using HomeModule.Netatmo;
     using HomeModule.Raspberry;
     using HomeModule.Schedulers;
+    using Microsoft.Azure.Devices.Client;
+    using Microsoft.Azure.Devices.Client.Transport.Mqtt;
+    using System;
+    using System.Runtime.Loader;
+    using System.Threading;
+    using System.Threading.Tasks;
 
     class Program
     {

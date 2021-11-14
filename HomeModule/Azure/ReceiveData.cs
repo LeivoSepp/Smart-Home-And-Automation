@@ -1,19 +1,18 @@
-﻿using Microsoft.Azure.Devices.Client;
+﻿using HomeModule.Helpers;
+using HomeModule.Models;
+using HomeModule.Netatmo;
+using HomeModule.Raspberry;
+using HomeModule.Schedulers;
+using Microsoft.Azure.Devices.Client;
+using Microsoft.Azure.Devices.Shared;
+using System;
+using System.Collections.Generic;
+using System.Device.Gpio;
+using System.IO;
+using System.Net.Http;
 using System.Text;
 using System.Text.Json;
-using HomeModule.Schedulers;
-using HomeModule.Raspberry;
-using System;
-using System.Device.Gpio;
-using Microsoft.Azure.Devices.Shared;
 using System.Threading.Tasks;
-using System.Collections.Generic;
-using HomeModule.Netatmo;
-using System.Net.Http;
-using HomeModule.Models;
-using System.IO;
-using HomeModule.Helpers;
-using System.Linq;
 
 namespace HomeModule.Azure
 {
@@ -382,7 +381,7 @@ namespace HomeModule.Azure
                 var nps = JsonSerializer.Deserialize<JsonElement>(result.Result);
                 ison = nps.GetProperty("ison").GetBoolean();
 
-                if(shellyName == "OutsideLight" || shellyName == "GarageLight")
+                if (shellyName == "OutsideLight" || shellyName == "GarageLight")
                     Console.WriteLine($"Shelly {shellyName} {(turnOn ? "turned on" : "turned off")} {METHOD.DateTimeTZ().DateTime:T}");
             }
             catch (Exception e)

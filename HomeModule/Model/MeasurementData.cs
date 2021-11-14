@@ -1,8 +1,8 @@
-﻿using System;
+﻿using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
 
 namespace Netatmo.Net.Model
 {
@@ -51,7 +51,7 @@ namespace Netatmo.Net.Model
 
                         for (var j = 0; j < measurementTypes.Count(); j++)
                         {
-                            var value = new MeasurementValue {Type = measurementTypes[j], Value = valueArray[j]};
+                            var value = new MeasurementValue { Type = measurementTypes[j], Value = valueArray[j] };
                             measurementValues.Add(value);
                         }
 

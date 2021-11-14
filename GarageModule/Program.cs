@@ -1,19 +1,19 @@
 namespace GarageModule
 {
+    using GarageModule.Azure;
+    using GarageModule.Sensors;
+    using Microsoft.Azure.Devices.Client;
     using System;
     using System.Runtime.Loader;
     using System.Threading;
     using System.Threading.Tasks;
-    using Microsoft.Azure.Devices.Client;
-    using GarageModule.Sensors;
-    using GarageModule.Azure;
 
     class Program
     {
         public static ModuleClient IoTHubModuleClient { get; set; }
         private static Garage _temperature;
         private static ReceiveData _receiveData;
- 
+
         static void Main(string[] args)
         {
             Init().Wait();

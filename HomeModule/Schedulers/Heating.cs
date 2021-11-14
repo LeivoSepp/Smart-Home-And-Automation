@@ -1,10 +1,10 @@
-﻿using System;
-using System.Threading.Tasks;
+﻿using HomeModule.Azure;
 using HomeModule.EnergyPrice;
-using System.Collections.Generic;
-using HomeModule.Azure;
-using System.Linq;
 using HomeModule.Helpers;
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace HomeModule.Schedulers
 {
@@ -29,7 +29,7 @@ namespace HomeModule.Schedulers
                 //get the current state of heating and hot water
                 foreach (var item in _realTimeEnergyPrices)
                 {
-                    if(item.date.DateTime.Hour == CurrentDateTime.DateTime.Hour)
+                    if (item.date.DateTime.Hour == CurrentDateTime.DateTime.Hour)
                     {
                         HeatingMode = item.heat;
                         isHotWaterTime = item.isHotWaterTime;

@@ -4,7 +4,7 @@ namespace HomeModule.Models
 {
     class SensorReading
     {
-        public SensorReading(string sensorid="", string roomName="", double temperatureset=0, bool isroom = false)
+        public SensorReading(string sensorid = "", string roomName = "", double temperatureset = 0, bool isroom = false)
         {
             SensorID = sensorid;
             RoomName = roomName;

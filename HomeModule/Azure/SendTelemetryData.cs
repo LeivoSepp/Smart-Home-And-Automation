@@ -1,7 +1,7 @@
-﻿using HomeModule.Netatmo;
-using System.Threading.Tasks;
+﻿using HomeModule.Helpers;
+using HomeModule.Netatmo;
 using System;
-using HomeModule.Helpers;
+using System.Threading.Tasks;
 
 namespace HomeModule.Azure
 {
@@ -38,7 +38,7 @@ namespace HomeModule.Azure
                 TelemetryDataClass.SourceInfo = "Telemetry 5min before every full hour";
                 await SendTelemetryAsync();
 
-                int secondsToNextHour = 3600 - ((int)DateTime.UtcNow.TimeOfDay.TotalSeconds+300) % 3600;
+                int secondsToNextHour = 3600 - ((int)DateTime.UtcNow.TimeOfDay.TotalSeconds + 300) % 3600;
                 await Task.Delay(TimeSpan.FromSeconds(secondsToNextHour)); //wait until 5min before the next hour
             }
         }
@@ -47,7 +47,7 @@ namespace HomeModule.Azure
             _sendListData = new SendDataAzure();
 
             var monitorData = new
-            { 
+            {
                 DeviceID = "HomeController",
                 NetatmoDataClass.Co2,
                 NetatmoDataClass.Humidity,

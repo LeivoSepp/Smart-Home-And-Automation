@@ -1,12 +1,11 @@
-﻿using System;
+﻿using Netatmo.Net.Model;
+using Netatmo.Net.Utils;
+using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
-using Netatmo.Net.Extensions;
-using Netatmo.Net.Model;
-using Netatmo.Net.Utils;
-using Newtonsoft.Json;
 
 namespace Netatmo.Net
 {
@@ -35,7 +34,7 @@ namespace Netatmo.Net
             ClientSecret = clientSecret;
             _httpClient = new HttpClient();
         }
-        
+
         /// <summary>
         /// Login to netatmo and retrieve an OAuthToken
         /// </summary>
@@ -87,7 +86,7 @@ namespace Netatmo.Net
         {
             var content = HttpContentCreator.CreateGetMeasureHttpContent(deviceId, scale, measurementTypes, moduleId, onlyLastMeasurement, begin, end, optimize, limit, realtime);
             var response = await Request<MeasurementData>(Urls.GetMeasureUrl, content);
-            if(response.Success)
+            if (response.Success)
                 response.Result.CreateMeasurementData(optimize, measurementTypes);
 
             return response;
@@ -111,7 +110,7 @@ namespace Netatmo.Net
             //Check if authenticated and refresh oauth token if needed
             if (!isTokeRenquest)
             {
-                if(OAuthAccessToken == null)
+                if (OAuthAccessToken == null)
                     return Response<T>.CreateUnsuccessful("Please login first", HttpStatusCode.Unauthorized);
 
                 if (OAuthAccessToken.NeedsRefresh)
@@ -123,7 +122,7 @@ namespace Netatmo.Net
 
                 httpContent.Add(new StringContent(OAuthAccessToken.AccessToken), "access_token");
             }
-            
+
             foreach (var key in content.Keys)
             {
                 httpContent.Add(new StringContent(content[key]), key);

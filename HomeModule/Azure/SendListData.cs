@@ -1,10 +1,10 @@
-﻿using Microsoft.Azure.Devices.Client;
+﻿using HomeModule.Helpers;
+using Microsoft.Azure.Devices.Client;
 using System;
 using System.Text;
-using System.Threading.Tasks;
-using System.Threading;
-using HomeModule.Helpers;
 using System.Text.Json;
+using System.Threading;
+using System.Threading.Tasks;
 
 namespace HomeModule.Azure
 {

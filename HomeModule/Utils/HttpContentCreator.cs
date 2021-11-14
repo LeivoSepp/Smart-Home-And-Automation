@@ -1,7 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using Netatmo.Net.Extensions;
+﻿using Netatmo.Net.Extensions;
 using Netatmo.Net.Model;
+using System;
+using System.Collections.Generic;
 
 namespace Netatmo.Net.Utils
 {

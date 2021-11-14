@@ -23,6 +23,6 @@ namespace Netatmo.Net.Model
         public double[] Location { get; set; }
 
         [JsonProperty(PropertyName = "timezone")]
-        public string TimeZone{ get; set; }
+        public string TimeZone { get; set; }
     }
 }

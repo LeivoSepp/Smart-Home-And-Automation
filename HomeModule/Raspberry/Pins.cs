@@ -1,9 +1,9 @@
 ﻿using HomeModule.Azure;
-using System;
-using System.Threading.Tasks;
-using System.Device.Gpio;
-using System.Collections.Generic;
 using HomeModule.Helpers;
+using System;
+using System.Collections.Generic;
+using System.Device.Gpio;
+using System.Threading.Tasks;
 
 namespace HomeModule.Raspberry
 {

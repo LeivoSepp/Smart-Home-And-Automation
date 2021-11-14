@@ -3,7 +3,7 @@
 namespace Netatmo.Net.Model
 {
     public class Administrative
-    {            
+    {
         [JsonProperty(PropertyName = "country")]
         public string Country { get; set; }
 

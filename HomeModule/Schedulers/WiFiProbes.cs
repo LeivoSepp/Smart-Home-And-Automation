@@ -29,7 +29,7 @@ namespace HomeModule.Schedulers
         public string urlKismet = Environment.GetEnvironmentVariable("KismetURL");
         public string jsonFields = JsonSerializer.Serialize(KismetField.KismetFields); //serialize kismet fields
 
-        HttpClient http = new HttpClient();
+        readonly HttpClient http = new HttpClient();
 
         public async void QueryWiFiProbes()
         {
@@ -412,8 +412,10 @@ namespace HomeModule.Schedulers
             try
             {
                 HttpContent httpContent = new StringContent(jsonContent);
-                httpContent.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded");
-                httpContent.Headers.ContentType.CharSet = "UTF-8";
+                httpContent.Headers.ContentType = new MediaTypeHeaderValue("application/x-www-form-urlencoded")
+                {
+                    CharSet = "UTF-8"
+                };
                 HttpResponseMessage responseMsg = await http.PostAsync(url, httpContent);
                 var result = responseMsg.Content.ReadAsStringAsync();
                 debug = result.Result;

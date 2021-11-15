@@ -47,7 +47,7 @@ namespace GarageModule
             // Open a connection to the Edge runtime
             ModuleClient ioTHubModuleClient = await ModuleClient.CreateFromEnvironmentAsync(settings);
             await ioTHubModuleClient.OpenAsync();
-            IoTHubModuleClient = ioTHubModuleClient as ModuleClient;
+            IoTHubModuleClient = ioTHubModuleClient;
             Console.WriteLine("IoT Hub module client initialized.");
 
             // Register callback to be called when a message is received by the module

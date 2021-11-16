@@ -29,22 +29,20 @@ namespace HomeModule.Measuring
 
             try
             {
-                using (var ds2482_100 = dS2482DeviceFactory.CreateDS2482_100(false, false))
-                {
-                    await Task.Delay(2000);
-                    if (ds2482_100 == null)
-                        Console.WriteLine("ds2482 is ZERO");
+                using var ds2482_100 = dS2482DeviceFactory.CreateDS2482_100(false, false);
+                await Task.Delay(2000);
+                if (ds2482_100 == null)
+                    Console.WriteLine("ds2482 is ZERO");
 
-                    foreach (var device in ds2482_100.GetDevices<DS18B20>())
+                foreach (var device in ds2482_100.GetDevices<DS18B20>())
+                {
+                    var reading = new SensorReading
                     {
-                        var reading = new SensorReading
-                        {
-                            SensorID = device.OneWireAddressString,
-                            Temperature = device.GetTemperature()
-                        };
-                        //update sensor temperature
-                        AllSensors.Temperatures.FirstOrDefault(x => x.SensorID == reading.SensorID).Temperature = reading.Temperature;
-                    }
+                        SensorID = device.OneWireAddressString,
+                        Temperature = device.GetTemperature()
+                    };
+                    //update sensor temperature
+                    AllSensors.Temperatures.FirstOrDefault(x => x.SensorID == reading.SensorID).Temperature = reading.Temperature;
                 }
             }
             catch (Exception e)

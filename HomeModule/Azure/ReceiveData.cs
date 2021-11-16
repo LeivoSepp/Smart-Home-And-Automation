@@ -161,12 +161,12 @@ namespace HomeModule.Azure
             var response = Encoding.ASCII.GetBytes("Ok");
             return new MethodResponse(response, 200);
         }
-#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+//#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
         //this method is called out by Azure Function. 
         //1. Shelly Door/Gate sensor activates Azure Function
         //2. Shelly Garage Spotlight activates Azure Function (this doesnt work !??)
         private async Task<MethodResponse> SetLights(MethodRequest methodRequest, object userContext)
-#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+//#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
             try
             {

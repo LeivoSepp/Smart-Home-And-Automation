@@ -49,6 +49,10 @@ namespace HomeModule.Raspberry
                 }
                 catch (Exception e) { Console.WriteLine($"Timeout {e}"); }
 
+                //Datastream[0] + Datastream[1] = 1234 5678 1234 5678
+                //int EventId = DataStream[0] >> 2; -> 1234 56
+                //int CategoryId = ((DataStream[0] & 3) << 4) + (DataStream[1] >> 4); -> 78 1234
+                //Check this: https://github.com/LeivoSepp/Paradox-Spectra-1738-SerialOutput#byte-1-and-2-event-and-category
                 int EventId = DataStream[0] >> 2;
                 int CategoryId = ((DataStream[0] & 3) << 4) + (DataStream[1] >> 4);
 

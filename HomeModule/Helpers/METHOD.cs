@@ -13,7 +13,7 @@ namespace HomeModule.Helpers
         public static DateTime UnixTimeStampToDateTime(double unixTimeStamp)
         {
             // Unix timestamp is seconds past epoch
-            System.DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, System.DateTimeKind.Utc);
+            DateTime dtDateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc);
             dtDateTime = dtDateTime.AddSeconds(unixTimeStamp).ToLocalTime();
             //dtDateTime = dtDateTime.AddHours(DateTimeTZ().Offset.TotalHours);
             return dtDateTime;
@@ -21,8 +21,8 @@ namespace HomeModule.Helpers
         public static DateTimeOffset DateTimeTZ()
         {
             TimeZoneInfo eet = TimeZoneInfo.FindSystemTimeZoneById("EET");
-            TimeSpan timeSpan = eet.GetUtcOffset(System.DateTime.UtcNow);
-            DateTimeOffset LocalTimeTZ = new DateTimeOffset(System.DateTime.UtcNow).ToOffset(timeSpan);
+            TimeSpan timeSpan = eet.GetUtcOffset(DateTime.UtcNow);
+            DateTimeOffset LocalTimeTZ = new DateTimeOffset(DateTime.UtcNow).ToOffset(timeSpan);
             return LocalTimeTZ;
         }
         public static bool TimeBetween(DateTimeOffset datetime, TimeSpan start, TimeSpan end)

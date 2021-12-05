@@ -53,10 +53,10 @@ namespace GarageModule.Sensors
                 {
                     Lux = Temp = "";
                     //double pressure = MPL115A2Sensor.getPressure(); //kPa
-                    CurrentLux = Math.Round(TSL2561Sensor.GetLux(), 1);
-                    Lux = $"Lux: {CurrentLux}"; //this for logging
                     Temperature = (int)Math.Round(MPL115A2Sensor.getTemperature(), 0);
                     Temp = $"Temp: {Temperature}"; //this for logging
+                    CurrentLux = Math.Round(TSL2561Sensor.GetLux(), 1);
+                    Lux = $"Lux: {CurrentLux}"; //this for logging
 
                     status = "No info";
 
@@ -115,6 +115,7 @@ namespace GarageModule.Sensors
                 DeviceID = "SecurityController",
                 door = "Garage",
                 status,
+                SourceInfo = status,
                 isHomeSecured,
                 date = DateTimeTZ().ToString("dd.MM"),
                 time = DateTimeTZ().ToString("HH:mm"),

@@ -10,6 +10,8 @@ using System.IO;
 using System.Linq;
 using System.Text.Json;
 using System.Threading.Tasks;
+using RobootikaCOM.NetCore.Devices;
+
 
 namespace HomeModule.Schedulers
 {
@@ -29,6 +31,8 @@ namespace HomeModule.Schedulers
         internal const string RETURN_2_FLOOR = "2. Floor Return";
 
         public static SensorReadings ListOfAllSensors;
+
+        private readonly HT16K33 driver = new HT16K33(new byte[] { 0x71, 0x73 }, HT16K33.Rotate.D180); //LED matrix
         public async void ReadTemperature()
         {
             var _receiveData = new ReceiveData();
@@ -41,6 +45,9 @@ namespace HomeModule.Schedulers
             ListOfAllSensors = await _sensorsClient.ReadSensors();
             //fill out LastTemperatures and initial Temperature trend which is initially always TRUE
             ListOfAllSensors = UpdateSensorsTrendAndLastTemp(ListOfAllSensors, ListOfAllSensors);
+
+            //Start LED matrix
+            LedMatrixAsync();
 
             var filename = Methods.GetFilePath(CONSTANT.FILENAME_ROOM_TEMPERATURES);
             if (File.Exists(filename))
@@ -84,10 +91,12 @@ namespace HomeModule.Schedulers
                 else
                     Pins.PinWrite(Pins.saunaHeatOutPin, PinValue.High);
                 //if sauna extremely hot, then turn off
-                if (ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == SAUNA).Temperature > CONSTANT.EXTREME_SAUNA_TEMP) _receiveData.ProcessCommand(CommandNames.TURN_OFF_SAUNA);
+                if (ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == SAUNA).Temperature > CONSTANT.EXTREME_SAUNA_TEMP)
+                    _receiveData.ProcessCommand(CommandNames.TURN_OFF_SAUNA);
 
                 //if all rooms has achieved their target temperature then turn system off
-                if (ListOfAllSensors.Temperatures.Where(x => x.isRoom).All(x => !x.isHeatingRequired)) _receiveData.ProcessCommand(CommandNames.REDUCE_TEMP_COMMAND);
+                if (ListOfAllSensors.Temperatures.Where(x => x.isRoom).All(x => !x.isHeatingRequired))
+                    _receiveData.ProcessCommand(CommandNames.REDUCE_TEMP_COMMAND);
 
                 //if all room temperatures together has changed more that 3 degrees then send it out to database
                 if (Math.Abs(SumOfTemperatureDeltas) > 4)
@@ -108,6 +117,21 @@ namespace HomeModule.Schedulers
                 await Task.Delay(TimeSpan.FromMinutes(1)); //check temperatures every minute
             }
         }
+        public async void LedMatrixAsync()
+        {
+            LED8x8Matrix matrix = new LED8x8Matrix(driver);
+            while (true)
+            {
+                int SaunaTemp = Convert.ToInt32(ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == SAUNA).Temperature);
+                string SaunaStarted = "";
+                if (TelemetryDataClass.isSaunaOn)
+                    SaunaStarted = $"   Alates {TelemetryDataClass.SaunaStartedTime:HH:mm}";
+                string message = $"{SaunaStarted}  saun {(TelemetryDataClass.isSaunaOn ? "on" : "off" )}  {SaunaTemp}'";
+                matrix.ScrollStringInFromRight(message, 70);
+                await Task.Delay(TimeSpan.FromSeconds(2)); //scroll every 2 sec
+            }
+        }
+
         private SensorReadings UpdateSensorsTrendAndLastTemp(SensorReadings listOfRooms, SensorReadings sensorReadings)
         {
             foreach (var s in listOfRooms.Temperatures)

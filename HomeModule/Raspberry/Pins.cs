@@ -34,6 +34,7 @@ namespace HomeModule.Raspberry
         public const int roomHeatInPin = 25;
         public const int waterHeatInPin = 23;
         public const int SaunaDoorInPin = 16;
+        public const int btnSaunaPin = 12;
 
         private static bool IsRoomHeatPinOn
         {
@@ -139,6 +140,8 @@ namespace HomeModule.Raspberry
             gpio.OpenPin(roomHeatInPin, PinMode.InputPullUp);
             gpio.OpenPin(waterHeatInPin, PinMode.InputPullUp);
             gpio.OpenPin(SaunaDoorInPin, PinMode.InputPullUp);
+            gpio.OpenPin(btnSaunaPin, PinMode.InputPullUp);
+
 
             //kui on sama sisendi peale falling ja rising - siis hakkab segast peksma.
             //isegi siis peksab segast kui on roomheat ja waterheat mõlemad ainult falling
@@ -170,6 +173,8 @@ namespace HomeModule.Raspberry
                 SetButtonPressed((bool)gpio.Read(btnNormalTempPin), btnNormalTempPin);
                 await Task.Delay(TimeSpan.FromMilliseconds(10));
                 SetButtonPressed((bool)gpio.Read(btnHeatOnPin), btnHeatOnPin);
+                await Task.Delay(TimeSpan.FromMilliseconds(10));
+                SetButtonPressed((bool)gpio.Read(btnSaunaPin), btnSaunaPin);
                 await Task.Delay(TimeSpan.FromMilliseconds(10));
             }
         }
@@ -210,6 +215,12 @@ namespace HomeModule.Raspberry
                     onCommand = CommandNames.TURN_ON_HEATING;
                     offCommand = CommandNames.TURN_OFF_HEATING;
                     ledValuePin = heatOnOutPin;
+                    break;
+                case btnSaunaPin:
+                    //On and Off ara opposite because the saunaHeatOutPin is high by default
+                    onCommand = CommandNames.TURN_OFF_SAUNA;
+                    offCommand = CommandNames.TURN_ON_SAUNA;
+                    ledValuePin = saunaHeatOutPin;
                     break;
                 default:
                     onCommand = null;

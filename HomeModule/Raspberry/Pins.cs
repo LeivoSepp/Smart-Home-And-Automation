@@ -1,5 +1,6 @@
 ﻿using HomeModule.Azure;
 using HomeModule.Helpers;
+using HomeModule.Schedulers;
 using System;
 using System.Collections.Generic;
 using System.Device.Gpio;
@@ -254,6 +255,24 @@ namespace HomeModule.Raspberry
         static DateTime dateTimeRoomHeat = METHOD.DateTimeTZ().DateTime;
         static DateTime dateTimeWaterHeat = METHOD.DateTimeTZ().DateTime;
         static bool IsWaterJustFinished = false;
+
+        private static string FlowTemperatures()
+        {
+            string flowTemperatures = "";
+
+            try
+            {
+                foreach (var flowTemp in HomeTemperature.ListOfAllSensors.Temperatures)
+                {
+                    flowTemperatures += $"\n {flowTemp.RoomName} : {flowTemp.Temperature} {(flowTemp.isRoom ? flowTemp.isHeatingRequired ? "open" : "closed" : "")}";
+                }
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e.Message);
+            }
+            return flowTemperatures;
+        }
         //below is a bunch of logic which you probaly wont understand later
         //this piece of code is working based on ground-heating system LED-s events
         private static async void Pin_WaterRisingAsync() //winter only
@@ -262,7 +281,7 @@ namespace HomeModule.Raspberry
             if (IsRoomHeatPinOn) //if roomheating LED was on, stop roomheating
             {
                 TelemetryDataClass.RoomHeatingInMinutes = (int)(METHOD.DateTimeTZ().DateTime - dateTimeRoomHeat).TotalMinutes;
-                TelemetryDataClass.SourceInfo = $"5. Roomheating {TelemetryDataClass.RoomHeatingInMinutes} min, Start Waterheating";
+                TelemetryDataClass.SourceInfo = $"5. Roomheating {TelemetryDataClass.RoomHeatingInMinutes} min, Start Waterheating. {FlowTemperatures()} \n";
                 await _sendData.SendData();
                 TelemetryDataClass.RoomHeatingInMinutes = 0;
                 dateTimeWaterHeat = METHOD.DateTimeTZ().DateTime; //start waterheating
@@ -273,19 +292,31 @@ namespace HomeModule.Raspberry
             IsWaterJustFinished = true;
             var _sendData = new Pins();
             TelemetryDataClass.WaterHeatingInMinutes = (int)(METHOD.DateTimeTZ().DateTime - dateTimeWaterHeat).TotalMinutes;
-            TelemetryDataClass.SourceInfo = $"7. Waterheating {TelemetryDataClass.WaterHeatingInMinutes} min";
+            TelemetryDataClass.SourceInfo = $"7. Waterheating {TelemetryDataClass.WaterHeatingInMinutes} min {FlowTemperatures()} \n";
             await _sendData.SendData();
             TelemetryDataClass.WaterHeatingInMinutes = 0;
 
             await Task.Delay(TimeSpan.FromSeconds(3)); //wait for a 3 seconds for the roomheat LED, is it turning on or off?
             IsWaterJustFinished = false;
             //waterheating just finished and roomheating will continue nonstop
-            if (IsRoomHeatPinOn) dateTimeRoomHeat = METHOD.DateTimeTZ().DateTime; //start roomheat
+            if (IsRoomHeatPinOn)
+            {
+                dateTimeRoomHeat = METHOD.DateTimeTZ().DateTime; //start roomheat
+                Console.WriteLine($"Console message start roomheat: {METHOD.DateTimeTZ().DateTime} {FlowTemperatures()}");
+            }
         }
         private static void Pin_HeatingRisingAsync() //winter and summer
         {
-            if (!IsWaterHeatPinOn) dateTimeRoomHeat = METHOD.DateTimeTZ().DateTime; //start roomheat
-            if (IsWaterHeatPinOn) dateTimeWaterHeat = METHOD.DateTimeTZ().DateTime; //start waterheat
+            if (!IsWaterHeatPinOn)
+            {
+                dateTimeRoomHeat = METHOD.DateTimeTZ().DateTime; //start roomheat
+                Console.WriteLine($"Console message start roomheat: {METHOD.DateTimeTZ().DateTime} {FlowTemperatures()}");
+            }
+            if (IsWaterHeatPinOn)
+            {
+                dateTimeWaterHeat = METHOD.DateTimeTZ().DateTime; //start waterheat
+                Console.WriteLine($"Console message start waterheat: {METHOD.DateTimeTZ().DateTime} {FlowTemperatures()}");
+            }
         }
         private static async void Pin_HeatingFallingAsync() //winter and summer
         {
@@ -293,7 +324,7 @@ namespace HomeModule.Raspberry
             if (!IsWaterJustFinished && !IsWaterHeatPinOn) //if waterheating LED is off AND the waterheating counter isnt started then stop roomheating
             {
                 TelemetryDataClass.RoomHeatingInMinutes = (int)(METHOD.DateTimeTZ().DateTime - dateTimeRoomHeat).TotalMinutes;
-                TelemetryDataClass.SourceInfo = $"3. Roomheating {TelemetryDataClass.RoomHeatingInMinutes} min";
+                TelemetryDataClass.SourceInfo = $"3. Roomheating {TelemetryDataClass.RoomHeatingInMinutes} min {FlowTemperatures()} \n";
                 await _sendData.SendData();
                 TelemetryDataClass.RoomHeatingInMinutes = 0;
             }
@@ -302,7 +333,7 @@ namespace HomeModule.Raspberry
             if (IsWaterHeatPinOn) //heating system in WATERHEATING mode, waterheating LED always on, this is for summer time
             {
                 TelemetryDataClass.WaterHeatingInMinutes = (int)(METHOD.DateTimeTZ().DateTime - dateTimeWaterHeat).TotalMinutes;
-                TelemetryDataClass.SourceInfo = $"4. Waterheating {TelemetryDataClass.WaterHeatingInMinutes} min";
+                TelemetryDataClass.SourceInfo = $"4. Waterheating {TelemetryDataClass.WaterHeatingInMinutes} min  {FlowTemperatures()} \n";
                 await _sendData.SendData();
                 TelemetryDataClass.WaterHeatingInMinutes = 0;
             }

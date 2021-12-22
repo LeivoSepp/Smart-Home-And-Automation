@@ -342,7 +342,7 @@ namespace HomeModule.Azure
                 Pins.PinWrite(Pins.waterOutPin, PinValue.Low);
                 TelemetryDataClass.isWaterHeatingOn = false;
             }
-            else if (command == CommandNames.TURN_ON_HEATING && !TelemetryDataClass.isHomeInVacation)
+            else if (command == CommandNames.TURN_ON_HEATING)
             {
                 Pins.PinWrite(Pins.heatOnOutPin, PinValue.High);
                 TelemetryDataClass.isHeatingOn = true;

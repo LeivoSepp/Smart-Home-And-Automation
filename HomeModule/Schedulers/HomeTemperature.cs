@@ -17,10 +17,10 @@ namespace HomeModule.Schedulers
 {
     class HomeTemperature
     {
-        internal const string BEDROOM = "Bedroom";
         internal const string LIVING = "Living";
-        internal const string PIANO = "Piano";
         internal const string OFFICE = "Office";
+        internal const string PIANO = "Piano";
+        internal const string BEDROOM = "Bedroom";
         internal const string SAUNA = "Sauna";
         internal const string WARM_WATER = "Warm water";
         internal const string INFLOW_MAIN = "Main inflow";
@@ -126,7 +126,7 @@ namespace HomeModule.Schedulers
                 string SaunaStarted = "";
                 if (TelemetryDataClass.isSaunaOn)
                     SaunaStarted = $"   Alates {TelemetryDataClass.SaunaStartedTime:HH:mm}";
-                string message = $"{SaunaStarted}  saun {(TelemetryDataClass.isSaunaOn ? "on" : "off" )}  {SaunaTemp}'";
+                string message = $"{SaunaStarted}  saun {(TelemetryDataClass.isSaunaOn ? "sees" : "off" )}  {SaunaTemp}'";
                 matrix.ScrollStringInFromRight(message, 70);
                 await Task.Delay(TimeSpan.FromSeconds(2)); //scroll every 2 sec
             }

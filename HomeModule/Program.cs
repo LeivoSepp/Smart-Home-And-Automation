@@ -77,13 +77,13 @@ namespace HomeModule
             _receiveNetatmoData = new ReceiveNetatmoData();
             _receiveNetatmoData.ReceiveData();
 
-            //read from ome temperature sensors
-            _homeTemperature = new HomeTemperature();
-            _homeTemperature.ReadTemperature();
-
             //Starting schedulers
             _co2Scheduler = new Co2();
             _co2Scheduler.CheckCo2Async();
+
+            //read from ome temperature sensors
+            _homeTemperature = new HomeTemperature();
+            _homeTemperature.ReadTemperature();
 
             _saunaHeating = new SaunaHeating();
             _saunaHeating.CheckHeatingTime();

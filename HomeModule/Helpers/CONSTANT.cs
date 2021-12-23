@@ -32,6 +32,7 @@
 
         public const double DEFAULT_ROOM_TEMP = 21.5;
         public const double DEFAULT_SAUNA_TEMP = 95;
+        public const double MIN_WATER_TEMP = 40;
 
         public const int NORMAL_HEATING = 1; //heating rooms an warm water
         public const int REDUCED_HEATING = 2; //creating only warm water

@@ -43,6 +43,8 @@ namespace HomeModule.Schedulers
                 if (HeatingMode == CONSTANT.EVU_STOP) cmdHeat = CommandNames.TURN_OFF_HEATING;
                 _receiveData.ProcessCommand(cmdHeat);
 
+                TelemetryDataClass.isHeatingTime = HeatingMode == CONSTANT.NORMAL_HEATING ? true : false;
+
                 //lets control hot water based on activity time and weekend
                 string cmd = isHotWaterTime ? CommandNames.TURN_ON_HOTWATERPUMP : CommandNames.TURN_OFF_HOTWATERPUMP;
                 _receiveData.ProcessCommand(cmd);

@@ -35,6 +35,7 @@ namespace HomeModule.Schedulers
         private readonly HT16K33 driver = new HT16K33(new byte[] { 0x71, 0x73 }, HT16K33.Rotate.D180); //LED matrix
         public async void ReadTemperature()
         {
+            bool isReadTemperatureStarted = false;
             var _receiveData = new ReceiveData();
             var _sensorsClient = new RinsenOneWireClient();
             var _sendListData = new SendDataAzure();
@@ -90,13 +91,34 @@ namespace HomeModule.Schedulers
                     Pins.PinWrite(Pins.saunaHeatOutPin, PinValue.Low);
                 else
                     Pins.PinWrite(Pins.saunaHeatOutPin, PinValue.High);
+
                 //if sauna extremely hot, then turn off
                 if (ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == SAUNA).Temperature > CONSTANT.EXTREME_SAUNA_TEMP)
                     _receiveData.ProcessCommand(CommandNames.TURN_OFF_SAUNA);
 
+                //if hotwater time and hot water is below 40 then turn on heating and set "heatingRequired"
+                if (TelemetryDataClass.isWaterHeatingOn && ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == WARM_WATER).Temperature < CONSTANT.MIN_WATER_TEMP)
+                    TelemetryDataClass.isHotWaterRequired = true;
+                else
+                    TelemetryDataClass.isHotWaterRequired = false;
+
                 //if all rooms has achieved their target temperature then turn system off
-                if (ListOfAllSensors.Temperatures.Where(x => x.isRoom).All(x => !x.isHeatingRequired))
-                    _receiveData.ProcessCommand(CommandNames.REDUCE_TEMP_COMMAND);
+                if (TelemetryDataClass.isHeatingTime && !ListOfAllSensors.Temperatures.Where(x => x.isRoom).All(x => !x.isHeatingRequired))
+                    TelemetryDataClass.isHeatingRequired = true;
+                else
+                    TelemetryDataClass.isHeatingRequired = false;
+
+                //turn off heating if there is no demand for heating and hot water 
+                if (!TelemetryDataClass.isHeatingRequired && !TelemetryDataClass.isHotWaterRequired && TelemetryDataClass.isHeatingOn)
+                    _receiveData.ProcessCommand(CommandNames.TURN_OFF_HEATING);
+                
+                //reduced heating will be turned on if there is demand for hot water 
+                if (TelemetryDataClass.isHotWaterRequired && !TelemetryDataClass.isHeatingOn)
+                    _receiveData.ProcessCommand(CommandNames.TURN_ON_HEATING);
+
+                //normal heating will be turned on if there is demand for hot water or heating
+                if (TelemetryDataClass.isHeatingRequired && !TelemetryDataClass.isHeatingOn)
+                    _receiveData.ProcessCommand(CommandNames.NORMAL_TEMP_COMMAND);
 
                 //if all room temperatures together has changed more that 3 degrees then send it out to database
                 if (Math.Abs(SumOfTemperatureDeltas) > 4)
@@ -114,6 +136,13 @@ namespace HomeModule.Schedulers
                     await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo, "output");
                     SumOfTemperatureDeltas = 0; //resetting to start summing up again
                 }
+                //started message for debugging
+                if (!isReadTemperatureStarted)
+                {
+                    Console.WriteLine($"ReadTemperature() started");
+                    isReadTemperatureStarted = true;
+                }
+
                 await Task.Delay(TimeSpan.FromMinutes(1)); //check temperatures every minute
             }
         }

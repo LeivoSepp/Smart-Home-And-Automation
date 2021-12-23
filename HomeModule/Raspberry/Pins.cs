@@ -146,10 +146,12 @@ namespace HomeModule.Raspberry
 
             //kui on sama sisendi peale falling ja rising - siis hakkab segast peksma.
             //isegi siis peksab segast kui on roomheat ja waterheat mõlemad ainult falling
+            Console.WriteLine($"ConnectGpio() Initialized");
         }
 
         public async void LoopGpioPins()
         {
+            bool isLoopGpioPinsStarted = false;
             //this loop will cycle in 70ms to check indefinitely all the pins
             //it's a better solution than using event handlers
             while (true)
@@ -177,6 +179,13 @@ namespace HomeModule.Raspberry
                 await Task.Delay(TimeSpan.FromMilliseconds(10));
                 SetButtonPressed((bool)gpio.Read(btnSaunaPin), btnSaunaPin);
                 await Task.Delay(TimeSpan.FromMilliseconds(10));
+
+                //started message for debugging
+                if (!isLoopGpioPinsStarted)
+                {
+                    Console.WriteLine($"LoopGpioPins() started");
+                    isLoopGpioPinsStarted = true;
+                }
             }
         }
 
@@ -269,7 +278,7 @@ namespace HomeModule.Raspberry
             }
             catch (Exception e)
             {
-                Console.WriteLine(e.Message);
+                Console.WriteLine($"All Temperature Sensors check {e.StackTrace}");
             }
             return flowTemperatures;
         }

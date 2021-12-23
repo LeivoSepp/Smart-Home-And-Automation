@@ -19,6 +19,7 @@ namespace HomeModule.Raspberry
 
         public async void ParadoxSecurity()
         {
+            bool isParadoxSecurityStarted = false;
             string ComPort = "/dev/ttyAMA0";
             int baudrate = 9600;
             _serialPort = new SerialPort(ComPort, baudrate);
@@ -95,11 +96,20 @@ namespace HomeModule.Raspberry
                 {
                     //Console.WriteLine($"{METHOD.DateTimeTZ():HH:mm:ss,ff} {Event}, {Message}");
                 }
+
+                //started message for debugging
+                if (!isParadoxSecurityStarted)
+                {
+                    Console.WriteLine($"ParadoxSecurity() started");
+                    isParadoxSecurityStarted = true;
+                }
             }
         }
 
         public async void IRSensorsReading()
         {
+            bool isIRSensorsReadingStarted = false;
+
             _sendListData = new SendDataAzure();
             State NONE = new State { DoorValue = false, IRValue = false }; //door closed, IR passive
             State DOOR = new State { DoorValue = true, IRValue = false }; //door open, IR passive
@@ -257,6 +267,14 @@ namespace HomeModule.Raspberry
                             if (ContainsPattern(_queue, Exit4)) status = "exit 4";
                             if (ContainsPattern(_queue, DoorOpenClose)) status = "door open-closed";
                         }
+
+                        //entry queue debugging info 
+                        Console.WriteLine($"\n Entry queue at {CurrentDateTime} \n");
+                        for (int i = 0; i < _queue.Count; i++)
+                        {
+                            Console.WriteLine($"{i}. Door: {(_queue[i].DoorValue ? "O" : "X")} - IR: {(_queue[i].IRValue ? "O" : "X")}");
+                        }
+                        Console.WriteLine($"");
                     }
                     if (status != "No pattern")
                     {
@@ -281,6 +299,12 @@ namespace HomeModule.Raspberry
                 catch (Exception e)
                 {
                     Console.WriteLine($"Paradox exception: {e}");
+                }
+                //started message for debugging
+                if (!isIRSensorsReadingStarted)
+                {
+                    Console.WriteLine($"IRSensorsReading() started");
+                    isIRSensorsReadingStarted = true;
                 }
                 await Task.Delay(TimeSpan.FromMilliseconds(10)); //check statuses every 10 millisecond
             }

@@ -25,13 +25,16 @@ namespace HomeModule.Azure
         public static bool isOutsideLightsOn { get; set; }
         public static bool isGarageLightsOn { get; set; }
         public static bool isHomeDoorOpen { get; set; }
-
+        public static bool isHeatingRequired { get; set; }
+        public static bool isHotWaterRequired { get; set; }
+        public static bool isHeatingTime { get; set; }
     }
     class SendTelemetryData
     {
         private SendDataAzure _sendListData;
         public async void SendTelemetryEventsAsync()
         {
+            bool isSendTelemetryEventsAsyncStarted = false;
             await Task.Delay(TimeSpan.FromSeconds(10)); //wait 10 seconds for the first initialization to have a Netatmo data present, later it doesnt make sense
             while (true)
             {
@@ -39,6 +42,12 @@ namespace HomeModule.Azure
                 await SendTelemetryAsync();
 
                 int secondsToNextHour = 3600 - ((int)DateTime.UtcNow.TimeOfDay.TotalSeconds + 300) % 3600;
+                //started message for debugging
+                if (!isSendTelemetryEventsAsyncStarted)
+                {
+                    Console.WriteLine($"SendTelemetryEventsAsync() started");
+                    isSendTelemetryEventsAsyncStarted = true;
+                }
                 await Task.Delay(TimeSpan.FromSeconds(secondsToNextHour)); //wait until 5min before the next hour
             }
         }

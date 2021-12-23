@@ -315,7 +315,7 @@ namespace HomeModule.Azure
                 {
                     ProcessCommand(CommandNames.TURN_ON_HEATING);
                     Pins.PinWrite(Pins.normalTempOutPin, PinValue.High);
-                    Pins.PinWrite(Pins.floorPumpOutPin, PinValue.High);
+                    //Pins.PinWrite(Pins.floorPumpOutPin, PinValue.High);
                     TelemetryDataClass.isNormalHeating = true;
                 }
                 else
@@ -328,13 +328,12 @@ namespace HomeModule.Azure
             {
                 while (Pins.IsRoomHeatingOn || Pins.IsWaterHeatingOn) ;
                 Pins.PinWrite(Pins.normalTempOutPin, PinValue.Low);
-                Pins.PinWrite(Pins.floorPumpOutPin, PinValue.Low);
+                //Pins.PinWrite(Pins.floorPumpOutPin, PinValue.Low);
                 TelemetryDataClass.isNormalHeating = false;
             }
             else if (command == CommandNames.TURN_ON_HOTWATERPUMP && !TelemetryDataClass.isHomeInVacation)
             {
                 Pins.PinWrite(Pins.waterOutPin, PinValue.High);
-                ProcessCommand(CommandNames.TURN_ON_HEATING);
                 TelemetryDataClass.isWaterHeatingOn = true;
             }
             else if (command == CommandNames.TURN_OFF_HOTWATERPUMP)
@@ -351,11 +350,12 @@ namespace HomeModule.Azure
             {
                 while (Pins.IsRoomHeatingOn || Pins.IsWaterHeatingOn) ;
                 Pins.PinWrite(Pins.heatOnOutPin, PinValue.Low);
-                Pins.PinWrite(Pins.floorPumpOutPin, PinValue.Low);
+                //Pins.PinWrite(Pins.floorPumpOutPin, PinValue.Low);
                 ProcessCommand(CommandNames.REDUCE_TEMP_COMMAND);
                 ProcessCommand(CommandNames.TURN_OFF_HOTWATERPUMP);
                 TelemetryDataClass.isHeatingOn = false;
             }
+            Console.WriteLine($"Command '{command.ToUpper()}' executed at {METHOD.DateTimeTZ().DateTime}.");
         }
     }
     public class Shelly

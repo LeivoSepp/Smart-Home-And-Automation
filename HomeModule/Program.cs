@@ -64,14 +64,19 @@ namespace HomeModule
             // Register callback to be called when a message is received by the module
             //await ioTHubModuleClient.SetInputMessageHandlerAsync("input1", PipeMessage, ioTHubModuleClient);
 
-            //initialize Raspberry
+            //initialize Raspberry and start scheduler
             _raspberryPins = new Pins();
             _raspberryPins.ConnectGpio();
             _raspberryPins.LoopGpioPins();
 
+            //start Paradox security scheduler
             _paradox1738 = new Paradox1738();
             _paradox1738.ParadoxSecurity();
             _paradox1738.IRSensorsReading();
+
+            //read from ome temperature sensors
+            _homeTemperature = new HomeTemperature();
+            _homeTemperature.ReadTemperature();
 
             //Receive Netatmo data
             _receiveNetatmoData = new ReceiveNetatmoData();
@@ -81,19 +86,13 @@ namespace HomeModule
             _co2Scheduler = new Co2();
             _co2Scheduler.CheckCo2Async();
 
-            //read from ome temperature sensors
-            _homeTemperature = new HomeTemperature();
-            _homeTemperature.ReadTemperature();
-
+            //start saune scheduler
             _saunaHeating = new SaunaHeating();
             _saunaHeating.CheckHeatingTime();
 
+            //start heating scheduler
             _heatingScheduler = new Heating();
             _heatingScheduler.ReduceHeatingSchedulerAsync();
-
-            //Receive IoTHub commands
-            _receiveData = new ReceiveData();
-            _receiveData.ReceiveCommandsAsync();
 
             //query WiFiProbes
             _wiFiProbes = new WiFiProbes();
@@ -106,6 +105,10 @@ namespace HomeModule
             //Send data to IoTHub
             _sendData = new SendTelemetryData();
             _sendData.SendTelemetryEventsAsync();
+
+            //Receive IoTHub commands
+            _receiveData = new ReceiveData();
+            _receiveData.ReceiveCommandsAsync();
         }
     }
 }

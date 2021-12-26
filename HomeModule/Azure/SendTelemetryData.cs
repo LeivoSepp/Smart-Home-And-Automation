@@ -28,6 +28,7 @@ namespace HomeModule.Azure
         public static bool isHeatingRequired { get; set; }
         public static bool isHotWaterRequired { get; set; }
         public static bool isHeatingTime { get; set; }
+        public static bool isHotWaterTime { get; set; }
     }
     class SendTelemetryData
     {

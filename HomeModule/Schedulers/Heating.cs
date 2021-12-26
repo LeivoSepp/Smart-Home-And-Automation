@@ -12,7 +12,6 @@ namespace HomeModule.Schedulers
     {
         public async void ReduceHeatingSchedulerAsync()
         {
-            var _receiveData = new ReceiveData();
             var _receiveEnergyPrice = new ReceiveEnergyPrice();
             List<EnergyPriceClass> _realTimeEnergyPrices = await _receiveEnergyPrice.QueryEnergyPriceAsync(); //run on app startup
             while (true)
@@ -36,18 +35,17 @@ namespace HomeModule.Schedulers
                         break;
                     }
                 }
-                //lets control the heating system according to the heating schedule
-                string cmdHeat = null;
-                if (HeatingMode == CONSTANT.NORMAL_HEATING) cmdHeat = CommandNames.NORMAL_TEMP_COMMAND;
-                if (HeatingMode == CONSTANT.REDUCED_HEATING) cmdHeat = CommandNames.REDUCE_TEMP_COMMAND;
-                if (HeatingMode == CONSTANT.EVU_STOP) cmdHeat = CommandNames.TURN_OFF_HEATING;
-                _receiveData.ProcessCommand(cmdHeat);
+                ////turn manual heating off in every hour
+                //TelemetryDataClass.isNormalHeatingManual = false;
 
+                ////turn manual hot water off in every hour
+                //TelemetryDataClass.isHotWaterManual = false;
+
+                //this is used in ReadTemperature scheduler to turn on or off the heating
                 TelemetryDataClass.isHeatingTime = HeatingMode == CONSTANT.NORMAL_HEATING ? true : false;
 
-                //lets control hot water based on activity time and weekend
-                string cmd = isHotWaterTime ? CommandNames.TURN_ON_HOTWATERPUMP : CommandNames.TURN_OFF_HOTWATERPUMP;
-                _receiveData.ProcessCommand(cmd);
+                //this is used in ReadTemperature scheduler to turn on or off the hot water
+                TelemetryDataClass.isHotWaterTime = isHotWaterTime;
 
                 int secondsToNextHour = 3600 - (int)CurrentDateTime.DateTime.TimeOfDay.TotalSeconds % 3600;
                 await Task.Delay(TimeSpan.FromSeconds(secondsToNextHour));

@@ -243,7 +243,7 @@ namespace HomeModule.Raspberry
             while (!(bool)gpio.Read(PressedButton)) ; //loop is running until button pressed
 
             string command = ((bool)ledValue) ? offCommand : onCommand;
-            _receiveData.ProcessCommand(command);
+            Task.Run(() => _receiveData.ProcessCommand(command));
         }
         public async Task SendData()
         {

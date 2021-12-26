@@ -30,14 +30,14 @@ namespace HomeModule.Schedulers
                 if (TelemetryDataClass.SaunaStartedTime != DateTime.MinValue)
                 {
                     int TotalTimeSaunaHeatedInMinutes = (int)(METHOD.DateTimeTZ().DateTime - TelemetryDataClass.SaunaStartedTime).TotalMinutes;
-                    string cmd = CommandNames.NO_COMMAND;
                     //turn saun on if it has heating time but not turned on
                     if (TotalTimeSaunaHeatedInMinutes < CONSTANT.MAX_SAUNA_HEATING_TIME && !TelemetryDataClass.isSaunaOn)
-                        cmd = CommandNames.TURN_ON_SAUNA;
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                        Task.Run(() => _receiveData.ProcessCommand(CommandNames.TURN_ON_SAUNA));
                     //turn sauna off if the time is over
-                    if (TotalTimeSaunaHeatedInMinutes > CONSTANT.MAX_SAUNA_HEATING_TIME)
-                        cmd = CommandNames.TURN_OFF_SAUNA;
-                    _receiveData.ProcessCommand(cmd);
+                    if (TotalTimeSaunaHeatedInMinutes > CONSTANT.MAX_SAUNA_HEATING_TIME && TelemetryDataClass.isSaunaOn)
+                        Task.Run(() => _receiveData.ProcessCommand(CommandNames.TURN_OFF_SAUNA));
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
                 }
                 await Task.Delay(TimeSpan.FromMinutes(1)); //check every minute
             }

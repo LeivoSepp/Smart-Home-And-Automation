@@ -122,6 +122,8 @@ namespace HomeModule.Raspberry
             List<State> Exit2 = new List<State> { NONE, IR, ALL, DOOR, ALL, IR, NONE };
             List<State> Exit3 = new List<State> { NONE, IR, ALL, IR, NONE };
             List<State> Exit4 = new List<State> { NONE, IR, ALL, DOOR, NONE };
+            List<State> Exit5 = new List<State> { NONE, IR, ALL, DOOR, ALL, NONE };
+            List<State> Exit6 = new List<State> { NONE, IR, ALL, NONE };
             List<State> DoorOpenClose = new List<State> { NONE, DOOR, NONE };
             List<State> RepeatDoorAll = new List<State> { DOOR, ALL }; //repeat
             List<State> RepeatAllDoor = new List<State> { ALL, DOOR }; //repeat
@@ -265,6 +267,8 @@ namespace HomeModule.Raspberry
                             if (ContainsPattern(_queue, Exit2)) status = "exit 2";
                             if (ContainsPattern(_queue, Exit3)) status = "exit 3";
                             if (ContainsPattern(_queue, Exit4)) status = "exit 4";
+                            if (ContainsPattern(_queue, Exit5)) status = "exit 5";
+                            if (ContainsPattern(_queue, Exit6)) status = "exit 6";
                             if (ContainsPattern(_queue, DoorOpenClose)) status = "door open-closed";
                         }
 

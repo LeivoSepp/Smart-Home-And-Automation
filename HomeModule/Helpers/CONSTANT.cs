@@ -15,7 +15,7 @@
         public const int CO2_LEVEL_TO_CHECK = 900;
 
         public const int EXTREME_SAUNA_TEMP = 110;
-        public const int MAX_SAUNA_HEATING_TIME = 180; //minutes
+        public const int MAX_SAUNA_HEATING_TIME = 150; //minutes
 
         public const string CONTAINER_MAPPED_FOLDER = "mappedFolder";
         public const string FILENAME_SAUNA_TIME = "SaunaStartedTime";

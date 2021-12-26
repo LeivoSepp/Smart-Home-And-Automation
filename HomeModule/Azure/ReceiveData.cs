@@ -82,7 +82,9 @@ namespace HomeModule.Azure
             foreach (string cmd in command)
             {
                 if (cmd != null)
-                    receiveData.ProcessCommand(cmd);
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                    Task.Run(() => receiveData.ProcessCommand(cmd));
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
             }
 
             //This data goes back directly to PowerApps through Azure Functions
@@ -161,12 +163,12 @@ namespace HomeModule.Azure
             var response = Encoding.ASCII.GetBytes("Ok");
             return new MethodResponse(response, 200);
         }
-//#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
+        //#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
         //this method is called out by Azure Function. 
         //1. Shelly Door/Gate sensor activates Azure Function
         //2. Shelly Garage Spotlight activates Azure Function (this doesnt work !??)
         private async Task<MethodResponse> SetLights(MethodRequest methodRequest, object userContext)
-//#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
+        //#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
             try
             {
@@ -190,7 +192,9 @@ namespace HomeModule.Azure
             return new MethodResponse(response, 200);
         }
 
+#pragma warning disable IDE0051 // Remove unused private members
         async Task OnDesiredPropertiesUpdate(TwinCollection desiredProperties, object userContext)
+#pragma warning restore IDE0051 // Remove unused private members
         {
             //desired property only for security mode and vacation mode
             //it is useful on the situation for example app/device restart to set the correct state
@@ -203,13 +207,17 @@ namespace HomeModule.Azure
                 if (desiredProperties["isHomeInVacation"] != null && ((bool)desiredProperties["isHomeInVacation"] == !TelemetryDataClass.isHomeInVacation))
                 {
                     command = (bool)desiredProperties["isHomeInVacation"] ? CommandNames.TURN_ON_VACATION : CommandNames.TURN_OFF_VACATION;
-                    ProcessCommand(command);
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                    Task.Run(() => ProcessCommand(command));
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
                     reportedProperties["isHomeInVacation"] = TelemetryDataClass.isHomeInVacation;
                 }
                 if (desiredProperties["isHomeSecured"] != null && ((bool)desiredProperties["isHomeSecured"] == !TelemetryDataClass.isHomeSecured))
                 {
                     command = (bool)desiredProperties["isHomeSecured"] ? CommandNames.TURN_ON_SECURITY : CommandNames.TURN_OFF_SECURITY;
-                    ProcessCommand(command);
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                    Task.Run(() => ProcessCommand(command));
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
                     reportedProperties["isHomeSecured"] = TelemetryDataClass.isHomeSecured;
                 }
             }
@@ -268,9 +276,11 @@ namespace HomeModule.Azure
             {
                 TelemetryDataClass.isHomeInVacation = true;
                 TelemetryDataClass.VacationTime = METHOD.DateTimeTZ().DateTime;
-                ProcessCommand(CommandNames.TURN_OFF_HEATING);
-                ProcessCommand(CommandNames.TURN_OFF_SAUNA);
-                ProcessCommand(CommandNames.CLOSE_VENT);
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                Task.Run(() => ProcessCommand(CommandNames.TURN_OFF_HEATING)) ;
+                Task.Run(() => ProcessCommand(CommandNames.TURN_OFF_SAUNA));
+                Task.Run(() => ProcessCommand(CommandNames.CLOSE_VENT));
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
                 Console.WriteLine($"{(SomeoneAtHome.IsSecurityManuallyOn ? "Manual security mode." : "Automatic security mode.")} Vacation mode on at {TelemetryDataClass.VacationTime:G}");
             }
             else if (command == CommandNames.TURN_OFF_VACATION)
@@ -313,27 +323,34 @@ namespace HomeModule.Azure
             {
                 if (!TelemetryDataClass.isHomeInVacation)
                 {
-                    ProcessCommand(CommandNames.TURN_ON_HEATING);
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                    Task.Run(() => ProcessCommand(CommandNames.TURN_ON_HEATING));
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
                     Pins.PinWrite(Pins.normalTempOutPin, PinValue.High);
                     //Pins.PinWrite(Pins.floorPumpOutPin, PinValue.High);
                     TelemetryDataClass.isNormalHeating = true;
                 }
                 else
                 {
-                    ProcessCommand(CommandNames.REDUCE_TEMP_COMMAND);
-                    ProcessCommand(CommandNames.TURN_ON_HEATING);
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                    Task.Run(() => ProcessCommand(CommandNames.REDUCE_TEMP_COMMAND));
+                    Task.Run(() => ProcessCommand(CommandNames.TURN_ON_HEATING));
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
                 }
             }
             else if (command == CommandNames.REDUCE_TEMP_COMMAND)
             {
+                //wait until heat is not in progress
                 while (Pins.IsRoomHeatingOn || Pins.IsWaterHeatingOn) ;
                 Pins.PinWrite(Pins.normalTempOutPin, PinValue.Low);
-                //Pins.PinWrite(Pins.floorPumpOutPin, PinValue.Low);
                 TelemetryDataClass.isNormalHeating = false;
             }
             else if (command == CommandNames.TURN_ON_HOTWATERPUMP && !TelemetryDataClass.isHomeInVacation)
             {
                 Pins.PinWrite(Pins.waterOutPin, PinValue.High);
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                Task.Run(() => ProcessCommand(CommandNames.TURN_ON_HEATING));
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
                 TelemetryDataClass.isWaterHeatingOn = true;
             }
             else if (command == CommandNames.TURN_OFF_HOTWATERPUMP)
@@ -348,11 +365,13 @@ namespace HomeModule.Azure
             }
             else if (command == CommandNames.TURN_OFF_HEATING)
             {
+                //wait until heat is not in progress
                 while (Pins.IsRoomHeatingOn || Pins.IsWaterHeatingOn) ;
                 Pins.PinWrite(Pins.heatOnOutPin, PinValue.Low);
-                //Pins.PinWrite(Pins.floorPumpOutPin, PinValue.Low);
-                ProcessCommand(CommandNames.REDUCE_TEMP_COMMAND);
-                ProcessCommand(CommandNames.TURN_OFF_HOTWATERPUMP);
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                Task.Run(() => ProcessCommand(CommandNames.REDUCE_TEMP_COMMAND));
+                Task.Run(() => ProcessCommand(CommandNames.TURN_OFF_HOTWATERPUMP));
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
                 TelemetryDataClass.isHeatingOn = false;
             }
             Console.WriteLine($"Command '{command.ToUpper()}' executed at {METHOD.DateTimeTZ().DateTime}.");

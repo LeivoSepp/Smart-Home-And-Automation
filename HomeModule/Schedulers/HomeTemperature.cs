@@ -94,31 +94,37 @@ namespace HomeModule.Schedulers
 
                 //if sauna extremely hot, then turn off
                 if (ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == SAUNA).Temperature > CONSTANT.EXTREME_SAUNA_TEMP)
-                    _receiveData.ProcessCommand(CommandNames.TURN_OFF_SAUNA);
+#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                    Task.Run(() => _receiveData.ProcessCommand(CommandNames.TURN_OFF_SAUNA));
 
-                //if hotwater time and hot water is below 40 then turn on heating and set "heatingRequired"
-                if (TelemetryDataClass.isWaterHeatingOn && ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == WARM_WATER).Temperature < CONSTANT.MIN_WATER_TEMP)
+                //if it is time to make hotwater or is hot water turned on manually and hot water is below 40 then turn system on
+                if ((TelemetryDataClass.isHotWaterTime || TelemetryDataClass.isWaterHeatingOn) && ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == WARM_WATER).Temperature < CONSTANT.MIN_WATER_TEMP)
                     TelemetryDataClass.isHotWaterRequired = true;
                 else
                     TelemetryDataClass.isHotWaterRequired = false;
 
-                //if all rooms has achieved their target temperature then turn system off
-                if (TelemetryDataClass.isHeatingTime && !ListOfAllSensors.Temperatures.Where(x => x.isRoom).All(x => !x.isHeatingRequired))
+                //if it is hetaing time or heating switched on manually and some room requires heating the turn system on
+                if ((TelemetryDataClass.isHeatingTime || TelemetryDataClass.isNormalHeating) && !ListOfAllSensors.Temperatures.Where(x => x.isRoom).All(x => !x.isHeatingRequired))
                     TelemetryDataClass.isHeatingRequired = true;
                 else
                     TelemetryDataClass.isHeatingRequired = false;
 
-                //turn off heating if there is no demand for heating and hot water 
-                if (!TelemetryDataClass.isHeatingRequired && !TelemetryDataClass.isHotWaterRequired && TelemetryDataClass.isHeatingOn)
-                    _receiveData.ProcessCommand(CommandNames.TURN_OFF_HEATING);
-                
-                //reduced heating will be turned on if there is demand for hot water 
-                if (TelemetryDataClass.isHotWaterRequired && !TelemetryDataClass.isHeatingOn)
-                    _receiveData.ProcessCommand(CommandNames.TURN_ON_HEATING);
+                //turn off hotwater pump if there is no demand for hot water
+                if (!TelemetryDataClass.isHotWaterRequired && TelemetryDataClass.isWaterHeatingOn)
+                    Task.Run(() => _receiveData.ProcessCommand(CommandNames.TURN_OFF_HOTWATERPUMP));
 
-                //normal heating will be turned on if there is demand for hot water or heating
+                //turn off heating (EVU_STOP) if there is no demand for heating and hot water 
+                if (!TelemetryDataClass.isHeatingRequired && !TelemetryDataClass.isHotWaterRequired && TelemetryDataClass.isHeatingOn)
+                    Task.Run(() => _receiveData.ProcessCommand(CommandNames.TURN_OFF_HEATING));
+
+                //waterpump and heating (REDUCED) will be turned on if there is demand for hot water 
+                if (TelemetryDataClass.isHotWaterRequired && !TelemetryDataClass.isWaterHeatingOn)
+                    Task.Run(() => _receiveData.ProcessCommand(CommandNames.TURN_ON_HOTWATERPUMP));
+
+                //normal heating will be turned on if there is demand for heating
                 if (TelemetryDataClass.isHeatingRequired && !TelemetryDataClass.isHeatingOn)
-                    _receiveData.ProcessCommand(CommandNames.NORMAL_TEMP_COMMAND);
+                    Task.Run(() => _receiveData.ProcessCommand(CommandNames.NORMAL_TEMP_COMMAND));
+#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
 
                 //if all room temperatures together has changed more that 3 degrees then send it out to database
                 if (Math.Abs(SumOfTemperatureDeltas) > 4)
@@ -155,7 +161,7 @@ namespace HomeModule.Schedulers
                 string SaunaStarted = "";
                 if (TelemetryDataClass.isSaunaOn)
                     SaunaStarted = $"   Alates {TelemetryDataClass.SaunaStartedTime:HH:mm}";
-                string message = $"{SaunaStarted}  saun {(TelemetryDataClass.isSaunaOn ? "sees" : "off" )}  {SaunaTemp}'";
+                string message = $"{SaunaStarted}  saun {(TelemetryDataClass.isSaunaOn ? "sees" : "off")}  {SaunaTemp}'";
                 matrix.ScrollStringInFromRight(message, 70);
                 await Task.Delay(TimeSpan.FromSeconds(2)); //scroll every 2 sec
             }
@@ -170,8 +176,8 @@ namespace HomeModule.Schedulers
                 {
                     if (s.RoomName == n.RoomName)
                     {
-                        s.isHeatingRequired = (s.TemperatureSET - n.Temperature) > 0;
-                        s.isTrendIncreases = (n.Temperature - s.Temperature) > 0;
+                        s.isHeatingRequired = s.TemperatureSET > n.Temperature;
+                        s.isTrendIncreases = n.Temperature > s.Temperature;
                         s.LastTemperature = s.Temperature;
                         s.Temperature = n.Temperature;
                         break;

@@ -41,7 +41,7 @@ namespace HomeModule.Schedulers
             if (!IsSecurityManuallyOn)
             {
                 string cmd = WiFiProbes.IsAnyMobileAtHome ? CommandNames.TURN_OFF_SECURITY : CommandNames.TURN_ON_SECURITY;
-                _receiveData.ProcessCommand(cmd);
+                Task.Run(() => _receiveData.ProcessCommand(cmd));
             }
             TelemetryDataClass.isSomeoneAtHome = IsSomeoneAtHome;
             Console.WriteLine($"{(IsSecurityManuallyOn ? "Manual security mode." : "Automatic security mode.")} {(IsSomeoneAtHome ? "Someone at home" : "Nobody is home")} {CurrentDateTime.DateTime:G}");

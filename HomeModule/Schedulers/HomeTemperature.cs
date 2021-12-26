@@ -40,7 +40,8 @@ namespace HomeModule.Schedulers
             var _sensorsClient = new RinsenOneWireClient();
             var _sendListData = new SendDataAzure();
             var Methods = new METHOD();
-            //currentSumOfTempDeltas is some bigger number than the delta (0,5) is used to determine temperature changes
+
+            //currentSumOfTempDeltas is some big number to determine temperature changes at startup to generate send data
             double SumOfTemperatureDeltas = 10;
             //initiate the list with the temps and names
             ListOfAllSensors = await _sensorsClient.ReadSensors();
@@ -50,13 +51,17 @@ namespace HomeModule.Schedulers
             //Start LED matrix
             LedMatrixAsync();
 
+
             var filename = Methods.GetFilePath(CONSTANT.FILENAME_ROOM_TEMPERATURES);
+            //save the room temperatures into Raspberry to have this data after reboot or app update
             if (File.Exists(filename))
             {
                 var dataFromFile = await Methods.OpenExistingFile(filename);
                 List<SensorReading> SetRoomTemps = JsonSerializer.Deserialize<List<SensorReading>>(dataFromFile);
                 SetTemperatures(SetRoomTemps);
             }
+
+            //run in every minute to check temperatures
             while (true)
             {
                 //get a new sensor readings and then update
@@ -78,32 +83,33 @@ namespace HomeModule.Schedulers
                 else
                     Pins.PinWrite(Pins.homeOfficeHeatControlOut, PinValue.Low);
 
-                //manage Piano heating actuator
+                //manage Piano heating actuator - this works through Shelly
                 bool isPianoHeatingOn = ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == PIANO).isHeatingRequired;
                 await Shelly.SetShellySwitch(isPianoHeatingOn, Shelly.PianoHeating, nameof(Shelly.PianoHeating));
 
-                //manage Bedroom heating actuator
+                //manage Bedroom heating actuator - this works through Shelly
                 bool isBedroomHeatingOn = ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == BEDROOM).isHeatingRequired;
                 await Shelly.SetShellySwitch(isBedroomHeatingOn, Shelly.BedroomHeating, nameof(Shelly.BedroomHeating));
 
                 //manage sauna temperature
-                if (ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == SAUNA).isHeatingRequired && TelemetryDataClass.isSaunaOn)
+                var sauna = ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == SAUNA);
+                if (sauna.isHeatingRequired && TelemetryDataClass.isSaunaOn)
                     Pins.PinWrite(Pins.saunaHeatOutPin, PinValue.Low);
                 else
                     Pins.PinWrite(Pins.saunaHeatOutPin, PinValue.High);
 
                 //if sauna extremely hot, then turn off
-                if (ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == SAUNA).Temperature > CONSTANT.EXTREME_SAUNA_TEMP)
+                if (sauna.Temperature > CONSTANT.EXTREME_SAUNA_TEMP)
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
                     Task.Run(() => _receiveData.ProcessCommand(CommandNames.TURN_OFF_SAUNA));
 
-                //if it is time to make hotwater or is hot water turned on manually and hot water is below 40 then turn system on
+                //if there is time to make hotwater or hot water turned on and hot water is below 40 then hot water required
                 if ((TelemetryDataClass.isHotWaterTime || TelemetryDataClass.isWaterHeatingOn) && ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == WARM_WATER).Temperature < CONSTANT.MIN_WATER_TEMP)
                     TelemetryDataClass.isHotWaterRequired = true;
                 else
                     TelemetryDataClass.isHotWaterRequired = false;
 
-                //if it is hetaing time or heating switched on manually and some room requires heating the turn system on
+                //if it is hetaing time or heating switched on and some room requires heating then heating required
                 if ((TelemetryDataClass.isHeatingTime || TelemetryDataClass.isNormalHeating) && !ListOfAllSensors.Temperatures.Where(x => x.isRoom).All(x => !x.isHeatingRequired))
                     TelemetryDataClass.isHeatingRequired = true;
                 else
@@ -126,7 +132,7 @@ namespace HomeModule.Schedulers
                     Task.Run(() => _receiveData.ProcessCommand(CommandNames.NORMAL_TEMP_COMMAND));
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
 
-                //if all room temperatures together has changed more that 3 degrees then send it out to database
+                //if all room temperatures together has changed more that 4 degrees then send it out to CosmosDB
                 if (Math.Abs(SumOfTemperatureDeltas) > 4)
                 {
                     TelemetryDataClass.SourceInfo = $"Room temp changed {SumOfTemperatureDeltas:0.0}";
@@ -142,7 +148,7 @@ namespace HomeModule.Schedulers
                     await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo, "output");
                     SumOfTemperatureDeltas = 0; //resetting to start summing up again
                 }
-                //started message for debugging
+                //message for debugging
                 if (!isReadTemperatureStarted)
                 {
                     Console.WriteLine($"ReadTemperature() started");
@@ -152,11 +158,13 @@ namespace HomeModule.Schedulers
                 await Task.Delay(TimeSpan.FromMinutes(1)); //check temperatures every minute
             }
         }
+        //scroll the sauna information in Led-matrix
         public async void LedMatrixAsync()
         {
             LED8x8Matrix matrix = new LED8x8Matrix(driver);
             while (true)
             {
+                //get the sauna temp
                 int SaunaTemp = Convert.ToInt32(ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == SAUNA).Temperature);
                 string SaunaStarted = "";
                 if (TelemetryDataClass.isSaunaOn)

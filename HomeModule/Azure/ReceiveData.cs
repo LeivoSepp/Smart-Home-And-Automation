@@ -257,7 +257,8 @@ namespace HomeModule.Azure
                 Pins.PinWrite(Pins.saunaHeatOutPin, PinValue.Low);
                 TelemetryDataClass.isSaunaOn = true;
                 var filename = Methods.GetFilePath(CONSTANT.FILENAME_SAUNA_TIME);
-                if (TelemetryDataClass.SaunaStartedTime == DateTime.MinValue) //if sauna hasnt been started before
+                //if sauna just started the write the starting time into file
+                if (TelemetryDataClass.SaunaStartedTime == DateTime.MinValue) 
                 {
                     DateTime SaunaStartedTime = METHOD.DateTimeTZ().DateTime;
                     await Methods.SaveStringToLocalFile(filename, SaunaStartedTime.ToString("dd.MM.yyyy HH:mm"));
@@ -266,6 +267,7 @@ namespace HomeModule.Azure
             }
             else if (command == CommandNames.TURN_OFF_SAUNA)
             {
+                //delete the sauna file
                 var filename = Methods.GetFilePath(CONSTANT.FILENAME_SAUNA_TIME);
                 File.Delete(filename);
                 Pins.PinWrite(Pins.saunaHeatOutPin, PinValue.High);
@@ -327,7 +329,6 @@ namespace HomeModule.Azure
                     Task.Run(() => ProcessCommand(CommandNames.TURN_ON_HEATING));
 #pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
                     Pins.PinWrite(Pins.normalTempOutPin, PinValue.High);
-                    //Pins.PinWrite(Pins.floorPumpOutPin, PinValue.High);
                     TelemetryDataClass.isNormalHeating = true;
                 }
                 else
@@ -340,7 +341,7 @@ namespace HomeModule.Azure
             }
             else if (command == CommandNames.REDUCE_TEMP_COMMAND)
             {
-                //wait until heat is not in progress
+                //wait until heat is finished
                 while (Pins.IsRoomHeatingOn || Pins.IsWaterHeatingOn) ;
                 Pins.PinWrite(Pins.normalTempOutPin, PinValue.Low);
                 TelemetryDataClass.isNormalHeating = false;
@@ -365,7 +366,7 @@ namespace HomeModule.Azure
             }
             else if (command == CommandNames.TURN_OFF_HEATING)
             {
-                //wait until heat is not in progress
+                //wait until heat is finished
                 while (Pins.IsRoomHeatingOn || Pins.IsWaterHeatingOn) ;
                 Pins.PinWrite(Pins.heatOnOutPin, PinValue.Low);
 #pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed

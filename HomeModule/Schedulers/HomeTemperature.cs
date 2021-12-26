@@ -184,8 +184,9 @@ namespace HomeModule.Schedulers
                 {
                     if (s.RoomName == n.RoomName)
                     {
+                        //trend will be calculated over two measuring cycle (2 minutes)
                         s.isHeatingRequired = s.TemperatureSET > n.Temperature;
-                        s.isTrendIncreases = n.Temperature > s.Temperature;
+                        s.isTrendIncreases = n.Temperature > s.LastTemperature; 
                         s.LastTemperature = s.Temperature;
                         s.Temperature = n.Temperature;
                         break;

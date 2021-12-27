@@ -25,10 +25,12 @@ namespace HomeModule.Azure
         public static bool isOutsideLightsOn { get; set; }
         public static bool isGarageLightsOn { get; set; }
         public static bool isHomeDoorOpen { get; set; }
-        public static bool isHeatingRequired { get; set; }
-        public static bool isHotWaterRequired { get; set; }
-        public static bool isHeatingTime { get; set; }
-        public static bool isHotWaterTime { get; set; }
+        public static bool IsHeatingRequired { get; set; }
+        public static bool IsHotWaterRequired { get; set; }
+        public static bool IsHeatingTime { get; set; }
+        public static bool IsHotWaterTime { get; set; }
+        public static bool IsHeatingTurnedOnManually { get; set; } 
+        public static bool IsReducedHeating { get; set; } 
     }
     class SendTelemetryData
     {

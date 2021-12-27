@@ -124,6 +124,7 @@ namespace HomeModule.Raspberry
             List<State> Exit4 = new List<State> { NONE, IR, ALL, DOOR, NONE };
             List<State> Exit5 = new List<State> { NONE, IR, ALL, DOOR, ALL, NONE };
             List<State> Exit6 = new List<State> { NONE, IR, ALL, NONE };
+            List<State> Exit7 = new List<State> { NONE, IR, DOOR, NONE };
             List<State> DoorOpenClose = new List<State> { NONE, DOOR, NONE };
             List<State> RepeatDoorAll = new List<State> { DOOR, ALL }; //repeat
             List<State> RepeatAllDoor = new List<State> { ALL, DOOR }; //repeat
@@ -269,14 +270,19 @@ namespace HomeModule.Raspberry
                             if (ContainsPattern(_queue, Exit4)) status = "exit 4";
                             if (ContainsPattern(_queue, Exit5)) status = "exit 5";
                             if (ContainsPattern(_queue, Exit6)) status = "exit 6";
+                            if (ContainsPattern(_queue, Exit7)) status = "exit 7";
                             if (ContainsPattern(_queue, DoorOpenClose)) status = "door open-closed";
                         }
 
                         //entry queue debugging info 
-                        Console.WriteLine($"\n Entry queue at {CurrentDateTime} \n");
+                        Console.Write($"Entry queue at {CurrentDateTime}: ");
                         for (int i = 0; i < _queue.Count; i++)
                         {
-                            Console.WriteLine($"{i}. Door: {(_queue[i].DoorValue ? "O" : "X")} - IR: {(_queue[i].IRValue ? "O" : "X")}");
+                            if(_queue[i] == NONE) Console.Write($"NONE");
+                            if (_queue[i] == ALL) Console.Write($"ALL");
+                            if (_queue[i] == DOOR) Console.Write($"DOOR");
+                            if (_queue[i] == IR) Console.Write($"IR");
+                            Console.Write($" ");
                         }
                         Console.WriteLine($"");
                     }

@@ -34,7 +34,7 @@ namespace HomeModule.Azure
                     pipeMessage.Properties.Add(prop.Key, prop.Value);
                 }
                 await moduleClient.SendEventAsync(output, pipeMessage);
-                Console.WriteLine($"Azure IoT Hub message: {counterValue}. {SourceInfo}: {METHOD.DateTimeTZ().DateTime}");
+                Console.WriteLine($"\nAzure IoT Hub message: {counterValue}. {SourceInfo}: {METHOD.DateTimeTZ().DateTime}");
             }
             return MessageResponse.Completed;
         }

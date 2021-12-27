@@ -217,7 +217,7 @@ namespace HomeModule.Raspberry
                     ledValuePin = ventOutPin;
                     break;
                 case btnNormalTempPin:
-                    onCommand = CommandNames.NORMAL_TEMP_COMMAND;
+                    onCommand = CommandNames.NORMAL_TEMP_COMMAND_MANUAL;
                     offCommand = CommandNames.REDUCE_TEMP_COMMAND;
                     ledValuePin = normalTempOutPin;
                     break;
@@ -243,7 +243,7 @@ namespace HomeModule.Raspberry
             while (!(bool)gpio.Read(PressedButton)) ; //loop is running until button pressed
 
             string command = ((bool)ledValue) ? offCommand : onCommand;
-            Task.Run(() => _receiveData.ProcessCommand(command));
+            _receiveData.ProcessCommand(command);
         }
         public async Task SendData()
         {
@@ -278,7 +278,7 @@ namespace HomeModule.Raspberry
             }
             catch (Exception e)
             {
-                Console.WriteLine($"All Temperature Sensors check {e.StackTrace}");
+                Console.WriteLine($"All Temperature Sensors check exception {e.StackTrace}");
             }
             return flowTemperatures;
         }
@@ -291,6 +291,7 @@ namespace HomeModule.Raspberry
             {
                 TelemetryDataClass.RoomHeatingInMinutes = (int)(METHOD.DateTimeTZ().DateTime - dateTimeRoomHeat).TotalMinutes;
                 TelemetryDataClass.SourceInfo = $"5. Roomheating {TelemetryDataClass.RoomHeatingInMinutes} min, Start Waterheating. {FlowTemperatures()} \n";
+                Console.WriteLine($"\nConsole message stop roomheat, start waterheat: {METHOD.DateTimeTZ().DateTime} {FlowTemperatures()}");
                 await _sendData.SendData();
                 TelemetryDataClass.RoomHeatingInMinutes = 0;
                 dateTimeWaterHeat = METHOD.DateTimeTZ().DateTime; //start waterheating
@@ -302,6 +303,7 @@ namespace HomeModule.Raspberry
             var _sendData = new Pins();
             TelemetryDataClass.WaterHeatingInMinutes = (int)(METHOD.DateTimeTZ().DateTime - dateTimeWaterHeat).TotalMinutes;
             TelemetryDataClass.SourceInfo = $"7. Waterheating {TelemetryDataClass.WaterHeatingInMinutes} min {FlowTemperatures()} \n";
+            Console.WriteLine($"\nConsole message stop waterheat: {METHOD.DateTimeTZ().DateTime} {FlowTemperatures()}");
             await _sendData.SendData();
             TelemetryDataClass.WaterHeatingInMinutes = 0;
 
@@ -311,7 +313,7 @@ namespace HomeModule.Raspberry
             if (IsRoomHeatPinOn)
             {
                 dateTimeRoomHeat = METHOD.DateTimeTZ().DateTime; //start roomheat
-                Console.WriteLine($"Console message start roomheat: {METHOD.DateTimeTZ().DateTime} {FlowTemperatures()}");
+                Console.WriteLine($"\nConsole message start roomheat: {METHOD.DateTimeTZ().DateTime} {FlowTemperatures()}");
             }
         }
         private static void Pin_HeatingRisingAsync() //winter and summer
@@ -319,12 +321,12 @@ namespace HomeModule.Raspberry
             if (!IsWaterHeatPinOn)
             {
                 dateTimeRoomHeat = METHOD.DateTimeTZ().DateTime; //start roomheat
-                Console.WriteLine($"Console message start roomheat: {METHOD.DateTimeTZ().DateTime} {FlowTemperatures()}");
+                Console.WriteLine($"\nConsole message start roomheat: {METHOD.DateTimeTZ().DateTime} {FlowTemperatures()}");
             }
             if (IsWaterHeatPinOn)
             {
                 dateTimeWaterHeat = METHOD.DateTimeTZ().DateTime; //start waterheat
-                Console.WriteLine($"Console message start waterheat: {METHOD.DateTimeTZ().DateTime} {FlowTemperatures()}");
+                Console.WriteLine($"\nConsole message start waterheat: {METHOD.DateTimeTZ().DateTime} {FlowTemperatures()}");
             }
         }
         private static async void Pin_HeatingFallingAsync() //winter and summer
@@ -333,7 +335,8 @@ namespace HomeModule.Raspberry
             if (!IsWaterJustFinished && !IsWaterHeatPinOn) //if waterheating LED is off AND the waterheating counter isnt started then stop roomheating
             {
                 TelemetryDataClass.RoomHeatingInMinutes = (int)(METHOD.DateTimeTZ().DateTime - dateTimeRoomHeat).TotalMinutes;
-                TelemetryDataClass.SourceInfo = $"3. Roomheating {TelemetryDataClass.RoomHeatingInMinutes} min {FlowTemperatures()} \n";
+                TelemetryDataClass.SourceInfo = $"3. Roomheating {TelemetryDataClass.RoomHeatingInMinutes} min";
+                Console.WriteLine($"\nConsole message stop roomheat: {METHOD.DateTimeTZ().DateTime} {FlowTemperatures()}");
                 await _sendData.SendData();
                 TelemetryDataClass.RoomHeatingInMinutes = 0;
             }
@@ -343,6 +346,7 @@ namespace HomeModule.Raspberry
             {
                 TelemetryDataClass.WaterHeatingInMinutes = (int)(METHOD.DateTimeTZ().DateTime - dateTimeWaterHeat).TotalMinutes;
                 TelemetryDataClass.SourceInfo = $"4. Waterheating {TelemetryDataClass.WaterHeatingInMinutes} min  {FlowTemperatures()} \n";
+                Console.WriteLine($"\nConsole message stop waterheat: {METHOD.DateTimeTZ().DateTime} {FlowTemperatures()}");
                 await _sendData.SendData();
                 TelemetryDataClass.WaterHeatingInMinutes = 0;
             }

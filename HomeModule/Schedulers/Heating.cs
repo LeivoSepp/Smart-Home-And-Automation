@@ -30,12 +30,12 @@ namespace HomeModule.Schedulers
                 var currentHour = _realTimeEnergyPrices.FirstOrDefault(x => x.date.DateTime.Hour == CurrentDateTime.DateTime.Hour);
                 
                 //this is used in ReadTemperature scheduler to turn on or off the heating
-                TelemetryDataClass.isHeatingTime = currentHour.heat == CONSTANT.NORMAL_HEATING ? true : false;
+                TelemetryDataClass.IsHeatingTime = currentHour.heat == CONSTANT.NORMAL_HEATING ? true : false;
 
                 //this is used in ReadTemperature scheduler to turn on or off the hot water
-                TelemetryDataClass.isHotWaterTime = currentHour.isHotWaterTime;
+                TelemetryDataClass.IsHotWaterTime = currentHour.isHotWaterTime;
 
-                Console.WriteLine($"Energy price {currentHour.price}, hot water time {currentHour.isHotWaterTime.ToString().ToUpper()}, energy time {currentHour.heat} at {currentHour.date:g}");
+                Console.WriteLine($"\nEnergy price {currentHour.price}, hot water time {currentHour.isHotWaterTime.ToString().ToUpper()}, energy time {currentHour.heat} at {currentHour.date:g}\n");
 
                 //calculate seconds for the next hour
                 int secondsToNextHour = 3600 - (int)CurrentDateTime.DateTime.TimeOfDay.TotalSeconds % 3600;

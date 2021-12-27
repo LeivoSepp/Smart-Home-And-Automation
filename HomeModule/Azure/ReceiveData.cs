@@ -49,7 +49,7 @@ namespace HomeModule.Azure
                 }
                 if (HomeCommands.TryGetProperty("NormalTemp", out JsonElement normalTemp) && normalTemp.GetBoolean() == !TelemetryDataClass.isNormalHeating)
                 {
-                    string cmd = normalTemp.GetBoolean() ? CommandNames.NORMAL_TEMP_COMMAND : CommandNames.REDUCE_TEMP_COMMAND;
+                    string cmd = normalTemp.GetBoolean() ? CommandNames.NORMAL_TEMP_COMMAND_MANUAL : CommandNames.REDUCE_TEMP_COMMAND;
                     command.Add(cmd);
                 }
                 if (HomeCommands.TryGetProperty("Vacation", out JsonElement vacation) && vacation.GetBoolean() == !TelemetryDataClass.isHomeInVacation)
@@ -82,9 +82,7 @@ namespace HomeModule.Azure
             foreach (string cmd in command)
             {
                 if (cmd != null)
-#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-                    Task.Run(() => receiveData.ProcessCommand(cmd));
-#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                   receiveData.ProcessCommand(cmd);
             }
 
             //This data goes back directly to PowerApps through Azure Functions
@@ -207,17 +205,13 @@ namespace HomeModule.Azure
                 if (desiredProperties["isHomeInVacation"] != null && ((bool)desiredProperties["isHomeInVacation"] == !TelemetryDataClass.isHomeInVacation))
                 {
                     command = (bool)desiredProperties["isHomeInVacation"] ? CommandNames.TURN_ON_VACATION : CommandNames.TURN_OFF_VACATION;
-#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-                    Task.Run(() => ProcessCommand(command));
-#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                    ProcessCommand(command);
                     reportedProperties["isHomeInVacation"] = TelemetryDataClass.isHomeInVacation;
                 }
                 if (desiredProperties["isHomeSecured"] != null && ((bool)desiredProperties["isHomeSecured"] == !TelemetryDataClass.isHomeSecured))
                 {
                     command = (bool)desiredProperties["isHomeSecured"] ? CommandNames.TURN_ON_SECURITY : CommandNames.TURN_OFF_SECURITY;
-#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-                    Task.Run(() => ProcessCommand(command));
-#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                    ProcessCommand(command);
                     reportedProperties["isHomeSecured"] = TelemetryDataClass.isHomeSecured;
                 }
             }
@@ -248,9 +242,11 @@ namespace HomeModule.Azure
         static DateTime dateTimeVentilation = METHOD.DateTimeTZ().DateTime;
         public async void ProcessCommand(string command)
         {
+            bool isCommandExecuted = false;
             if (command == CommandNames.NO_COMMAND)
             {
                 //_startStopLogic.testing(Pins.redLedPin);
+                isCommandExecuted = true;
             }
             else if (command == CommandNames.TURN_ON_SAUNA && !Pins.IsSaunaDoorOpen)
             {
@@ -264,6 +260,7 @@ namespace HomeModule.Azure
                     await Methods.SaveStringToLocalFile(filename, SaunaStartedTime.ToString("dd.MM.yyyy HH:mm"));
                     TelemetryDataClass.SaunaStartedTime = SaunaStartedTime;
                 }
+                isCommandExecuted = true;
             }
             else if (command == CommandNames.TURN_OFF_SAUNA)
             {
@@ -273,35 +270,38 @@ namespace HomeModule.Azure
                 Pins.PinWrite(Pins.saunaHeatOutPin, PinValue.High);
                 TelemetryDataClass.isSaunaOn = false;
                 TelemetryDataClass.SaunaStartedTime = new DateTime();
+                isCommandExecuted = true;
             }
             else if (command == CommandNames.TURN_ON_VACATION)
             {
                 TelemetryDataClass.isHomeInVacation = true;
                 TelemetryDataClass.VacationTime = METHOD.DateTimeTZ().DateTime;
-#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-                Task.Run(() => ProcessCommand(CommandNames.TURN_OFF_HEATING)) ;
-                Task.Run(() => ProcessCommand(CommandNames.TURN_OFF_SAUNA));
-                Task.Run(() => ProcessCommand(CommandNames.CLOSE_VENT));
-#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                ProcessCommand(CommandNames.TURN_OFF_HEATING) ;
+                ProcessCommand(CommandNames.TURN_OFF_SAUNA);
+                ProcessCommand(CommandNames.CLOSE_VENT);
                 Console.WriteLine($"{(SomeoneAtHome.IsSecurityManuallyOn ? "Manual security mode." : "Automatic security mode.")} Vacation mode on at {TelemetryDataClass.VacationTime:G}");
+                isCommandExecuted = true;
             }
             else if (command == CommandNames.TURN_OFF_VACATION)
             {
                 TelemetryDataClass.isHomeInVacation = false;
                 TelemetryDataClass.VacationTime = new DateTime();
                 Console.WriteLine($"{(SomeoneAtHome.IsSecurityManuallyOn ? "Manual security mode." : "Automatic security mode.")} Vacation mode off at {METHOD.DateTimeTZ().DateTime:G}");
+                isCommandExecuted = true;
             }
             else if (command == CommandNames.TURN_ON_SECURITY)
             {
                 TelemetryDataClass.isHomeSecured = true;
                 TelemetryDataClass.HomeSecuredTime = METHOD.DateTimeTZ().DateTime;
                 Console.WriteLine($"{(SomeoneAtHome.IsSecurityManuallyOn ? "Manual security mode." : "Automatic security mode.")} Home is secured at: {TelemetryDataClass.HomeSecuredTime:G}");
+                isCommandExecuted = true;
             }
             else if (command == CommandNames.TURN_OFF_SECURITY)
             {
                 TelemetryDataClass.isHomeSecured = false;
                 TelemetryDataClass.HomeSecuredTime = new DateTime();
                 Console.WriteLine($"{(SomeoneAtHome.IsSecurityManuallyOn ? "Manual security mode." : "Automatic security mode.")} Home is at normal state at: {METHOD.DateTimeTZ().DateTime:G}");
+                isCommandExecuted = true;
             }
             else if (command == CommandNames.OPEN_VENT)
             {
@@ -309,6 +309,7 @@ namespace HomeModule.Azure
                 ManualVentLogic.VENT_ON = true; //to enable 30min ventilation, same behavior as Co2 over 900
                 TelemetryDataClass.isVentilationOn = true;
                 dateTimeVentilation = METHOD.DateTimeTZ().DateTime;
+                isCommandExecuted = true;
             }
             else if (command == CommandNames.CLOSE_VENT)
             {
@@ -320,64 +321,79 @@ namespace HomeModule.Azure
                 await _sendData.SendData();
                 TelemetryDataClass.VentilationInMinutes = 0;
                 TelemetryDataClass.isVentilationOn = false;
+                isCommandExecuted = true;
             }
             else if (command == CommandNames.NORMAL_TEMP_COMMAND)
             {
                 if (!TelemetryDataClass.isHomeInVacation)
                 {
-#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-                    Task.Run(() => ProcessCommand(CommandNames.TURN_ON_HEATING));
-#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                    ProcessCommand(CommandNames.TURN_ON_HEATING);
                     Pins.PinWrite(Pins.normalTempOutPin, PinValue.High);
                     TelemetryDataClass.isNormalHeating = true;
                 }
                 else
                 {
-#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-                    Task.Run(() => ProcessCommand(CommandNames.REDUCE_TEMP_COMMAND));
-                    Task.Run(() => ProcessCommand(CommandNames.TURN_ON_HEATING));
-#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                    ProcessCommand(CommandNames.REDUCE_TEMP_COMMAND);
+                    ProcessCommand(CommandNames.TURN_ON_HEATING);
                 }
+                isCommandExecuted = true;
+            }
+            if (command == CommandNames.NORMAL_TEMP_COMMAND_MANUAL)
+            {
+                TelemetryDataClass.IsHeatingTurnedOnManually = true;
+                ProcessCommand(CommandNames.NORMAL_TEMP_COMMAND);
+                isCommandExecuted = true;
             }
             else if (command == CommandNames.REDUCE_TEMP_COMMAND)
             {
                 //wait until heat is finished
-                while (Pins.IsRoomHeatingOn || Pins.IsWaterHeatingOn) ;
-                Pins.PinWrite(Pins.normalTempOutPin, PinValue.Low);
-                TelemetryDataClass.isNormalHeating = false;
+                if (!Pins.IsRoomHeatingOn && !Pins.IsWaterHeatingOn)
+                {
+                    Pins.PinWrite(Pins.normalTempOutPin, PinValue.Low);
+                    TelemetryDataClass.isNormalHeating = false;
+                    TelemetryDataClass.IsHeatingTurnedOnManually = false;
+                    TelemetryDataClass.IsReducedHeating = true;
+                    isCommandExecuted = true;
+                }
             }
             else if (command == CommandNames.TURN_ON_HOTWATERPUMP && !TelemetryDataClass.isHomeInVacation)
             {
                 Pins.PinWrite(Pins.waterOutPin, PinValue.High);
-#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-                Task.Run(() => ProcessCommand(CommandNames.TURN_ON_HEATING));
-#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
+                ProcessCommand(CommandNames.TURN_ON_HEATING);
                 TelemetryDataClass.isWaterHeatingOn = true;
+                isCommandExecuted = true;
             }
             else if (command == CommandNames.TURN_OFF_HOTWATERPUMP)
             {
                 Pins.PinWrite(Pins.waterOutPin, PinValue.Low);
                 TelemetryDataClass.isWaterHeatingOn = false;
+                isCommandExecuted = true;
             }
             else if (command == CommandNames.TURN_ON_HEATING)
             {
                 Pins.PinWrite(Pins.heatOnOutPin, PinValue.High);
                 TelemetryDataClass.isHeatingOn = true;
+                isCommandExecuted = true;
             }
             else if (command == CommandNames.TURN_OFF_HEATING)
             {
                 //wait until heat is finished
-                while (Pins.IsRoomHeatingOn || Pins.IsWaterHeatingOn) ;
-                Pins.PinWrite(Pins.heatOnOutPin, PinValue.Low);
-#pragma warning disable CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-                Task.Run(() => ProcessCommand(CommandNames.REDUCE_TEMP_COMMAND));
-                Task.Run(() => ProcessCommand(CommandNames.TURN_OFF_HOTWATERPUMP));
-#pragma warning restore CS4014 // Because this call is not awaited, execution of the current method continues before the call is completed
-                TelemetryDataClass.isHeatingOn = false;
+                if (!Pins.IsRoomHeatingOn && !Pins.IsWaterHeatingOn)
+                {
+                    Pins.PinWrite(Pins.heatOnOutPin, PinValue.Low);
+                    ProcessCommand(CommandNames.REDUCE_TEMP_COMMAND);
+                    ProcessCommand(CommandNames.TURN_OFF_HOTWATERPUMP);
+                    TelemetryDataClass.IsReducedHeating = false;
+                    TelemetryDataClass.isHeatingOn = false;
+                    isCommandExecuted = true;
+                }
             }
-            Console.WriteLine($"Command '{command.ToUpper()}' executed at {METHOD.DateTimeTZ().DateTime}.");
+            //only show debugging info if command has really executed
+            if (isCommandExecuted)
+                Console.WriteLine($"Command '{command.ToUpper()}' executed at {METHOD.DateTimeTZ().DateTime}.");
         }
     }
+
     public class Shelly
     {
         public static string OutsideLight = Environment.GetEnvironmentVariable("OutsideLightShellyIP");

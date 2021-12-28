@@ -4,11 +4,9 @@ using System.Globalization;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Headers;
-using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using HomeIoTFunctions20.GetYrNoForecast;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Host;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -72,10 +70,9 @@ namespace HomeIoTFunctions20.GetEnergyMarketPrice
         {
             int hoursToHeat = await getHoursToHeatInDay(input.First(), DateTimeTZ().DateTime.AddDays(daysToAdd));
             var energyPrice = CalculateHeatingTime(energyData, daysToAdd, hoursToHeat);
-            if (energyPrice.Count > 0)
+            if (energyPrice.energyPrices.Count > 0)
             {
-                var energyPriceUpdated = updateEnergyPrice(energyPrice);
-                await asyncCollectorEnergyPrice.AddAsync(energyPriceUpdated);
+                await asyncCollectorEnergyPrice.AddAsync(energyPrice);
             }
         }
         private static List<EnergyPrice> ExtractTheData(RootData energyDataRaw)
@@ -166,7 +163,7 @@ namespace HomeIoTFunctions20.GetEnergyMarketPrice
             }
             return hours;
         }
-        private static List<EnergyPrice> CalculateHeatingTime(List<EnergyPrice> energyPricesTwoDays, byte days, int hoursToHeatInDay)
+        private static EnergyPriceClass CalculateHeatingTime(List<EnergyPrice> energyPricesTwoDays, byte days, int hoursToHeatInDay)
         {
             List<EnergyPrice> energyPrices = new List<EnergyPrice>();
             //filter out one day energy price
@@ -175,19 +172,41 @@ namespace HomeIoTFunctions20.GetEnergyMarketPrice
 
             energyPrices.Sort((x, y) => x.price.CompareTo(y.price)); //sort by energy price
 
+            //update values heatOn, heatReduced and heatOff to make nice graphs in PowerApps
             for (int i = 0; i < energyPrices.Count; i++)
             {
                 bool isItPassiveTime = IsItInsidePassiveTime(energyPrices[i].date);
-                if (i < hoursToHeatInDay) //all cheap hours marked as heating hours
-                    energyPrices[i].heat = NORMAL_HEATING;
-                else if (isItPassiveTime) //if it is daytime or night time (and not heating time), then full stop for heating
-                    energyPrices[i].heat = EVU_STOP;
-                else //if it is inside active time (early morning and evening), then warm water
-                    energyPrices[i].heat = REDUCED_HEATING;
-                energyPrices[i].isHotWaterTime = !isItPassiveTime; //set separate parameter for hotwater
+                //all cheap hours marked as heating hours
+                if (i < hoursToHeatInDay) 
+                {
+                    energyPrices[i].heat = true;
+                    energyPrices[i].heatOn = (int)energyPrices[i].price;
+                }
+                //if it is daytime or night time (and not heating time), then full stop for heating
+                else if (isItPassiveTime) 
+                {
+                    energyPrices[i].heat = false;
+                    energyPrices[i].heatOff = (int)energyPrices[i].price;
+                }
+                //if it is inside active time (early morning and evening), then warm water
+                else
+                {
+                    energyPrices[i].heat = false;
+                    energyPrices[i].heatReduced = (int)energyPrices[i].price;
+                }
+                //set separate parameter for hotwater
+                energyPrices[i].isHotWaterTime = !isItPassiveTime; 
             }
-            energyPrices.Sort((x, y) => x.date.CompareTo(y.date)); //sort by time of day
-            return energyPrices;
+            //sort by time of day
+            energyPrices.Sort((x, y) => x.date.CompareTo(y.date)); 
+            EnergyPriceClass monitorData = new EnergyPriceClass()
+            {
+                UtcOffset = DateTimeTZ().Offset.Hours,
+                DateAndTime = DateTimeTZ(),
+                dateEnergyPrice = energyPrices.Count > 0 ? energyPrices.First().date.ToString("dd.MM.yyyy") : "",
+                energyPrices = energyPrices
+            };
+            return monitorData;
         }
         private static bool IsItInsidePassiveTime(DateTimeOffset date)
         {
@@ -232,24 +251,24 @@ namespace HomeIoTFunctions20.GetEnergyMarketPrice
             bool isSleepTime = TimeBetween(datetime, SleepTimeStart, SleepTimeEnd);
             return isSleepTime;
         }
-        private static EnergyPriceClass updateEnergyPrice(List<EnergyPrice> energyPrices)
-        {
-            //update values heatOn, heatReduced and heatOff to make nice graphs in PowerApps
-            energyPrices.ToList().ForEach(c =>
-            {
-                c.heatOn = c.heat == 1 ? c.heat * (int)c.price : 0;
-                c.heatReduced = c.heat == 2 ? c.heat * (int)c.price / 2 : 0;
-                c.heatOff = c.heat == 3 ? c.heat * (int)c.price / 3 : 0;
-            });
-            EnergyPriceClass monitorData = new EnergyPriceClass()
-            {
-                UtcOffset = DateTimeTZ().Offset.Hours,
-                DateAndTime = DateTimeTZ(),
-                dateEnergyPrice = energyPrices.First().date.ToString("dd.MM.yyyy"),
-                energyPrices = energyPrices
-            };
-            return monitorData;
-        }
+        //private static EnergyPriceClass updateEnergyPrice(List<EnergyPrice> energyPrices)
+        //{
+        //    //update values heatOn, heatReduced and heatOff to make nice graphs in PowerApps
+        //    energyPrices.ToList().ForEach(c =>
+        //    {
+        //        c.heatOn = c.heat == 1 ? (int)c.price : 0;
+        //        c.heatReduced = c.heat == 2 ? (int)c.price : 0;
+        //        c.heatOff = c.heat == 3 ? (int)c.price : 0;
+        //    });
+        //    EnergyPriceClass monitorData = new EnergyPriceClass()
+        //    {
+        //        UtcOffset = DateTimeTZ().Offset.Hours,
+        //        DateAndTime = DateTimeTZ(),
+        //        dateEnergyPrice = energyPrices.First().date.ToString("dd.MM.yyyy"),
+        //        energyPrices = energyPrices
+        //    };
+        //    return monitorData;
+        //}
     }
     public class RootData
     {
@@ -285,7 +304,7 @@ namespace HomeIoTFunctions20.GetEnergyMarketPrice
         public DateTimeOffset date { get; set; }
         public double price { get; set; }
         public string time { get; set; }
-        public int heat { get; set; }
+        public bool heat { get; set; }
         public int heatOn { get; set; }
         public int heatReduced { get; set; }
         public int heatOff { get; set; }

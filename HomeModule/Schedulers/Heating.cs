@@ -30,7 +30,7 @@ namespace HomeModule.Schedulers
                 var currentHour = _realTimeEnergyPrices.FirstOrDefault(x => x.date.DateTime.Hour == CurrentDateTime.DateTime.Hour);
                 
                 //this is used in ReadTemperature scheduler to turn on or off the heating
-                TelemetryDataClass.IsHeatingTime = currentHour.heat == CONSTANT.NORMAL_HEATING ? true : false;
+                TelemetryDataClass.IsHeatingTime = currentHour.heat;
 
                 //this is used in ReadTemperature scheduler to turn on or off the hot water
                 TelemetryDataClass.IsHotWaterTime = currentHour.isHotWaterTime;

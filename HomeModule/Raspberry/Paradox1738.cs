@@ -279,9 +279,9 @@ namespace HomeModule.Raspberry
                         for (int i = 0; i < _queue.Count; i++)
                         {
                             if(_queue[i] == NONE) Console.Write($"NONE");
-                            if (_queue[i] == ALL) Console.Write($"ALL");
+                            if (_queue[i] == ALL) Console.Write($"ALL ");
                             if (_queue[i] == DOOR) Console.Write($"DOOR");
-                            if (_queue[i] == IR) Console.Write($"IR");
+                            if (_queue[i] == IR) Console.Write($" IR ");
                             Console.Write($" ");
                         }
                         Console.WriteLine($"");

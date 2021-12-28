@@ -44,7 +44,7 @@ namespace HomeModule.Azure
                 }
                 if (HomeCommands.TryGetProperty("Heating", out JsonElement heating) && heating.GetBoolean() == !TelemetryDataClass.isHeatingOn)
                 {
-                    string cmd = heating.GetBoolean() ? CommandNames.TURN_ON_HEATING : CommandNames.TURN_OFF_HEATING;
+                    string cmd = heating.GetBoolean() ? CommandNames.TURN_ON_HEATING : CommandNames.HEATING_OFF_COMMAND_MANUAL;
                     command.Add(cmd);
                 }
                 if (HomeCommands.TryGetProperty("NormalTemp", out JsonElement normalTemp) && normalTemp.GetBoolean() == !TelemetryDataClass.isNormalHeating)
@@ -276,7 +276,7 @@ namespace HomeModule.Azure
             {
                 TelemetryDataClass.isHomeInVacation = true;
                 TelemetryDataClass.VacationTime = METHOD.DateTimeTZ().DateTime;
-                ProcessCommand(CommandNames.TURN_OFF_HEATING);
+                ProcessCommand(CommandNames.HEATING_OFF_COMMAND_MANUAL);
                 ProcessCommand(CommandNames.TURN_OFF_SAUNA);
                 ProcessCommand(CommandNames.CLOSE_VENT);
                 Console.WriteLine($"{(SomeoneAtHome.IsSecurityManuallyOn ? "Manual security mode." : "Automatic security mode.")} Vacation mode on at {TelemetryDataClass.VacationTime:G}");
@@ -344,17 +344,6 @@ namespace HomeModule.Azure
                 ProcessCommand(CommandNames.TURN_OFF_HEATING);
                 isCommandExecuted = true;
             }
-            else if (command == CommandNames.REDUCE_TEMP_COMMAND)
-            {
-                //wait until heat is finished
-                if (!Pins.IsRoomHeatingOn && !Pins.IsWaterHeatingOn)
-                {
-                    ProcessCommand(CommandNames.TURN_ON_HEATING);
-                    Pins.PinWrite(Pins.normalTempOutPin, PinValue.Low);
-                    TelemetryDataClass.IsReducedHeating = true;
-                    isCommandExecuted = true;
-                }
-            }
             else if (command == CommandNames.TURN_ON_HOTWATERPUMP)
             {
                 Pins.PinWrite(Pins.waterOutPin, PinValue.High);
@@ -382,7 +371,6 @@ namespace HomeModule.Azure
                     Pins.PinWrite(Pins.heatOnOutPin, PinValue.Low);
                     Pins.PinWrite(Pins.normalTempOutPin, PinValue.Low);
                     ProcessCommand(CommandNames.TURN_OFF_HOTWATERPUMP);
-                    TelemetryDataClass.IsReducedHeating = false;
                     TelemetryDataClass.isHeatingOn = false;
                     TelemetryDataClass.isNormalHeating = false;
                     isCommandExecuted = true;

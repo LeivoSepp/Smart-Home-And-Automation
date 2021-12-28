@@ -223,7 +223,7 @@ namespace HomeModule.Raspberry
                     break;
                 case btnHeatOnPin:
                     onCommand = CommandNames.TURN_ON_HEATING;
-                    offCommand = CommandNames.TURN_OFF_HEATING;
+                    offCommand = CommandNames.HEATING_OFF_COMMAND_MANUAL;
                     ledValuePin = heatOnOutPin;
                     break;
                 case btnSaunaPin:

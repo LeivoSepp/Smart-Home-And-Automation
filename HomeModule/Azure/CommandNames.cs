@@ -7,7 +7,6 @@
         internal const string NORMAL_TEMP_COMMAND = "Normal temp";
         internal const string NORMAL_TEMP_COMMAND_MANUAL = "Normal temp manually";
         internal const string HEATING_OFF_COMMAND_MANUAL = "Heating off manually";
-        internal const string REDUCE_TEMP_COMMAND = "Reduce temp";
         internal const string TURN_ON_HEATING = "Open heat";
         internal const string TURN_OFF_HEATING = "Close heat";
         internal const string TURN_ON_HOTWATERPUMP = "Open water";

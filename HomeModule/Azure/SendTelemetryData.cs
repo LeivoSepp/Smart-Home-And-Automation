@@ -31,7 +31,6 @@ namespace HomeModule.Azure
         public static bool IsHotWaterTime { get; set; }
         public static bool IsHeatingTurnedOnManually { get; set; }
         public static bool IsHeatingTurnedOffManually { get; set; }
-        public static bool IsReducedHeating { get; set; } 
     }
     class SendTelemetryData
     {

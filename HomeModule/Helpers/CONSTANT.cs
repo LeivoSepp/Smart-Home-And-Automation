@@ -33,10 +33,7 @@
         public const double DEFAULT_ROOM_TEMP = 21.5;
         public const double DEFAULT_SAUNA_TEMP = 95;
         public const double MIN_WATER_TEMP = 40;
-
-        public const int NORMAL_HEATING = 1; //heating rooms an warm water
-        public const int REDUCED_HEATING = 2; //creating only warm water
-        public const int EVU_STOP = 3; //heating off at all
+        public const int REDUCED_TEMP = 3; //degrees to reduce room temp in vacation
 
         public const int SIGNAL_TRESHOLD = -70; //dB
         public const int ACTIVE_DEVICES_IN_LAST = -600; //seconds

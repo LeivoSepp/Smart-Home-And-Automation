@@ -123,8 +123,8 @@ namespace HomeModule.Schedulers
                     _receiveData.ProcessCommand(CommandNames.NORMAL_TEMP_COMMAND);
 
                 //reduced heating will be turned on if there is demand for heating - only during vacation time
-                if (TelemetryDataClass.IsHeatingRequired && !TelemetryDataClass.IsReducedHeating && TelemetryDataClass.isHomeInVacation)
-                    _receiveData.ProcessCommand(CommandNames.REDUCE_TEMP_COMMAND);
+                if (TelemetryDataClass.IsHeatingRequired && !TelemetryDataClass.isHeatingOn && TelemetryDataClass.isHomeInVacation)
+                    _receiveData.ProcessCommand(CommandNames.TURN_ON_HEATING);
 
                 //turn off hotwater pump if there is no demand for hot water
                 if (!TelemetryDataClass.IsHotWaterRequired && TelemetryDataClass.isWaterHeatingOn)
@@ -157,7 +157,7 @@ namespace HomeModule.Schedulers
                     isReadTemperatureStarted = true;
                 }
 
-                await Task.Delay(TimeSpan.FromMinutes(1)); //check temperatures every minute
+                await Task.Delay(TimeSpan.FromSeconds(60)); //check temperatures every 60 sec
             }
         }
         //scroll the sauna information in Led-matrix
@@ -179,6 +179,8 @@ namespace HomeModule.Schedulers
 
         private SensorReadings UpdateSensorsTrendAndLastTemp(SensorReadings listOfRooms, SensorReadings sensorReadings)
         {
+            //reduce target room temperatures by 3 degrees
+            int reducedTemp = TelemetryDataClass.isHomeInVacation ? CONSTANT.REDUCED_TEMP : 0;
             foreach (var s in listOfRooms.Temperatures)
             {
                 //update room temperature trends and values
@@ -187,8 +189,8 @@ namespace HomeModule.Schedulers
                     if (s.RoomName == n.RoomName)
                     {
                         //trend will be calculated over two measuring cycle (2 minutes)
-                        s.isHeatingRequired = s.TemperatureSET > n.Temperature;
-                        s.isTrendIncreases = n.Temperature > s.LastTemperature; 
+                        s.isHeatingRequired = s.TemperatureSET - reducedTemp > n.Temperature;
+                        s.isTrendIncreases = n.Temperature > s.LastTemperature;
                         s.LastTemperature = s.Temperature;
                         s.Temperature = n.Temperature;
                         break;

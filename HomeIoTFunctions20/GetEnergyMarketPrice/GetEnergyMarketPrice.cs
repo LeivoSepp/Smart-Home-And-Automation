@@ -28,8 +28,8 @@ namespace HomeIoTFunctions20.GetEnergyMarketPrice
         //timer scheduler to get the energy market price once in a day, calculate heating schedule and save it to CosmosDB
         [FunctionName("GetEnergyMarketPrice")]
         public static async Task Run(
-        [TimerTrigger("0 0 13 * * *")] TimerInfo myTimer, //every day at 14 (trigger if fired based UTC)
-                                       //[TimerTrigger("0 */2 * * * *")] TimerInfo myTimer,
+        //[TimerTrigger("0 0 13 * * *")] TimerInfo myTimer, //every day at 14 (trigger if fired based UTC)
+                                       [TimerTrigger("0 */2 * * * *")] TimerInfo myTimer,
             [CosmosDB(
                 databaseName: "FreeCosmosDB",
                 collectionName: "TelemetryData",
@@ -93,7 +93,7 @@ namespace HomeIoTFunctions20.GetEnergyMarketPrice
                             if (column.Value != "-") //stupid hack as the source data is corrupted after daylight !!
                                 energyData.Add(new EnergyPrice
                                 {
-                                    date = DateTimeOffset.ParseExact(datetime, "dd-MM-yyyy HH:mm", null).AddHours(1),
+                                    date = DateTimeOffset.ParseExact(datetime, "dd-MM-yyyy HH:mm", null, DateTimeStyles.AssumeUniversal).AddHours(1),
                                     price = double.Parse(column.Value, CultureInfo.GetCultureInfo("et-EE")),
                                     time = time.AddHours(1).ToString("HH:mm")
                                 });

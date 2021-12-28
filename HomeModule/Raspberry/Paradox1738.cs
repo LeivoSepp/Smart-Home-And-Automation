@@ -94,7 +94,7 @@ namespace HomeModule.Raspberry
 
                 if (!(isStatus && (CategoryId == 0 || CategoryId == 1)) && !(EventId == 0 || EventId == 1)) //not show System Ready/Not ready messages and zone open/close messages.
                 {
-                    //Console.WriteLine($"{METHOD.DateTimeTZ():HH:mm:ss,ff} {Event}, {Message}");
+                    Console.WriteLine($"{METHOD.DateTimeTZ():HH:mm:ss,ff} {Event}, {Message}");
                 }
 
                 //started message for debugging

@@ -23,7 +23,7 @@ namespace HomeIoTFunctions20.GetEnergyPrice
                 JArray input,
             ILogger log)
         {
-            //{Date} = "08/23/2019"
+            //{Date} = "08/23/2019" "28.12.2021"
 
             return new OkObjectResult($"{input.First}");
         }

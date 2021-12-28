@@ -108,11 +108,23 @@ namespace HomeModule.Schedulers
                 else
                     TelemetryDataClass.IsHotWaterRequired = false;
 
-                //if it is hetaing time or heating switched on and some room requires heating then heating required
-                if ((TelemetryDataClass.IsHeatingTime || TelemetryDataClass.IsHeatingTurnedOnManually) && !ListOfAllSensors.Temperatures.Where(x => x.isRoom).All(x => !x.isHeatingRequired))
+                //if it is hetaing time or heating switched on-off manually and some room requires heating then heating required
+                if ((TelemetryDataClass.IsHeatingTime || TelemetryDataClass.IsHeatingTurnedOnManually) && !TelemetryDataClass.IsHeatingTurnedOffManually && !ListOfAllSensors.Temperatures.Where(x => x.isRoom).All(x => !x.isHeatingRequired))
                     TelemetryDataClass.IsHeatingRequired = true;
                 else
                     TelemetryDataClass.IsHeatingRequired = false;
+
+                //waterpump and heating (REDUCED) will be turned on if there is demand for hot water - only during no-vacation
+                if (TelemetryDataClass.IsHotWaterRequired && !TelemetryDataClass.isWaterHeatingOn && !TelemetryDataClass.isHomeInVacation)
+                    _receiveData.ProcessCommand(CommandNames.TURN_ON_HOTWATERPUMP);
+
+                //normal heating will be turned on if there is demand for heating - only during no-vacation
+                if (TelemetryDataClass.IsHeatingRequired && !TelemetryDataClass.isNormalHeating && !TelemetryDataClass.isHomeInVacation)
+                    _receiveData.ProcessCommand(CommandNames.NORMAL_TEMP_COMMAND);
+
+                //reduced heating will be turned on if there is demand for heating - only during vacation time
+                if (TelemetryDataClass.IsHeatingRequired && !TelemetryDataClass.IsReducedHeating && TelemetryDataClass.isHomeInVacation)
+                    _receiveData.ProcessCommand(CommandNames.REDUCE_TEMP_COMMAND);
 
                 //turn off hotwater pump if there is no demand for hot water
                 if (!TelemetryDataClass.IsHotWaterRequired && TelemetryDataClass.isWaterHeatingOn)
@@ -121,14 +133,6 @@ namespace HomeModule.Schedulers
                 //turn off heating (EVU_STOP) if there is no demand for heating and hot water 
                 if (!TelemetryDataClass.IsHeatingRequired && !TelemetryDataClass.IsHotWaterRequired && TelemetryDataClass.isHeatingOn)
                     _receiveData.ProcessCommand(CommandNames.TURN_OFF_HEATING);
-
-                //waterpump and heating (REDUCED) will be turned on if there is demand for hot water 
-                if (TelemetryDataClass.IsHotWaterRequired && !TelemetryDataClass.isWaterHeatingOn)
-                    _receiveData.ProcessCommand(CommandNames.TURN_ON_HOTWATERPUMP);
-
-                //normal or reduced heating will be turned on if there is demand for heating
-                if (TelemetryDataClass.IsHeatingRequired && !TelemetryDataClass.isNormalHeating && !TelemetryDataClass.IsReducedHeating)
-                    _receiveData.ProcessCommand(CommandNames.NORMAL_TEMP_COMMAND);
 
                 //if all room temperatures together has changed more that 4 degrees then send it out to CosmosDB
                 if (Math.Abs(SumOfTemperatureDeltas) > 4)

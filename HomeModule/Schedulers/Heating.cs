@@ -35,6 +35,10 @@ namespace HomeModule.Schedulers
                 //this is used in ReadTemperature scheduler to turn on or off the hot water
                 TelemetryDataClass.IsHotWaterTime = currentHour.isHotWaterTime;
 
+                //turn off manual heating option in every hour
+                TelemetryDataClass.IsHeatingTurnedOnManually = false;
+                TelemetryDataClass.IsHeatingTurnedOffManually = false;
+
                 Console.WriteLine($"\nEnergy price {currentHour.price}, hot water time {currentHour.isHotWaterTime.ToString().ToUpper()}, heating time {currentHour.heat.ToString().ToUpper()} at {currentHour.date:g}\n");
 
                 //calculate seconds for the next hour

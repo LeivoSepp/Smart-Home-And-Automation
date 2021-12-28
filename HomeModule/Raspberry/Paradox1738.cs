@@ -272,19 +272,19 @@ namespace HomeModule.Raspberry
                             if (ContainsPattern(_queue, Exit6)) status = "exit 6";
                             if (ContainsPattern(_queue, Exit7)) status = "exit 7";
                             if (ContainsPattern(_queue, DoorOpenClose)) status = "door open-closed";
-                        }
 
-                        //entry queue debugging info 
-                        Console.Write($"Entry queue at {CurrentDateTime}: ");
-                        for (int i = 0; i < _queue.Count; i++)
-                        {
-                            if(_queue[i] == NONE) Console.Write($"NONE");
-                            if (_queue[i] == ALL) Console.Write($"ALL ");
-                            if (_queue[i] == DOOR) Console.Write($"DOOR");
-                            if (_queue[i] == IR) Console.Write($" IR ");
-                            Console.Write($" ");
+                            //entry queue debugging info 
+                            Console.Write($"Entry queue at {CurrentDateTime}: ");
+                            for (int i = 0; i < _queue.Count; i++)
+                            {
+                                if (_queue[i] == NONE) Console.Write($"NONE");
+                                if (_queue[i] == ALL) Console.Write($"ALL ");
+                                if (_queue[i] == DOOR) Console.Write($"DOOR");
+                                if (_queue[i] == IR) Console.Write($" IR ");
+                                Console.Write($" ");
+                            }
+                            Console.WriteLine($"");
                         }
-                        Console.WriteLine($"");
                     }
                     if (status != "No pattern")
                     {

@@ -218,7 +218,7 @@ namespace HomeModule.Raspberry
                     break;
                 case btnNormalTempPin:
                     onCommand = CommandNames.NORMAL_TEMP_COMMAND_MANUAL;
-                    offCommand = CommandNames.REDUCE_TEMP_COMMAND;
+                    offCommand = CommandNames.HEATING_OFF_COMMAND_MANUAL;
                     ledValuePin = normalTempOutPin;
                     break;
                 case btnHeatOnPin:
@@ -273,7 +273,7 @@ namespace HomeModule.Raspberry
             {
                 foreach (var flowTemp in HomeTemperature.ListOfAllSensors.Temperatures)
                 {
-                    flowTemperatures += $"\n  {flowTemp.RoomName.PadRight(17 - (flowTemp.RoomName.Length > 17 ? 17 : flowTemp.RoomName.Length))} : {Math.Round(flowTemp.Temperature, 2)} {(flowTemp.isRoom ? flowTemp.isHeatingRequired ? "open" : "closed" : "")}";
+                    flowTemperatures += $"\n  {flowTemp.RoomName}{"".PadRight(17 - (flowTemp.RoomName.Length > 17 ? 17 : flowTemp.RoomName.Length))} : {Math.Round(flowTemp.Temperature, 2):F} {(flowTemp.isRoom ? flowTemp.isHeatingRequired ? "open" : "closed" : "")}";
                 }
             }
             catch (Exception e)

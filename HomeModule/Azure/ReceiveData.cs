@@ -49,7 +49,7 @@ namespace HomeModule.Azure
                 }
                 if (HomeCommands.TryGetProperty("NormalTemp", out JsonElement normalTemp) && normalTemp.GetBoolean() == !TelemetryDataClass.isNormalHeating)
                 {
-                    string cmd = normalTemp.GetBoolean() ? CommandNames.NORMAL_TEMP_COMMAND_MANUAL : CommandNames.REDUCE_TEMP_COMMAND;
+                    string cmd = normalTemp.GetBoolean() ? CommandNames.NORMAL_TEMP_COMMAND_MANUAL : CommandNames.HEATING_OFF_COMMAND_MANUAL;
                     command.Add(cmd);
                 }
                 if (HomeCommands.TryGetProperty("Vacation", out JsonElement vacation) && vacation.GetBoolean() == !TelemetryDataClass.isHomeInVacation)
@@ -82,7 +82,7 @@ namespace HomeModule.Azure
             foreach (string cmd in command)
             {
                 if (cmd != null)
-                   receiveData.ProcessCommand(cmd);
+                    receiveData.ProcessCommand(cmd);
             }
 
             //This data goes back directly to PowerApps through Azure Functions
@@ -254,7 +254,7 @@ namespace HomeModule.Azure
                 TelemetryDataClass.isSaunaOn = true;
                 var filename = Methods.GetFilePath(CONSTANT.FILENAME_SAUNA_TIME);
                 //if sauna just started the write the starting time into file
-                if (TelemetryDataClass.SaunaStartedTime == DateTime.MinValue) 
+                if (TelemetryDataClass.SaunaStartedTime == DateTime.MinValue)
                 {
                     DateTime SaunaStartedTime = METHOD.DateTimeTZ().DateTime;
                     await Methods.SaveStringToLocalFile(filename, SaunaStartedTime.ToString("dd.MM.yyyy HH:mm"));
@@ -276,7 +276,7 @@ namespace HomeModule.Azure
             {
                 TelemetryDataClass.isHomeInVacation = true;
                 TelemetryDataClass.VacationTime = METHOD.DateTimeTZ().DateTime;
-                ProcessCommand(CommandNames.TURN_OFF_HEATING) ;
+                ProcessCommand(CommandNames.TURN_OFF_HEATING);
                 ProcessCommand(CommandNames.TURN_OFF_SAUNA);
                 ProcessCommand(CommandNames.CLOSE_VENT);
                 Console.WriteLine($"{(SomeoneAtHome.IsSecurityManuallyOn ? "Manual security mode." : "Automatic security mode.")} Vacation mode on at {TelemetryDataClass.VacationTime:G}");
@@ -325,23 +325,23 @@ namespace HomeModule.Azure
             }
             else if (command == CommandNames.NORMAL_TEMP_COMMAND)
             {
-                if (!TelemetryDataClass.isHomeInVacation)
-                {
-                    ProcessCommand(CommandNames.TURN_ON_HEATING);
-                    Pins.PinWrite(Pins.normalTempOutPin, PinValue.High);
-                    TelemetryDataClass.isNormalHeating = true;
-                }
-                else
-                {
-                    ProcessCommand(CommandNames.REDUCE_TEMP_COMMAND);
-                    ProcessCommand(CommandNames.TURN_ON_HEATING);
-                }
+                ProcessCommand(CommandNames.TURN_ON_HEATING);
+                Pins.PinWrite(Pins.normalTempOutPin, PinValue.High);
+                TelemetryDataClass.isNormalHeating = true;
                 isCommandExecuted = true;
             }
-            if (command == CommandNames.NORMAL_TEMP_COMMAND_MANUAL)
+            else if (command == CommandNames.NORMAL_TEMP_COMMAND_MANUAL)
             {
                 TelemetryDataClass.IsHeatingTurnedOnManually = true;
+                TelemetryDataClass.IsHeatingTurnedOffManually = false;
                 ProcessCommand(CommandNames.NORMAL_TEMP_COMMAND);
+                isCommandExecuted = true;
+            }
+            else if (command == CommandNames.HEATING_OFF_COMMAND_MANUAL)
+            {
+                TelemetryDataClass.IsHeatingTurnedOnManually = false;
+                TelemetryDataClass.IsHeatingTurnedOffManually = true;
+                ProcessCommand(CommandNames.TURN_OFF_HEATING);
                 isCommandExecuted = true;
             }
             else if (command == CommandNames.REDUCE_TEMP_COMMAND)
@@ -349,14 +349,13 @@ namespace HomeModule.Azure
                 //wait until heat is finished
                 if (!Pins.IsRoomHeatingOn && !Pins.IsWaterHeatingOn)
                 {
+                    ProcessCommand(CommandNames.TURN_ON_HEATING);
                     Pins.PinWrite(Pins.normalTempOutPin, PinValue.Low);
-                    TelemetryDataClass.isNormalHeating = false;
-                    TelemetryDataClass.IsHeatingTurnedOnManually = false;
                     TelemetryDataClass.IsReducedHeating = true;
                     isCommandExecuted = true;
                 }
             }
-            else if (command == CommandNames.TURN_ON_HOTWATERPUMP && !TelemetryDataClass.isHomeInVacation)
+            else if (command == CommandNames.TURN_ON_HOTWATERPUMP)
             {
                 Pins.PinWrite(Pins.waterOutPin, PinValue.High);
                 ProcessCommand(CommandNames.TURN_ON_HEATING);
@@ -381,10 +380,11 @@ namespace HomeModule.Azure
                 if (!Pins.IsRoomHeatingOn && !Pins.IsWaterHeatingOn)
                 {
                     Pins.PinWrite(Pins.heatOnOutPin, PinValue.Low);
-                    ProcessCommand(CommandNames.REDUCE_TEMP_COMMAND);
+                    Pins.PinWrite(Pins.normalTempOutPin, PinValue.Low);
                     ProcessCommand(CommandNames.TURN_OFF_HOTWATERPUMP);
                     TelemetryDataClass.IsReducedHeating = false;
                     TelemetryDataClass.isHeatingOn = false;
+                    TelemetryDataClass.isNormalHeating = false;
                     isCommandExecuted = true;
                 }
             }

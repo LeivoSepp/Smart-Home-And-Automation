@@ -148,6 +148,7 @@ namespace HomeModule.Schedulers
                         ListOfAllSensors.Temperatures
                     };
                     await _sendListData.PipeMessage(monitorData, Program.IoTHubModuleClient, TelemetryDataClass.SourceInfo, "output");
+                    Console.WriteLine($"All Temperatures: {METHOD.DateTimeTZ().DateTime} {Pins.FlowTemperatures()}\n");
                     SumOfTemperatureDeltas = 0; //resetting to start summing up again
                 }
                 //message for debugging

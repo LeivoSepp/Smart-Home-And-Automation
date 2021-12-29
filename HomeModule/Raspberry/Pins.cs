@@ -265,7 +265,7 @@ namespace HomeModule.Raspberry
         static DateTime dateTimeWaterHeat = METHOD.DateTimeTZ().DateTime;
         static bool IsWaterJustFinished = false;
 
-        private static string FlowTemperatures()
+        public static string FlowTemperatures()
         {
             string flowTemperatures = "";
 

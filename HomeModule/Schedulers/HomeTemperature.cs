@@ -126,8 +126,8 @@ namespace HomeModule.Schedulers
                 if (TelemetryDataClass.IsHeatingRequired && !TelemetryDataClass.isHeatingOn && TelemetryDataClass.isHomeInVacation)
                     _receiveData.ProcessCommand(CommandNames.TURN_ON_HEATING);
 
-                //turn off hotwater pump if there is no demand for hot water
-                if (!TelemetryDataClass.IsHotWaterRequired && TelemetryDataClass.isWaterHeatingOn)
+                //turn off hotwater pump if there is no demand for hot water and waterheating is not running
+                if (!TelemetryDataClass.IsHotWaterRequired && TelemetryDataClass.isWaterHeatingOn && !Pins.IsWaterHeatingOn)
                     _receiveData.ProcessCommand(CommandNames.TURN_OFF_HOTWATERPUMP);
 
                 //turn off heating (EVU_STOP) if there is no demand for heating and hot water 

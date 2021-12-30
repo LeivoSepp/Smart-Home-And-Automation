@@ -347,7 +347,7 @@ namespace HomeModule.Azure
             else if (command == CommandNames.TURN_ON_HOTWATERPUMP)
             {
                 Pins.PinWrite(Pins.waterOutPin, PinValue.High);
-                ProcessCommand(CommandNames.TURN_ON_HEATING);
+                if(!TelemetryDataClass.isHeatingOn) ProcessCommand(CommandNames.TURN_ON_HEATING);
                 TelemetryDataClass.isWaterHeatingOn = true;
                 isCommandExecuted = true;
             }

@@ -285,6 +285,7 @@ namespace HomeModule.Azure
             else if (command == CommandNames.TURN_OFF_VACATION)
             {
                 TelemetryDataClass.isHomeInVacation = false;
+                TelemetryDataClass.IsHeatingTurnedOffManually = false;
                 TelemetryDataClass.VacationTime = new DateTime();
                 Console.WriteLine($"{(SomeoneAtHome.IsSecurityManuallyOn ? "Manual security mode." : "Automatic security mode.")} Vacation mode off at {METHOD.DateTimeTZ().DateTime:G}");
                 isCommandExecuted = true;

@@ -117,6 +117,7 @@ namespace HomeModule.Raspberry
             State IR = new State { DoorValue = false, IRValue = true }; //door closed, IR active
             List<State> Entry = new List<State> { NONE, DOOR, ALL, IR, NONE };
             List<State> Entry2 = new List<State> { NONE, DOOR, ALL, DOOR, NONE };
+            List<State> Entry3 = new List<State> { NONE, DOOR, ALL, IR, ALL, IR, NONE };
             List<State> Exit = new List<State> { NONE, IR, NONE, DOOR, ALL, IR, NONE };
             List<State> Exit1 = new List<State> { NONE, IR, NONE, DOOR, ALL, DOOR, NONE };
             List<State> Exit2 = new List<State> { NONE, IR, ALL, DOOR, ALL, IR, NONE };
@@ -125,6 +126,7 @@ namespace HomeModule.Raspberry
             List<State> Exit5 = new List<State> { NONE, IR, ALL, DOOR, ALL, NONE };
             List<State> Exit6 = new List<State> { NONE, IR, ALL, NONE };
             List<State> Exit7 = new List<State> { NONE, IR, DOOR, NONE };
+            List<State> ExitAndBack = new List<State> { NONE, IR, ALL, DOOR, IR, NONE };
             List<State> DoorOpenClose = new List<State> { NONE, DOOR, NONE };
             List<State> RepeatDoorAll = new List<State> { DOOR, ALL }; //repeat
             List<State> RepeatAllDoor = new List<State> { ALL, DOOR }; //repeat
@@ -263,6 +265,7 @@ namespace HomeModule.Raspberry
                         {
                             if (ContainsPattern(_queue, Entry)) status = "entry";
                             if (ContainsPattern(_queue, Entry2)) status = "entry 2";
+                            if (ContainsPattern(_queue, Entry3)) status = "entry 3";
                             if (ContainsPattern(_queue, Exit)) status = "exit";
                             if (ContainsPattern(_queue, Exit1)) status = "exit 1";
                             if (ContainsPattern(_queue, Exit2)) status = "exit 2";
@@ -271,6 +274,7 @@ namespace HomeModule.Raspberry
                             if (ContainsPattern(_queue, Exit5)) status = "exit 5";
                             if (ContainsPattern(_queue, Exit6)) status = "exit 6";
                             if (ContainsPattern(_queue, Exit7)) status = "exit 7";
+                            if (ContainsPattern(_queue, ExitAndBack)) status = "exit and back";
                             if (ContainsPattern(_queue, DoorOpenClose)) status = "door open-closed";
 
                             //entry queue debugging info 

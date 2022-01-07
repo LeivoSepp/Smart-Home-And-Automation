@@ -239,7 +239,8 @@ namespace HomeModule.Schedulers
                     Console.WriteLine($"   |  ------  | ------- |         --------          |           -----          |           -----          |  --------  ");
                     foreach (var device in sortedList)
                     {
-                        if (device.LastUnixTime > 0 && device.SignalType != "Wi-Fi AP" && device.DeviceOwner != "Unknown" && device.DeviceType != WiFiDevice.DEVICE) //show only my own ever seen LocalUserDevices devices
+                        //show only my own ever seen LocalUserDevices devices
+                        if (device.LastUnixTime > 0 && device.SignalType != "Wi-Fi AP" && device.DeviceOwner != "Unknown" && device.DeviceType != WiFiDevice.DEVICE && (device.IsPresent || device.IsChanged)) 
                         {
                             Console.WriteLine($" {(device.IsChanged ? "1" : " ")} " +
                                 $"| {METHOD.UnixTimeStampToDateTime(device.StatusUnixTime).AddHours(timeOffset):T} " +

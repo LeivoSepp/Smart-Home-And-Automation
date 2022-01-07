@@ -41,9 +41,9 @@ namespace HomeModule.Schedulers
             var _sendListData = new SendDataAzure();
             var Methods = new METHOD();
 
-            //this bool used to run hotwater pump at least 5 minutes
-            bool isFiveMinutesPassed = false;
-            int countMinutesToFive = 0;
+            //this bool and int are used to run hotwater pump at least 3 minutes
+            bool isThreeMinutesPassed = true;
+            int countMinutesToThree = 0;
 
             //currentSumOfTempDeltas is some big number to determine temperature changes at startup to generate send data
             double SumOfTemperatureDeltas = 10;
@@ -55,9 +55,8 @@ namespace HomeModule.Schedulers
             //Start LED matrix
             LedMatrixAsync();
 
-
-            var filename = Methods.GetFilePath(CONSTANT.FILENAME_ROOM_TEMPERATURES);
             //save the room temperatures into Raspberry to have this data after reboot or app update
+            var filename = Methods.GetFilePath(CONSTANT.FILENAME_ROOM_TEMPERATURES);
             if (File.Exists(filename))
             {
                 var dataFromFile = await Methods.OpenExistingFile(filename);
@@ -106,29 +105,32 @@ namespace HomeModule.Schedulers
                 if (sauna.Temperature > CONSTANT.EXTREME_SAUNA_TEMP)
                     _receiveData.ProcessCommand(CommandNames.TURN_OFF_SAUNA);
 
-                //if there is time to make hotwater or hot water turned on and hot water is below 40 then hot water required
-                bool isWaterTempVeryLow = ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == WARM_WATER).Temperature < CONSTANT.MIN_WATER_TEMP;
-                if ((TelemetryDataClass.IsHotWaterTime || TelemetryDataClass.isWaterHeatingOn) && (isWaterTempVeryLow || !isFiveMinutesPassed) && !TelemetryDataClass.isHomeInVacation)
+                //if there is time to make hotwater or hot water turned on manually and
+                //hot water temp is low or pump hasnt been run 3 minutes then run hotwater pump
+                double waterTemperature = ListOfAllSensors.Temperatures.FirstOrDefault(x => x.RoomName == WARM_WATER).Temperature;
+                bool isWaterTempVeryLow = waterTemperature < CONSTANT.MIN_WATER_TEMP;
+                if ((TelemetryDataClass.IsHotWaterTime || TelemetryDataClass.isWaterHeatingOn) && (isWaterTempVeryLow || !isThreeMinutesPassed) && !TelemetryDataClass.isHomeInVacation)
                 {
-                    if (countMinutesToFive < 4)
+                    if (countMinutesToThree < 3)
                     {
-                        countMinutesToFive++;
-                        isFiveMinutesPassed = false;
+                        countMinutesToThree++;
+                        isThreeMinutesPassed = false;
                         //turn on hotwater pump only if it wasnt tuned on
                         if (!TelemetryDataClass.isWaterHeatingOn) _receiveData.ProcessCommand(CommandNames.TURN_ON_HOTWATERPUMP);
+                        Console.WriteLine($"{countMinutesToThree}, {waterTemperature}");
                     }
                     else
                     {
-                        countMinutesToFive = 0;
-                        isFiveMinutesPassed = true;
-
+                        countMinutesToThree = 0;
+                        isThreeMinutesPassed = true;
+                        //enable waterheating if water temperature still low after 3 minutes
                         TelemetryDataClass.IsHotWaterRequired = isWaterTempVeryLow;
                     }
                 }
                 else
+                {
                     TelemetryDataClass.IsHotWaterRequired = false;
-
-                //Console.WriteLine($"{countMinutesToFive}, {isFiveMinutesPassed}");
+                }
 
                 //turn hotwaterpump on if the waterheating is working
                 if (!TelemetryDataClass.isWaterHeatingOn && Pins.IsWaterHeatingOn) 
@@ -144,10 +146,6 @@ namespace HomeModule.Schedulers
                 else
                     TelemetryDataClass.IsHeatingRequired = false;
 
-                //waterpump and heating (REDUCED) will be turned on if there is demand for hot water - only during no-vacation
-                //if (TelemetryDataClass.IsHotWaterRequired && !TelemetryDataClass.isWaterHeatingOn && !TelemetryDataClass.isHomeInVacation)
-                //    _receiveData.ProcessCommand(CommandNames.TURN_ON_HOTWATERPUMP);
-
                 //normal heating will be turned on if there is demand for heating - only during no-vacation
                 if (TelemetryDataClass.IsHeatingRequired && !TelemetryDataClass.isNormalHeating && !TelemetryDataClass.isHomeInVacation)
                     _receiveData.ProcessCommand(CommandNames.NORMAL_TEMP_COMMAND);
@@ -157,7 +155,7 @@ namespace HomeModule.Schedulers
                     _receiveData.ProcessCommand(CommandNames.TURN_ON_HEATING);
 
                 //turn off hotwater pump if pump itself is running but waterheating is already stopped
-                if (TelemetryDataClass.isWaterHeatingOn && !Pins.IsWaterHeatingOn && !TelemetryDataClass.IsHotWaterRequired && isFiveMinutesPassed)
+                if (TelemetryDataClass.isWaterHeatingOn && !Pins.IsWaterHeatingOn && !TelemetryDataClass.IsHotWaterRequired && isThreeMinutesPassed)
                     _receiveData.ProcessCommand(CommandNames.TURN_OFF_HOTWATERPUMP);
 
                 //turn off heating (EVU_STOP) if there is no demand for heating and hot water 
@@ -187,8 +185,8 @@ namespace HomeModule.Schedulers
                     Console.WriteLine($"ReadTemperature() started");
                     isReadTemperatureStarted = true;
                 }
-
-                await Task.Delay(TimeSpan.FromSeconds(60)); //check temperatures every 60 sec
+                //check temperatures every 60 sec
+                await Task.Delay(TimeSpan.FromSeconds(60)); 
             }
         }
         //scroll the sauna information in Led-matrix

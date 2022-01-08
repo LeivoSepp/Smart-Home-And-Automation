@@ -370,7 +370,8 @@ namespace HomeModule.Azure
                 {
                     Pins.PinWrite(Pins.heatOnOutPin, PinValue.Low);
                     Pins.PinWrite(Pins.normalTempOutPin, PinValue.Low);
-                    ProcessCommand(CommandNames.TURN_OFF_HOTWATERPUMP);
+                    //execute waterpump off only if it is running
+                    if (TelemetryDataClass.isWaterHeatingOn) ProcessCommand(CommandNames.TURN_OFF_HOTWATERPUMP);
                     TelemetryDataClass.isHeatingOn = false;
                     TelemetryDataClass.isNormalHeating = false;
                     isCommandExecuted = true;

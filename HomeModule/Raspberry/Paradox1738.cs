@@ -121,6 +121,7 @@ namespace HomeModule.Raspberry
             List<State> Entry4 = new List<State> { NONE, DOOR, ALL, NONE };
             List<State> Entry5 = new List<State> { NONE, DOOR, IR, NONE };
             List<State> Entry6 = new List<State> { NONE, DOOR, NONE, IR, NONE };
+            List<State> Entry7 = new List<State> { NONE, DOOR, ALL, DOOR, IR, NONE };
             List<State> Exit = new List<State> { NONE, IR, NONE, DOOR, ALL, IR, NONE };
             List<State> Exit1 = new List<State> { NONE, IR, NONE, DOOR, ALL, DOOR, NONE };
             List<State> Exit3 = new List<State> { NONE, IR, ALL, IR, NONE };
@@ -271,6 +272,7 @@ namespace HomeModule.Raspberry
                             if (ContainsPattern(_queue, Entry4)) status = "entry 4";
                             if (ContainsPattern(_queue, Entry5)) status = "entry 5";
                             if (ContainsPattern(_queue, Entry6)) status = "entry 6";
+                            if (ContainsPattern(_queue, Entry7)) status = "entry 7";
                             if (ContainsPattern(_queue, Exit)) status = "exit";
                             if (ContainsPattern(_queue, Exit1)) status = "exit 1";
                             if (ContainsPattern(_queue, Exit3)) status = "exit 3";

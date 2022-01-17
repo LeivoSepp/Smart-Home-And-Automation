@@ -115,22 +115,22 @@ namespace HomeModule.Raspberry
             State DOOR = new State { DoorValue = true, IRValue = false }; //door open, IR passive
             State ALL = new State { DoorValue = true, IRValue = true }; //door open, IR active
             State IR = new State { DoorValue = false, IRValue = true }; //door closed, IR active
-            List<State> Entry = new List<State> { NONE, DOOR, ALL, IR, NONE };
-            List<State> Entry2 = new List<State> { NONE, DOOR, ALL, DOOR, NONE };
-            List<State> Entry3 = new List<State> { NONE, DOOR, ALL, IR, ALL, IR, NONE };
-            List<State> Entry4 = new List<State> { NONE, DOOR, ALL, NONE };
-            List<State> Entry5 = new List<State> { NONE, DOOR, IR, NONE };
-            List<State> Entry6 = new List<State> { NONE, DOOR, NONE, IR, NONE };
-            List<State> Entry7 = new List<State> { NONE, DOOR, ALL, DOOR, IR, NONE };
-            List<State> Exit = new List<State> { NONE, IR, NONE, DOOR, ALL, IR, NONE };
-            List<State> Exit1 = new List<State> { NONE, IR, NONE, DOOR, ALL, DOOR, NONE };
-            List<State> Exit3 = new List<State> { NONE, IR, ALL, IR, NONE };
-            List<State> Exit4 = new List<State> { NONE, IR, ALL, DOOR, NONE };
-            List<State> Exit5 = new List<State> { NONE, IR, ALL, DOOR, ALL, NONE };
-            List<State> Exit6 = new List<State> { NONE, IR, ALL, NONE };
-            List<State> Exit7 = new List<State> { NONE, IR, DOOR, NONE };
-            List<State> ExitAndBack = new List<State> { NONE, IR, ALL, DOOR, IR, NONE };
-            List<State> ExitAndBack2 = new List<State> { NONE, IR, ALL, DOOR, ALL, IR, NONE };
+            List<State> Entry_NDAIN = new List<State> { NONE, DOOR, ALL, IR, NONE };
+            List<State> Entry2_NDADN = new List<State> { NONE, DOOR, ALL, DOOR, NONE };
+            List<State> Entry3_NDAIAIN = new List<State> { NONE, DOOR, ALL, IR, ALL, IR, NONE };
+            List<State> Entry4_NDAN = new List<State> { NONE, DOOR, ALL, NONE };
+            List<State> Entry5_NDIN = new List<State> { NONE, DOOR, IR, NONE };
+            List<State> Entry6_NDNIN = new List<State> { NONE, DOOR, NONE, IR, NONE };
+            List<State> Entry7_NDADIN = new List<State> { NONE, DOOR, ALL, DOOR, IR, NONE };
+            List<State> Exit_NINDAIN = new List<State> { NONE, IR, NONE, DOOR, ALL, IR, NONE };
+            List<State> Exit1_NINDADN = new List<State> { NONE, IR, NONE, DOOR, ALL, DOOR, NONE };
+            List<State> Exit3_NIAIN = new List<State> { NONE, IR, ALL, IR, NONE };
+            List<State> Exit4_NIADN = new List<State> { NONE, IR, ALL, DOOR, NONE };
+            List<State> Exit5_NIADAN = new List<State> { NONE, IR, ALL, DOOR, ALL, NONE };
+            List<State> Exit6_NIAN = new List<State> { NONE, IR, ALL, NONE };
+            List<State> Exit7_NIDN = new List<State> { NONE, IR, DOOR, NONE };
+            List<State> ExitAndBack_NIADIN = new List<State> { NONE, IR, ALL, DOOR, IR, NONE };
+            List<State> ExitAndBack2_NIADAIN = new List<State> { NONE, IR, ALL, DOOR, ALL, IR, NONE };
             List<State> RepeatDoorAll = new List<State> { DOOR, ALL }; //repeat
             List<State> RepeatAllDoor = new List<State> { ALL, DOOR }; //repeat
             List<State> RepeatIRAll = new List<State> { IR, ALL }; //repeat
@@ -266,22 +266,22 @@ namespace HomeModule.Raspberry
 
                         if (_queue.Count > 2) //only check pattern if there are more than 3 events in queue 
                         {
-                            if (ContainsPattern(_queue, Entry)) status = "entry";
-                            if (ContainsPattern(_queue, Entry2)) status = "entry 2";
-                            if (ContainsPattern(_queue, Entry3)) status = "entry 3";
-                            if (ContainsPattern(_queue, Entry4)) status = "entry 4";
-                            if (ContainsPattern(_queue, Entry5)) status = "entry 5";
-                            if (ContainsPattern(_queue, Entry6)) status = "entry 6";
-                            if (ContainsPattern(_queue, Entry7)) status = "entry 7";
-                            if (ContainsPattern(_queue, Exit)) status = "exit";
-                            if (ContainsPattern(_queue, Exit1)) status = "exit 1";
-                            if (ContainsPattern(_queue, Exit3)) status = "exit 3";
-                            if (ContainsPattern(_queue, Exit4)) status = "exit 4";
-                            if (ContainsPattern(_queue, Exit5)) status = "exit 5";
-                            if (ContainsPattern(_queue, Exit6)) status = "exit 6";
-                            if (ContainsPattern(_queue, Exit7)) status = "exit 7";
-                            if (ContainsPattern(_queue, ExitAndBack)) status = "exit and back";
-                            if (ContainsPattern(_queue, ExitAndBack2)) status = "exit and back 2";
+                            if (ContainsPattern(_queue, Entry_NDAIN)) status = "entry NDAIN";
+                            if (ContainsPattern(_queue, Entry2_NDADN)) status = "entry 2 NDADN";
+                            if (ContainsPattern(_queue, Entry3_NDAIAIN)) status = "entry 3 NDAIAIN";
+                            if (ContainsPattern(_queue, Entry4_NDAN)) status = "entry 4 NDAN";
+                            if (ContainsPattern(_queue, Entry5_NDIN)) status = "entry 5 NDIN";
+                            if (ContainsPattern(_queue, Entry6_NDNIN)) status = "entry 6 NDNIN";
+                            if (ContainsPattern(_queue, Entry7_NDADIN)) status = "entry 7 NDADIN";
+                            if (ContainsPattern(_queue, Exit_NINDAIN)) status = "exit NINDAIN";
+                            if (ContainsPattern(_queue, Exit1_NINDADN)) status = "exit 1 NINDADN";
+                            if (ContainsPattern(_queue, Exit3_NIAIN)) status = "exit 3 NIAIN";
+                            if (ContainsPattern(_queue, Exit4_NIADN)) status = "exit 4 NIADN";
+                            if (ContainsPattern(_queue, Exit5_NIADAN)) status = "exit 5 NIADAN";
+                            if (ContainsPattern(_queue, Exit6_NIAN)) status = "exit 6 NIAN";
+                            if (ContainsPattern(_queue, Exit7_NIDN)) status = "exit 7 NIDN";
+                            if (ContainsPattern(_queue, ExitAndBack_NIADIN)) status = "exit and back NIADIN";
+                            if (ContainsPattern(_queue, ExitAndBack2_NIADAIN)) status = "exit and back 2 NIADAIN";
 
                             //entry queue debugging info 
                             Console.Write($"Entry queue at {CurrentDateTime}: ");

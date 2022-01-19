@@ -129,6 +129,8 @@ namespace HomeModule.Raspberry
             List<State> Exit5_NIADAN = new List<State> { NONE, IR, ALL, DOOR, ALL, NONE };
             List<State> Exit6_NIAN = new List<State> { NONE, IR, ALL, NONE };
             List<State> Exit7_NIDN = new List<State> { NONE, IR, DOOR, NONE };
+            List<State> Exit8_NIDADN = new List<State> { NONE, IR, DOOR, ALL, DOOR, NONE };
+            List<State> Exit9_NIDAN = new List<State> { NONE, IR, DOOR, ALL, NONE };
             List<State> ExitAndBack_NIADIN = new List<State> { NONE, IR, ALL, DOOR, IR, NONE };
             List<State> ExitAndBack2_NIADAIN = new List<State> { NONE, IR, ALL, DOOR, ALL, IR, NONE };
             List<State> RepeatDoorAll = new List<State> { DOOR, ALL }; //repeat
@@ -280,6 +282,8 @@ namespace HomeModule.Raspberry
                             if (ContainsPattern(_queue, Exit5_NIADAN)) status = "exit 5 NIADAN";
                             if (ContainsPattern(_queue, Exit6_NIAN)) status = "exit 6 NIAN";
                             if (ContainsPattern(_queue, Exit7_NIDN)) status = "exit 7 NIDN";
+                            if (ContainsPattern(_queue, Exit8_NIDADN)) status = "exit 8 NIDADN";
+                            if (ContainsPattern(_queue, Exit9_NIDAN)) status = "exit 9 NIDAN";
                             if (ContainsPattern(_queue, ExitAndBack_NIADIN)) status = "exit and back NIADIN";
                             if (ContainsPattern(_queue, ExitAndBack2_NIADAIN)) status = "exit and back 2 NIADAIN";
 

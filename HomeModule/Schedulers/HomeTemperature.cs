@@ -32,7 +32,7 @@ namespace HomeModule.Schedulers
 
         public static SensorReadings ListOfAllSensors;
 
-        private readonly HT16K33 driver = new HT16K33(new byte[] { 0x71, 0x73 }, HT16K33.Rotate.D180); //LED matrix
+        private readonly HT16K33 driver = new HT16K33(new byte[] { 0x70, 0x73 }, HT16K33.Rotate.D180); //LED matrix
         public async void ReadTemperature()
         {
             bool isReadTemperatureStarted = false;

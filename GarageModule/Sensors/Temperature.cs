@@ -18,7 +18,7 @@ namespace GarageModule.Sensors
         private readonly MPL115A2 MPL115A2Sensor = new MPL115A2(); //temperature sensor
         private readonly TSL2561 TSL2561Sensor = new TSL2561(); //light and pressure sensor
 
-        private readonly HT16K33 driver = new HT16K33(new byte[] { 0x70 }, HT16K33.Rotate.None); //LED matrix
+        private readonly HT16K33 driver = new HT16K33(new byte[] { 0x71 }, HT16K33.Rotate.None); //LED matrix
         private SendDataAzure _sendListData;
         public static List<AlertingZone> alertingSensors = new List<AlertingZone>();
 

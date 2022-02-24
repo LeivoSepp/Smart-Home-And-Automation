@@ -134,6 +134,7 @@ namespace HomeModule.Raspberry
             List<State> ExitAndBack_NIADIN = new List<State> { NONE, IR, ALL, DOOR, IR, NONE };
             List<State> ExitAndBack2_NIADAIN = new List<State> { NONE, IR, ALL, DOOR, ALL, IR, NONE };
             List<State> ExitAndBack3_NIDIN = new List<State> { NONE, IR, DOOR, IR, NONE };
+            List<State> EntryAndExit_NDAIDN = new List<State> { NONE, DOOR, ALL, IR, DOOR, NONE };
             List<State> RepeatDoorAll = new List<State> { DOOR, ALL }; //repeat
             List<State> RepeatAllDoor = new List<State> { ALL, DOOR }; //repeat
             List<State> RepeatIRAll = new List<State> { IR, ALL }; //repeat
@@ -288,6 +289,7 @@ namespace HomeModule.Raspberry
                             if (ContainsPattern(_queue, ExitAndBack_NIADIN)) status = "exit and back NIADIN";
                             if (ContainsPattern(_queue, ExitAndBack2_NIADAIN)) status = "exit and back 2 NIADAIN";
                             if (ContainsPattern(_queue, ExitAndBack3_NIDIN)) status = "exit and back 3 NIDIN";
+                            if (ContainsPattern(_queue, EntryAndExit_NDAIDN)) status = "entry and exit NDAIDN";
 
                             //entry queue debugging info 
                             Console.Write($"Entry queue at {CurrentDateTime}: ");

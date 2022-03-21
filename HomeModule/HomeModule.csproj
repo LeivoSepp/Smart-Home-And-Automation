@@ -16,11 +16,11 @@
 
 	<ItemGroup>
 		<PackageReference Include="CoordinateSharp" Version="2.12.1.1" />
-		<PackageReference Include="Microsoft.Azure.Devices.Client" Version="1.39.0" />
+		<PackageReference Include="Microsoft.Azure.Devices.Client" Version="1.40.0" />
 		<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="6.0.0" />
 		<PackageReference Include="Rinsen.OneWire" Version="0.3.2" />
 		<PackageReference Include="RobootikaCOM.NetCore.Devices" Version="1.0.0" />
-		<PackageReference Include="System.Device.Gpio" Version="1.0.0" />
+		<PackageReference Include="System.Device.Gpio" Version="2.1.0" />
 		<PackageReference Include="System.IO.Ports" Version="6.0.0" />
 	</ItemGroup>
 </Project>

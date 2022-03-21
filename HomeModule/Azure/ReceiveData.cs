@@ -365,11 +365,12 @@ namespace HomeModule.Azure
             }
             else if (command == CommandNames.TURN_OFF_HEATING)
             {
+                //lower the HeatPump temperature to gave an opportunity turn off itself naturally
+                Pins.PinWrite(Pins.normalTempOutPin, PinValue.Low);
                 //wait until heat is finished
                 if (!Pins.IsRoomHeatingOn && !Pins.IsWaterHeatingOn)
                 {
                     Pins.PinWrite(Pins.heatOnOutPin, PinValue.Low);
-                    Pins.PinWrite(Pins.normalTempOutPin, PinValue.Low);
                     //execute waterpump off only if it is running
                     if (TelemetryDataClass.isWaterHeatingOn) ProcessCommand(CommandNames.TURN_OFF_HOTWATERPUMP);
                     TelemetryDataClass.isHeatingOn = false;

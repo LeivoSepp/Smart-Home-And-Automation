@@ -1,6 +1,5 @@
 using IoTHubTrigger = Microsoft.Azure.WebJobs.EventHubTriggerAttribute;
 using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.EventHubs;
 using System.Text;
 using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
@@ -11,6 +10,7 @@ using System.Threading.Tasks;
 using System.Linq;
 using Microsoft.Extensions.Configuration;
 using System.Collections.Generic;
+using Azure.Messaging.EventHubs;
 
 namespace HomeIoTFunctions20.IoTHubMessages
 {
@@ -53,8 +53,8 @@ namespace HomeIoTFunctions20.IoTHubMessages
             {
                 try
                 {
-                    if (eventData.SystemProperties.EnqueuedTimeUtc >= DateTime.UtcNow.AddMinutes(-1))
-                        jsonStr = Encoding.UTF8.GetString(eventData.Body.Array);
+                    if (eventData.EnqueuedTime >= DateTime.UtcNow.AddMinutes(-1))
+                        jsonStr = Encoding.UTF8.GetString(eventData.EventBody.ToArray());
                     else
                         return;
 

@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace GarageModule.Sensors
 {
     class Garage
-    {
+    {        
         private readonly GpioController gpio = new GpioController(PinNumberingScheme.Logical);
         private const int GarageDoorInPin = 26;
 
@@ -45,7 +45,8 @@ namespace GarageModule.Sensors
             TSL2561Sensor.SetTiming(true, TSL2561.INTEGRATIONTIME_402MS);
 
             //int lastTemperature = 100; //some big number to enable initial message when program is starting
-            gpio.OpenPin(GarageDoorInPin, PinMode.InputPullUp);
+            gpio.OpenPin(GarageDoorInPin, PinMode.Input);
+            //gpio.OpenPin(GarageDoorInPin, PinMode.InputPullUp);
 
             while (true)
             {

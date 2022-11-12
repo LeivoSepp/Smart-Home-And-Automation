@@ -134,14 +134,24 @@ namespace HomeModule.Raspberry
             //summertime: waterheat is always high "waterheat mode", LED is on
             //otherwise - roomheat pin is high when heating.
             //waterheat pin is high when water water-LED is on on the system (kraaniga märk)
-            gpio.OpenPin(btnWaterPin, PinMode.InputPullUp); //PullUp - kõik PIN-d is High by default, kontrollitud!
-            gpio.OpenPin(btnVentPin, PinMode.InputPullUp);
-            gpio.OpenPin(btnNormalTempPin, PinMode.InputPullUp);
-            gpio.OpenPin(btnHeatOnPin, PinMode.InputPullUp);
-            gpio.OpenPin(roomHeatInPin, PinMode.InputPullUp);
-            gpio.OpenPin(waterHeatInPin, PinMode.InputPullUp);
-            gpio.OpenPin(SaunaDoorInPin, PinMode.InputPullUp);
-            gpio.OpenPin(btnSaunaPin, PinMode.InputPullUp);
+
+            //gpio.OpenPin(btnWaterPin, PinMode.InputPullUp); //PullUp - kõik PIN-d is High by default, kontrollitud!
+            //gpio.OpenPin(btnVentPin, PinMode.InputPullUp);
+            //gpio.OpenPin(btnNormalTempPin, PinMode.InputPullUp);
+            //gpio.OpenPin(btnHeatOnPin, PinMode.InputPullUp);
+            //gpio.OpenPin(roomHeatInPin, PinMode.InputPullUp);
+            //gpio.OpenPin(waterHeatInPin, PinMode.InputPullUp);
+            //gpio.OpenPin(SaunaDoorInPin, PinMode.InputPullUp);
+            //gpio.OpenPin(btnSaunaPin, PinMode.InputPullUp);
+
+            gpio.OpenPin(btnWaterPin, PinMode.Input); 
+            gpio.OpenPin(btnVentPin, PinMode.Input);
+            gpio.OpenPin(btnNormalTempPin, PinMode.Input);
+            gpio.OpenPin(btnHeatOnPin, PinMode.Input);
+            gpio.OpenPin(roomHeatInPin, PinMode.Input);
+            gpio.OpenPin(waterHeatInPin, PinMode.Input);
+            gpio.OpenPin(SaunaDoorInPin, PinMode.Input);
+            gpio.OpenPin(btnSaunaPin, PinMode.Input);
 
 
             //kui on sama sisendi peale falling ja rising - siis hakkab segast peksma.

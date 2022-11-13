@@ -22,7 +22,7 @@ namespace HomeIoTFunctions20.IoTHubMessages
         //all messages are forwarded to CosmosDB and some of the messages will sent to SendGrid (e-mail)
         //it will not forward old messages, only messages that are current and forward
         [FunctionName("IoTHubMessages")]
-        public static async Task Run([IoTHubTrigger("iothubtrigger", Connection = "IoTHubEndpoint", ConsumerGroup = "FunctionGroup")] EventData[] eventMessages,
+        public static async Task Run([IoTHubTrigger("iothub-ehub-homecontro-832854-1e85d582a8", Connection = "IoTHubEndpoint", ConsumerGroup = "FunctionGroup")] EventData[] eventMessages,
              [CosmosDB(
                 databaseName: "FreeCosmosDB",
                 collectionName: "TelemetryData",

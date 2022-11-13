@@ -28,8 +28,8 @@ namespace HomeIoTFunctions20.GetEnergyMarketPrice
         //timer scheduler to get the energy market price once in a day, calculate heating schedule and save it to CosmosDB
         [FunctionName("GetEnergyMarketPrice")]
         public static async Task Run(
-        //[TimerTrigger("0 0 13 * * *")] TimerInfo myTimer, //every day at 14 (trigger if fired based UTC)
-                                       [TimerTrigger("0 */2 * * * *")] TimerInfo myTimer,
+        [TimerTrigger("0 0 13 * * *")] TimerInfo myTimer, //every day at 14 (trigger if fired based UTC)
+        //[TimerTrigger("0 */2 * * * *")] TimerInfo myTimer, //every second minute (trigger if fired based UTC)
             [CosmosDB(
                 databaseName: "FreeCosmosDB",
                 collectionName: "TelemetryData",

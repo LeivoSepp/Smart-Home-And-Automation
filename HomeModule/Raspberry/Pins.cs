@@ -1,6 +1,7 @@
 ﻿using HomeModule.Azure;
 using HomeModule.Helpers;
 using HomeModule.Schedulers;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Collections.Generic;
 using System.Device.Gpio;
@@ -248,7 +249,6 @@ namespace HomeModule.Raspberry
                     ledValuePin = 0;
                     break;
             }
-
             var ledValue = PinRead(ledValuePin);
             while (!(bool)gpio.Read(PressedButton)) ; //loop is running until button pressed
 

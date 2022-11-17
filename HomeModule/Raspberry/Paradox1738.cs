@@ -26,6 +26,7 @@ namespace HomeModule.Raspberry
             try
             {
                 _serialPort.Open();
+                Console.WriteLine($"Serial port OPEN");
             }
             catch (IOException ex)
             {
@@ -48,7 +49,8 @@ namespace HomeModule.Raspberry
                         }
                     }
                 }
-                catch (Exception e) { Console.WriteLine($"Timeout {e}"); }
+                catch (Exception e) 
+                { Console.WriteLine($"Paradox Security Exception BytesToRead {e}"); }
 
                 //Datastream[0] + Datastream[1] = 1234 5678 1234 5678
                 //int EventId = DataStream[0] >> 2; -> 1234 56
@@ -101,6 +103,7 @@ namespace HomeModule.Raspberry
                 if (!isParadoxSecurityStarted)
                 {
                     Console.WriteLine($"ParadoxSecurity() started");
+                    Console.WriteLine($"Last Active Zone ID: {LastActiveZoneID}");
                     isParadoxSecurityStarted = true;
                 }
             }
@@ -108,6 +111,8 @@ namespace HomeModule.Raspberry
 
         public async void IRSensorsReading()
         {
+            Console.WriteLine($"IRSensorreading starting");
+
             bool isIRSensorsReadingStarted = false;
 
             _sendListData = new SendDataAzure();
@@ -531,6 +536,7 @@ namespace HomeModule.Raspberry
         };
         public static List<Zone> Zones = new List<Zone>
         {
+            new Zone(0, new DateTime(), new DateTime(), "Serial ERROR"),
             new Zone(1, new DateTime(), new DateTime(), "Door"),
             new Zone(2, new DateTime(), new DateTime(), "Entry"),
             new Zone(3, new DateTime(), new DateTime(), "Living"),

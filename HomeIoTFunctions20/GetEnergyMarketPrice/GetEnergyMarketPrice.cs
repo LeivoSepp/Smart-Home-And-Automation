@@ -175,15 +175,19 @@ namespace HomeIoTFunctions20.GetEnergyMarketPrice
             //update values heatOn, heatReduced and heatOff to make nice graphs in PowerApps
             for (int i = 0; i < energyPrices.Count; i++)
             {
-                bool isItPassiveTime = IsItInsidePassiveTime(energyPrices[i].date);
+                //bool isItPassiveTime = IsItInsidePassiveTime(energyPrices[i].date);
                 //all cheap hours marked as heating hours
                 if (i < hoursToHeatInDay) 
                 {
                     energyPrices[i].heat = true;
                     energyPrices[i].heatOn = (int)energyPrices[i].price;
                 }
+                
                 //if it is daytime or night time (and not heating time), then full stop for heating
-                else if (isItPassiveTime) 
+                //else if (isItPassiveTime) 
+
+                //5 most expensive hours have full stop for heating
+                else if (i > 18)
                 {
                     energyPrices[i].heat = false;
                     energyPrices[i].heatOff = (int)energyPrices[i].price;
@@ -191,11 +195,12 @@ namespace HomeIoTFunctions20.GetEnergyMarketPrice
                 //if it is inside active time (early morning and evening), then warm water
                 else
                 {
+                    energyPrices[i].isHotWaterTime = true;
                     energyPrices[i].heat = false;
                     energyPrices[i].heatReduced = (int)energyPrices[i].price;
                 }
                 //set separate parameter for hotwater
-                energyPrices[i].isHotWaterTime = !isItPassiveTime; 
+                //energyPrices[i].isHotWaterTime = !isItPassiveTime; 
             }
             //sort by time of day
             energyPrices.Sort((x, y) => x.date.CompareTo(y.date)); 
@@ -208,35 +213,35 @@ namespace HomeIoTFunctions20.GetEnergyMarketPrice
             };
             return monitorData;
         }
-        private static bool IsItInsidePassiveTime(DateTimeOffset date)
-        {
-            bool isWakeUpTime = !IsSleepTime(date);
-            bool isWeekend = IsWeekend(date);
-            bool result = true;
-            for (int i = 0; i < onTimer.Length; i++)
-            {
-                bool isTimeBetween = TimeBetween(date, TimeSpan.Parse(onTimer[i]), TimeSpan.Parse(offTimer[i]));
-                if (isTimeBetween || (isWeekend && isWakeUpTime))
-                {
-                    result = false;
-                    break;
-                }
-            }
-            return result;
-        }
-        private static bool IsWeekend(DateTimeOffset date)
-        {
-            return new[] { DayOfWeek.Sunday, DayOfWeek.Saturday }.Contains(date.DayOfWeek);
-        }
-        private static bool TimeBetween(DateTimeOffset datetime, TimeSpan start, TimeSpan end)
-        {
-            TimeSpan now = datetime.TimeOfDay;
-            // see if start comes before end
-            if (start < end)
-                return start <= now && now <= end;
-            // start is after end, so do the inverse comparison
-            return !(end < now && now < start);
-        }
+        //private static bool IsItInsidePassiveTime(DateTimeOffset date)
+        //{
+        //    bool isWakeUpTime = !IsSleepTime(date);
+        //    bool isWeekend = IsWeekend(date);
+        //    bool result = true;
+        //    for (int i = 0; i < onTimer.Length; i++)
+        //    {
+        //        bool isTimeBetween = TimeBetween(date, TimeSpan.Parse(onTimer[i]), TimeSpan.Parse(offTimer[i]));
+        //        if (isTimeBetween || (isWeekend && isWakeUpTime))
+        //        {
+        //            result = false;
+        //            break;
+        //        }
+        //    }
+        //    return result;
+        //}
+        //private static bool IsWeekend(DateTimeOffset date)
+        //{
+        //    return new[] { DayOfWeek.Sunday, DayOfWeek.Saturday }.Contains(date.DayOfWeek);
+        //}
+        //private static bool TimeBetween(DateTimeOffset datetime, TimeSpan start, TimeSpan end)
+        //{
+        //    TimeSpan now = datetime.TimeOfDay;
+        //    // see if start comes before end
+        //    if (start < end)
+        //        return start <= now && now <= end;
+        //    // start is after end, so do the inverse comparison
+        //    return !(end < now && now < start);
+        //}
         public static DateTimeOffset DateTimeTZ()
         {
             TimeZoneInfo eet = TimeZoneInfo.FindSystemTimeZoneById("FLE Standard Time");
@@ -244,13 +249,13 @@ namespace HomeIoTFunctions20.GetEnergyMarketPrice
             DateTimeOffset LocalTimeTZ = new DateTimeOffset(DateTime.UtcNow).ToOffset(timeSpan);
             return LocalTimeTZ;
         }
-        public static bool IsSleepTime(DateTimeOffset datetime)
-        {
-            TimeSpan SleepTimeStart = TimeSpan.Parse("00:00");
-            TimeSpan SleepTimeEnd = TimeSpan.Parse("07:00");
-            bool isSleepTime = TimeBetween(datetime, SleepTimeStart, SleepTimeEnd);
-            return isSleepTime;
-        }
+        //public static bool IsSleepTime(DateTimeOffset datetime)
+        //{
+        //    TimeSpan SleepTimeStart = TimeSpan.Parse("00:00");
+        //    TimeSpan SleepTimeEnd = TimeSpan.Parse("07:00");
+        //    bool isSleepTime = TimeBetween(datetime, SleepTimeStart, SleepTimeEnd);
+        //    return isSleepTime;
+        //}
         //private static EnergyPriceClass updateEnergyPrice(List<EnergyPrice> energyPrices)
         //{
         //    //update values heatOn, heatReduced and heatOff to make nice graphs in PowerApps
